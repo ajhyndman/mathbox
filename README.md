@@ -8,7 +8,9 @@ MathBox is a library for rendering presentation-quality math diagrams in a brows
 
 MathBox is used through its JS-based DOM.
 
-For background, see the [article series on Acko.net](http://acko.net/blog/mathbox2/). See `docs/` for TLDR and `examples/` for a start.
+For background, see the [article series on Acko.net](http://acko.net/blog/mathbox2/).
+
+**See `docs/` for TLDR and `examples/` for a start.**
 
 Demos:
 
@@ -28,13 +30,20 @@ Presentations:
 
 ***
 
-## Usage
 
-Download the [package](http://acko.net/files/mathbox2/mathbox-0.0.2.zip) or install via bower:
+## Download
+
+* Release: [0.0.3 ZIP](http://acko.net/files/mathbox2/mathbox-0.0.3.zip)
+
+or install via bower:
 
 ```bash
 bower install mathbox
 ```
+
+
+***
+## Usage
 
 Include the bundle:
 
@@ -88,13 +97,15 @@ Use `.print()`, `.inspect()` and `.debug()` to show information about a selectio
 
 ***
 
-## Docs 
+## Docs & Help
 
 See:
 
  * `docs/intro.md` for a tiny quickstart
  * `docs/primitives.md` for a full element reference
  * `docs/context.md` for advanced context usage.
+
+Visit the [MathBox Google Group](https://groups.google.com/forum/#!forum/mathbox) or #mathbox on Freenode.
 
 ***
 
