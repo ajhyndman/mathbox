@@ -2,7 +2,7 @@ Operator = require '../operator/operator'
 Util = require '../../../util'
 
 class Format extends Operator
-  @traits = ['node', 'bind', 'operator', 'texture', 'text', 'format']
+  @traits = ['node', 'bind', 'operator', 'texture', 'text', 'format', 'font']
   @defaults =
     minFilter: 'linear'
     magFilter: 'linear'
@@ -18,7 +18,7 @@ class Format extends Operator
   textShader: (shader) ->
     @atlas.shader shader
 
-  textIsSDF:  () -> @props.expand > 0
+  textIsSDF:  () -> @props.sdf > 0
   textHeight: () -> @props.detail
 
   make: () ->
@@ -31,7 +31,7 @@ class Format extends Operator
     {minFilter, magFilter, type} = @props
 
     # Read font parameters
-    {font, style, variant, weight, detail, expand} = @props
+    {font, style, variant, weight, detail, sdf} = @props
 
     # Prepare text atlas
     @atlas = @_renderables.make 'textAtlas',
@@ -40,7 +40,7 @@ class Format extends Operator
                style:     style
                variant:   variant
                weight:    weight
-               outline:   expand
+               outline:   sdf
                minFilter: minFilter
                magFilter: magFilter
                type:      type
@@ -110,7 +110,7 @@ class Format extends Operator
         type: 'source.resize'
 
   change: (changed, touched, init) ->
-    return @rebuild() if touched['text']
+    return @rebuild() if touched['font']
 
     if changed['format.expr']   or
        changed['format.digits'] or

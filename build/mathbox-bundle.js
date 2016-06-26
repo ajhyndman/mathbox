@@ -46720,6 +46720,7 @@ module.exports = {"arrow.position": "uniform float worldUnit;\nuniform float lin
 "mesh.fragment.color": "varying vec4 vColor;\n\nvec4 getColor() {\n  return vColor;\n}\n",
 "mesh.fragment.map": "#ifdef POSITION_STPQ\nvarying vec4 vSTPQ;\n#endif\n#ifdef POSITION_U\nvarying float vU;\n#endif\n#ifdef POSITION_UV\nvarying vec2 vUV;\n#endif\n#ifdef POSITION_UVW\nvarying vec3 vUVW;\n#endif\n#ifdef POSITION_UVWO\nvarying vec4 vUVWO;\n#endif\n\nvec4 getSample(vec4 uvwo, vec4 stpq);\n\nvec4 getMapColor() {\n  #ifdef POSITION_STPQ\n  vec4 stpq = vSTPQ;\n  #else\n  vec4 stpq = vec4(0.0);\n  #endif\n\n  #ifdef POSITION_U\n  vec4 uvwo = vec4(vU, 0.0, 0.0, 0.0);\n  #endif\n  #ifdef POSITION_UV\n  vec4 uvwo = vec4(vUV, 0.0, 0.0);\n  #endif\n  #ifdef POSITION_UVW\n  vec4 uvwo = vec4(vUVW, 0.0);\n  #endif\n  #ifdef POSITION_UVWO\n  vec4 uvwo = vec4(vUVWO);\n  #endif\n\n  return getSample(uvwo, stpq);\n}\n",
 "mesh.fragment.mask": "varying float vMask;\n\nfloat ease(float t) {\n  t = clamp(t, 0.0, 1.0);\n  return t * t * (3.0 - 2.0 * t);\n}\n\nvec4 maskColor() {\n  if (vMask <= 0.0) discard;\n  return vec4(vec3(1.0), ease(vMask));\n}\n",
+"mesh.fragment.material": "#ifdef POSITION_STPQ\nvarying vec4 vSTPQ;\n#endif\n#ifdef POSITION_U\nvarying float vU;\n#endif\n#ifdef POSITION_UV\nvarying vec2 vUV;\n#endif\n#ifdef POSITION_UVW\nvarying vec3 vUVW;\n#endif\n#ifdef POSITION_UVWO\nvarying vec4 vUVWO;\n#endif\n\nvec4 getSample(vec4 rgba, vec4 stpq);\n\nvec4 getMaterialColor(vec4 rgba) {\n  vec4 stpq = vec4(0.0);\n\n  #ifdef POSITION_U\n  stpq.x = vU;\n  #endif\n  #ifdef POSITION_UV\n  stpq.xy = vUV;\n  #endif\n  #ifdef POSITION_UVW\n  stpq.xyz = vUVW;\n  #endif\n  #ifdef POSITION_UVWO\n  stpq = vUVWO;\n  #endif\n\n  #ifdef POSITION_STPQ\n  stpq = vSTPQ;\n  #endif\n\n  return getSample(rgba, stpq);\n}\n",
 "mesh.fragment.shaded": "varying vec3 vNormal;\nvarying vec3 vLight;\nvarying vec3 vPosition;\n\nvec3 offSpecular(vec3 color) {\n  vec3 c = 1.0 - color;\n  return 1.0 - c * c;\n}\n\nvec4 getShadedColor(vec4 rgba) {\n  \n  vec3 color = rgba.xyz;\n  vec3 color2 = offSpecular(rgba.xyz);\n\n  vec3 normal = normalize(vNormal);\n  vec3 light = normalize(vLight);\n  vec3 position = normalize(vPosition);\n  \n  float side    = gl_FrontFacing ? -1.0 : 1.0;\n  float cosine  = side * dot(normal, light);\n  float diffuse = mix(max(0.0, cosine), .5 + .5 * cosine, .1);\n  \n  vec3  halfLight = normalize(light + position);\n\tfloat cosineHalf = max(0.0, side * dot(normal, halfLight));\n\tfloat specular = pow(cosineHalf, 16.0);\n\t\n\treturn vec4(color * (diffuse * .9 + .05) + .25 * color2 * specular, rgba.a);\n}\n",
 "mesh.fragment.texture": "",
 "mesh.gamma.in": "vec4 getGammaInColor(vec4 rgba) {\n  return vec4(rgba.rgb * rgba.rgb, rgba.a);\n}\n",
@@ -46728,7 +46729,7 @@ module.exports = {"arrow.position": "uniform float worldUnit;\nuniform float lin
 "mesh.position": "uniform vec4 geometryClip;\nattribute vec4 position4;\n\n// External\nvec3 getPosition(vec4 xyzw, float canonical);\n\nvec3 getMeshPosition() {\n  vec4 p = min(geometryClip, position4);\n  return getPosition(p, 1.0);\n}\n",
 "mesh.vertex.color": "attribute vec4 position4;\nuniform vec4 geometryClip;\nvarying vec4 vColor;\n\n// External\nvec4 getSample(vec4 xyzw);\n\nvoid vertexColor() {\n  vec4 p = min(geometryClip, position4);\n  vColor = getSample(p);\n}\n",
 "mesh.vertex.mask": "attribute vec4 position4;\nuniform vec4 geometryResolution;\nuniform vec4 geometryClip;\nvarying float vMask;\n\n// External\nfloat getSample(vec4 xyzw);\n\nvoid maskLevel() {\n  vec4 p = min(geometryClip, position4);\n  vMask = getSample(p * geometryResolution);\n}\n",
-"mesh.vertex.position": "uniform vec4 geometryResolution;\n\n#ifdef POSITION_STPQ\nvarying vec4 vSTPQ;\n#endif\n#ifdef POSITION_U\nvarying float vU;\n#endif\n#ifdef POSITION_UV\nvarying vec2 vUV;\n#endif\n#ifdef POSITION_UVW\nvarying vec3 vUVW;\n#endif\n#ifdef POSITION_UVWO\nvarying vec4 vUVWO;\n#endif\n\n// External\nvec3 getPosition(vec4 xyzw, vec4 stpq);\n\nvec3 getMeshPosition(vec4 xyzw, float canonical) {\n  vec4 stpq = xyzw * geometryResolution;\n  vec3 xyz = getPosition(xyzw, stpq);\n\n  #ifdef POSITION_MAP\n  if (canonical > 0.5) {\n    #ifdef POSITION_STPQ\n    vSTPQ = stpq;\n    #endif\n    #ifdef POSITION_U\n    vU = stpq.x;\n    #endif\n    #ifdef POSITION_UV\n    vUV = stpq.xy;\n    #endif\n    #ifdef POSITION_UVW\n    vUVW = stpq.xyz;\n    #endif\n    #ifdef POSITION_UVWO\n    vUVWO = stpq;\n    #endif\n  }\n  #endif\n  return xyz;\n}\n",
+"mesh.vertex.position": "uniform vec4 geometryResolution;\n\n#ifdef POSITION_STPQ\nvarying vec4 vSTPQ;\n#endif\n#ifdef POSITION_U\nvarying float vU;\n#endif\n#ifdef POSITION_UV\nvarying vec2 vUV;\n#endif\n#ifdef POSITION_UVW\nvarying vec3 vUVW;\n#endif\n#ifdef POSITION_UVWO\nvarying vec4 vUVWO;\n#endif\n\n// External\nvec3 getPosition(vec4 xyzw, in vec4 stpqIn, out vec4 stpqOut);\n\nvec3 getMeshPosition(vec4 xyzw, float canonical) {\n  vec4 stpqOut, stpqIn = xyzw * geometryResolution;\n  vec3 xyz = getPosition(xyzw, stpqIn, stpqOut);\n\n  #ifdef POSITION_MAP\n  if (canonical > 0.5) {\n    #ifdef POSITION_STPQ\n    vSTPQ = stpqOut;\n    #endif\n    #ifdef POSITION_U\n    vU = stpqOut.x;\n    #endif\n    #ifdef POSITION_UV\n    vUV = stpqOut.xy;\n    #endif\n    #ifdef POSITION_UVW\n    vUVW = stpqOut.xyz;\n    #endif\n    #ifdef POSITION_UVWO\n    vUVWO = stpqOut;\n    #endif\n  }\n  #endif\n  return xyz;\n}\n",
 "move.position": "uniform float transitionEnter;\nuniform float transitionExit;\nuniform vec4  transitionScale;\nuniform vec4  transitionBias;\nuniform float transitionSkew;\nuniform float transitionActive;\n\nuniform vec4  moveFrom;\nuniform vec4  moveTo;\n\nfloat ease(float t) {\n  t = clamp(t, 0.0, 1.0);\n  return 1.0 - (2.0 - t) * t;\n}\n\nvec4 getTransitionPosition(vec4 xyzw, inout vec4 stpq) {\n  if (transitionActive < 0.5) return xyzw;\n\n  float enter   = transitionEnter;\n  float exit    = transitionExit;\n  float skew    = transitionSkew;\n  vec4  scale   = transitionScale;\n  vec4  bias    = transitionBias;\n\n  float factor  = 1.0 + skew;\n  float offset  = dot(vec4(1.0), stpq * scale + bias);\n\n  float a1 = ease(enter * factor - offset);\n  float a2 = ease(exit  * factor + offset - skew);\n\n  return xyzw + a1 * moveFrom + a2 * moveTo;\n}",
 "object.mask.default": "vec4 getMask(vec4 xyzw) {\n  return vec4(1.0);\n}",
 "point.alpha.circle": "varying float vPixelSize;\n\nfloat getDiscAlpha(float mask) {\n  // Approximation: 1 - x*x is approximately linear around x = 1 with slope 2\n  return vPixelSize * (1.0 - mask);\n  //  return vPixelSize * 2.0 * (1.0 - sqrt(mask));\n}\n",
@@ -46749,13 +46750,13 @@ module.exports = {"arrow.position": "uniform float worldUnit;\nuniform float lin
 "point.size.varying": "uniform float pointSize;\n\nvec4 getSample(vec4 xyzw);\n\nfloat getPointSize(vec4 xyzw) {\n  return pointSize * getSample(xyzw).x;\n}",
 "polar.position": "uniform float polarBend;\nuniform float polarFocus;\nuniform float polarAspect;\nuniform float polarHelix;\n\nuniform mat4 viewMatrix;\n\nvec4 getPolarPosition(vec4 position, inout vec4 stpq) {\n  if (polarBend > 0.0) {\n\n    if (polarBend < 0.001) {\n      // Factor out large addition/subtraction of polarFocus\n      // to avoid numerical error\n      // sin(x) ~ x\n      // cos(x) ~ 1 - x * x / 2\n      vec2 pb = position.xy * polarBend;\n      float ppbbx = pb.x * pb.x;\n      return viewMatrix * vec4(\n        position.x * (1.0 - polarBend + (pb.y * polarAspect)),\n        position.y * (1.0 - .5 * ppbbx) - (.5 * ppbbx) * polarFocus / polarAspect,\n        position.z + position.x * polarHelix * polarBend,\n        1.0\n      );\n    }\n    else {\n      vec2 xy = position.xy * vec2(polarBend, polarAspect);\n      float radius = polarFocus + xy.y;\n      return viewMatrix * vec4(\n        sin(xy.x) * radius,\n        (cos(xy.x) * radius - polarFocus) / polarAspect,\n        position.z + position.x * polarHelix * polarBend,\n        1.0\n      );\n    }\n  }\n  else {\n    return viewMatrix * vec4(position.xyz, 1.0);\n  }\n}",
 "project.position": "uniform float styleZBias;\nuniform float styleZIndex;\n\nvoid setPosition(vec3 position) {\n  vec4 pos = projectionMatrix * vec4(position, 1.0);\n\n  // Apply relative Z bias\n  float bias  = (1.0 - styleZBias / 32768.0);\n  pos.z *= bias;\n  \n  // Apply large scale Z index changes\n  if (styleZIndex > 0.0) {\n    float z = pos.z / pos.w;\n    pos.z = ((z + 1.0) / (styleZIndex + 1.0) - 1.0) * pos.w;\n  }\n  \n  gl_Position = pos;\n}",
-"project.readback": "// This is three.js' global uniform, missing from fragment shaders.\nuniform mat4 projectionMatrix;\n\nvec4 readbackPosition(vec3 position) {\n  vec4 pos = projectionMatrix * vec4(position, 1.0);\n  vec3 final = pos.xyz / pos.w;\n  if (final.z < -1.0) {\n    return vec4(0.0, 0.0, 0.0, -1.0);\n  }\n  else {\n    return vec4(final, -position.z);\n  }\n}\n",
+"project.readback": "// This is three.js' global uniform, missing from fragment shaders.\nuniform mat4 projectionMatrix;\n\nvec4 readbackPosition(vec3 position, vec4 stpq) {\n  vec4 pos = projectionMatrix * vec4(position, 1.0);\n  vec3 final = pos.xyz / pos.w;\n  if (final.z < -1.0) {\n    return vec4(0.0, 0.0, 0.0, -1.0);\n  }\n  else {\n    return vec4(final, -position.z);\n  }\n}\n",
 "raw.position.scale": "uniform vec4 geometryScale;\nattribute vec4 position4;\n\nvec4 getRawPositionScale() {\n  return geometryScale * position4;\n}\n",
 "repeat.position": "uniform vec4 repeatModulus;\n\nvec4 getRepeatXYZW(vec4 xyzw) {\n  return mod(xyzw + .5, repeatModulus) - .5;\n}\n",
 "resample.padding": "uniform vec4 resampleBias;\n\nvec4 resamplePadding(vec4 xyzw) {\n  return xyzw + resampleBias;\n}",
 "resample.relative": "uniform vec4 resampleFactor;\n\nvec4 resampleRelative(vec4 xyzw) {\n  return xyzw * resampleFactor;\n}",
 "reveal.mask": "uniform float transitionEnter;\nuniform float transitionExit;\nuniform vec4  transitionScale;\nuniform vec4  transitionBias;\nuniform float transitionSkew;\nuniform float transitionActive;\n\nfloat getTransitionSDFMask(vec4 stpq) {\n  if (transitionActive < 0.5) return 1.0;\n\n  float enter   = transitionEnter;\n  float exit    = transitionExit;\n  float skew    = transitionSkew;\n  vec4  scale   = transitionScale;\n  vec4  bias    = transitionBias;\n\n  float factor  = 1.0 + skew;\n  float offset  = dot(vec4(1.0), stpq * scale + bias);\n\n  vec2 d = vec2(enter, exit) * factor + vec2(-offset, offset - skew);\n  if (exit  == 1.0) return d.x;\n  if (enter == 1.0) return d.y;\n  return min(d.x, d.y);\n}",
-"root.position": "vec3 getRootPosition(vec4 position, in vec4 stpq) {\n  return position.xyz;\n}",
+"root.position": "vec3 getRootPosition(vec4 position, in vec4 stpqIn, out vec4 stpqOut) {\n  stpqOut = stpqIn; // avoid inout confusion\n  return position.xyz;\n}",
 "sample.2d": "uniform sampler2D dataTexture;\n\nvec4 sample2D(vec2 uv) {\n  return texture2D(dataTexture, uv);\n}\n",
 "scale.position": "uniform vec4 scaleAxis;\nuniform vec4 scaleOffset;\n\nvec4 sampleData(float x);\n\nvec4 getScalePosition(vec4 xyzw) {\n  return scaleAxis * sampleData(xyzw.x).x + scaleOffset;\n}\n",
 "screen.map.stpq": "uniform vec4 remapSTPQScale;\n\nvec4 screenMapSTPQ(vec4 xyzw, out vec4 stpq) {\n  stpq = xyzw * remapSTPQScale;\n  return xyzw;\n}\n",
@@ -46778,12 +46779,830 @@ module.exports = {"arrow.position": "uniform float worldUnit;\nuniform float lin
 "surface.mask.hollow": "attribute vec4 position4;\n\nfloat getSurfaceHollowMask(vec4 xyzw) {\n  vec4 df = abs(fract(position4) - .5);\n  vec2 df2 = min(df.xy, df.zw);\n  float df3 = min(df2.x, df2.y);\n  return df3;\n}",
 "surface.position": "uniform vec4 geometryClip;\nuniform vec4 geometryResolution;\nuniform vec4 mapSize;\n\nattribute vec4 position4;\n\n// External\nvec3 getPosition(vec4 xyzw, float canonical);\n\nvec3 getSurfacePosition() {\n  vec4 p = min(geometryClip, position4);\n  vec3 xyz = getPosition(p, 1.0);\n\n  // Overwrite UVs\n#ifdef POSITION_UV\n#ifdef POSITION_UV_INT\n  vUV = -.5 + (position4.xy * geometryResolution.xy) * mapSize.xy;\n#else\n  vUV = position4.xy * geometryResolution.xy;\n#endif\n#endif\n\n  return xyz;\n}\n",
 "surface.position.normal": "uniform vec4 mapSize;\nuniform vec4 geometryResolution;\nuniform vec4 geometryClip;\nattribute vec4 position4;\nattribute vec2 surface;\n\n// External\nvec3 getPosition(vec4 xyzw, float canonical);\n\nvoid getSurfaceGeometry(vec4 xyzw, float edgeX, float edgeY, out vec3 left, out vec3 center, out vec3 right, out vec3 up, out vec3 down) {\n  vec4 deltaX = vec4(1.0, 0.0, 0.0, 0.0);\n  vec4 deltaY = vec4(0.0, 1.0, 0.0, 0.0);\n\n  /*\n  // high quality, 5 tap\n  center =                  getPosition(xyzw, 1.0);\n  left   = (edgeX > -0.5) ? getPosition(xyzw - deltaX, 0.0) : center;\n  right  = (edgeX < 0.5)  ? getPosition(xyzw + deltaX, 0.0) : center;\n  down   = (edgeY > -0.5) ? getPosition(xyzw - deltaY, 0.0) : center;\n  up     = (edgeY < 0.5)  ? getPosition(xyzw + deltaY, 0.0) : center;\n  */\n  \n  // low quality, 3 tap\n  center =                  getPosition(xyzw, 1.0);\n  left   =                  center;\n  down   =                  center;\n  right  = (edgeX < 0.5)  ? getPosition(xyzw + deltaX, 0.0) : (2.0 * center - getPosition(xyzw - deltaX, 0.0));\n  up     = (edgeY < 0.5)  ? getPosition(xyzw + deltaY, 0.0) : (2.0 * center - getPosition(xyzw - deltaY, 0.0));\n}\n\nvec3 getSurfaceNormal(vec3 left, vec3 center, vec3 right, vec3 up, vec3 down) {\n  vec3 dx = right - left;\n  vec3 dy = up    - down;\n  vec3 n = cross(dy, dx);\n  if (length(n) > 0.0) {\n    return normalize(n);\n  }\n  return vec3(0.0, 1.0, 0.0);\n}\n\nvarying vec3 vNormal;\nvarying vec3 vLight;\nvarying vec3 vPosition;\n\nvec3 getSurfacePositionNormal() {\n  vec3 left, center, right, up, down;\n\n  vec4 p = min(geometryClip, position4);\n\n  getSurfaceGeometry(p, surface.x, surface.y, left, center, right, up, down);\n  vNormal   = getSurfaceNormal(left, center, right, up, down);\n  vLight    = normalize((viewMatrix * vec4(1.0, 2.0, 2.0, 0.0)).xyz); // hardcoded directional light\n  vPosition = -center;\n\n#ifdef POSITION_UV\n#ifdef POSITION_UV_INT\n  vUV = -.5 + (position4.xy * geometryResolution.xy) * mapSize.xy;\n#else\n  vUV = position4.xy * geometryResolution.xy;\n#endif\n#endif\n  \n  return center;\n}\n",
-"ticks.position": "uniform float worldUnit;\nuniform float focusDepth;\nuniform float tickSize;\nuniform float tickEpsilon;\nuniform vec3  tickNormal;\nuniform vec2  tickStrip;\n\nvec4 getSample(vec4 xyzw);\n\nvec3 transformPosition(vec4 position, vec4 stpq);\n\nvec3 getTickPosition(vec4 xyzw, vec4 stpq) {\n\n  float epsilon = tickEpsilon;\n\n  // determine tick direction\n  float leftX  = max(tickStrip.x, xyzw.y - 1.0);\n  float rightX = min(tickStrip.y, xyzw.y + 1.0);\n  \n  vec4 left    = getSample(vec4(leftX,  xyzw.zw, 0.0));\n  vec4 right   = getSample(vec4(rightX, xyzw.zw, 0.0));\n  vec4 diff    = right - left;\n\n  vec3 normal  = cross(normalize(diff.xyz + vec3(diff.w)), tickNormal);\n  float bias   = max(0.0, 1.0 - length(normal) * 2.0);\n       normal  = mix(normal, tickNormal.yzx, bias * bias);\n  \n  // transform (point) and (point + delta)\n  vec4 center  = getSample(vec4(xyzw.yzw, 0.0));\n  vec4 delta   = vec4(normal, 0.0) * epsilon;\n\n  vec4 a = center;\n  vec4 b = center + delta;\n\n  vec3 c = transformPosition(a, stpq);\n  vec3 d = transformPosition(b, stpq);\n  \n  // sample on either side to create line\n  float line = xyzw.x - .5;\n  vec3  mid  = c;\n  vec3  side = normalize(d - c);\n\n  return mid + side * line * tickSize * worldUnit * focusDepth;\n}\n",
+"ticks.position": "uniform float worldUnit;\nuniform float focusDepth;\nuniform float tickSize;\nuniform float tickEpsilon;\nuniform vec3  tickNormal;\nuniform vec2  tickStrip;\n\nvec4 getSample(vec4 xyzw);\n\nvec3 transformPosition(vec4 position, in vec4 stpqIn, out vec4 stpqOut);\n\nvec3 getTickPosition(vec4 xyzw, in vec4 stpqIn, out vec4 stpqOut) {\n  float epsilon = tickEpsilon;\n\n  // determine tick direction\n  float leftX  = max(tickStrip.x, xyzw.y - 1.0);\n  float rightX = min(tickStrip.y, xyzw.y + 1.0);\n  \n  vec4 left    = getSample(vec4(leftX,  xyzw.zw, 0.0));\n  vec4 right   = getSample(vec4(rightX, xyzw.zw, 0.0));\n  vec4 diff    = right - left;\n\n  vec3 normal  = cross(normalize(diff.xyz + vec3(diff.w)), tickNormal);\n  float bias   = max(0.0, 1.0 - length(normal) * 2.0);\n       normal  = mix(normal, tickNormal.yzx, bias * bias);\n  \n  // transform (point) and (point + delta)\n  vec4 center  = getSample(vec4(xyzw.yzw, 0.0));\n  vec4 delta   = vec4(normal, 0.0) * epsilon;\n\n  vec4 a = center;\n  vec4 b = center + delta;\n\n  vec4 _;\n  vec3 c = transformPosition(a, stpqIn, stpqOut);\n  vec3 d = transformPosition(b, stpqIn, _);\n  \n  // sample on either side to create line\n  float line = xyzw.x - .5;\n  vec3  mid  = c;\n  vec3  side = normalize(d - c);\n\n  return mid + side * line * tickSize * worldUnit * focusDepth;\n}\n",
 "transform3.position": "uniform mat4 transformMatrix;\n\nvec4 transformPosition(vec4 position, inout vec4 stpq) {\n  return transformMatrix * vec4(position.xyz, 1.0);\n}\n",
 "transform4.position": "uniform mat4 transformMatrix;\nuniform vec4 transformOffset;\n\nvec4 transformPosition(vec4 position, inout vec4 stpq) {\n  return transformMatrix * position + transformOffset;\n}\n",
 "view.position": "// Implicit three.js uniform\n// uniform mat4 viewMatrix;\n\nvec4 getViewPosition(vec4 position, inout vec4 stpq) {\n  return (viewMatrix * vec4(position.xyz, 1.0));\n}\n"};
 
 },{}],2:[function(require,module,exports){
+module.exports = language
+
+var tokenizer = require('./tokenizer')
+
+function language(lookups) {
+  return function(selector) {
+    return parse(selector, remap(lookups))
+  }
+}
+
+function remap(opts) {
+  for(var key in opts) if(opt_okay(opts, key)) {
+    opts[key] = Function(
+        'return function(node, attr) { return node.' + opts[key] + ' }'
+    )
+    opts[key] = opts[key]()
+  }
+
+  return opts
+}
+
+function opt_okay(opts, key) {
+  return opts.hasOwnProperty(key) && typeof opts[key] === 'string'
+}
+
+function parse(selector, options) {
+  var stream = tokenizer()
+    , default_subj = true
+    , selectors = [[]]
+    , traversal
+    , bits
+
+  bits = selectors[0]
+
+  traversal = {
+      '': any_parents
+    , '>': direct_parent
+    , '+': direct_sibling
+    , '~': any_sibling
+  }
+
+  stream
+    .on('data', group)
+    .end(selector)
+
+  function group(token) {
+    var crnt
+
+    if(token.type === 'comma') {
+      selectors.unshift(bits = [])
+
+      return
+    }
+
+    if(token.type === 'op' || token.type === 'any-child') {
+      bits.unshift(traversal[token.data])
+      bits.unshift(check())
+
+      return
+    }
+
+    bits[0] = bits[0] || check()
+    crnt = bits[0]
+
+    if(token.type === '!') {
+      crnt.subject =
+      selectors[0].subject = true
+
+      return
+    }
+
+    crnt.push(
+        token.type === 'class' ? listContains(token.type, token.data) :
+        token.type === 'attr' ? attr(token) :
+        token.type === ':' || token.type === '::' ? pseudo(token) :
+        token.type === '*' ? Boolean :
+        matches(token.type, token.data)
+    )
+  }
+
+  return selector_fn
+
+  function selector_fn(node, as_boolean) {
+    var current
+      , length
+      , orig
+      , subj
+      , set
+
+    orig = node
+    set = []
+
+    for(var i = 0, len = selectors.length; i < len; ++i) {
+      bits = selectors[i]
+      current = entry
+      length = bits.length
+      node = orig
+      subj = []
+
+      for(var j = 0; j < length; j += 2) {
+        node = current(node, bits[j], subj)
+
+        if(!node) {
+          break
+        }
+
+        current = bits[j + 1]
+      }
+
+      if(j >= length) {
+        if(as_boolean) {
+          return true
+        }
+
+        add(!bits.subject ? [orig] : subj)
+      }
+    }
+
+    if(as_boolean) {
+      return false
+    }
+
+    return !set.length ? false :
+            set.length === 1 ? set[0] :
+            set
+
+    function add(items) {
+      var next
+
+      while(items.length) {
+        next = items.shift()
+
+        if(set.indexOf(next) === -1) {
+          set.push(next)
+        }
+      }
+    }
+  }
+
+  function check() {
+    _check.bits = []
+    _check.subject = false
+    _check.push = function(token) {
+      _check.bits.push(token)
+    }
+
+    return _check
+
+    function _check(node, subj) {
+      for(var i = 0, len = _check.bits.length; i < len; ++i) {
+        if(!_check.bits[i](node)) {
+          return false
+        }
+      }
+
+      if(_check.subject) {
+        subj.push(node)
+      }
+
+      return true
+    }
+  }
+
+  function listContains(type, data) {
+    return function(node) {
+      var val = options[type](node)
+      val =
+        Array.isArray(val) ? val :
+        val ? val.toString().split(/\s+/) :
+        []
+      return val.indexOf(data) >= 0
+    }
+  }
+
+  function attr(token) {
+    return token.data.lhs ?
+      valid_attr(
+          options.attr
+        , token.data.lhs
+        , token.data.cmp
+        , token.data.rhs
+      ) :
+      valid_attr(options.attr, token.data)
+  }
+
+  function matches(type, data) {
+    return function(node) {
+      return options[type](node) == data
+    }
+  }
+
+  function any_parents(node, next, subj) {
+    do {
+      node = options.parent(node)
+    } while(node && !next(node, subj))
+
+    return node
+  }
+
+  function direct_parent(node, next, subj) {
+    node = options.parent(node)
+
+    return node && next(node, subj) ? node : null
+  }
+
+  function direct_sibling(node, next, subj) {
+    var parent = options.parent(node)
+      , idx = 0
+      , children
+
+    children = options.children(parent)
+
+    for(var i = 0, len = children.length; i < len; ++i) {
+      if(children[i] === node) {
+        idx = i
+
+        break
+      }
+    }
+
+    return children[idx - 1] && next(children[idx - 1], subj) ?
+      children[idx - 1] :
+      null
+  }
+
+  function any_sibling(node, next, subj) {
+    var parent = options.parent(node)
+      , children
+
+    children = options.children(parent)
+
+    for(var i = 0, len = children.length; i < len; ++i) {
+      if(children[i] === node) {
+        return null
+      }
+
+      if(next(children[i], subj)) {
+        return children[i]
+      }
+    }
+
+    return null
+  }
+
+  function pseudo(token) {
+    return valid_pseudo(options, token.data)
+  }
+
+}
+
+function entry(node, next, subj) {
+  return next(node, subj) ? node : null
+}
+
+function valid_pseudo(options, match) {
+  switch(match) {
+    case 'empty': return valid_empty(options)
+    case 'first-child': return valid_first_child(options)
+    case 'last-child': return valid_last_child(options)
+    case 'root': return valid_root(options)
+  }
+
+  if(match.indexOf('contains') === 0) {
+    return valid_contains(options, match.slice(9, -1))
+  }
+
+  if(match.indexOf('any') === 0) {
+    return valid_any_match(options, match.slice(4, -1))
+  }
+
+  if(match.indexOf('not') === 0) {
+    return valid_not_match(options, match.slice(4, -1))
+  }
+
+  return function() {
+    return false
+  }
+}
+
+function valid_not_match(options, selector) {
+  var fn = parse(selector, options)
+
+  return not_function
+
+  function not_function(node) {
+    return !fn(node, true)
+  }
+}
+
+function valid_any_match(options, selector) {
+  var fn = parse(selector, options)
+
+  return fn
+}
+
+function valid_attr(fn, lhs, cmp, rhs) {
+  return function(node) {
+    var attr = fn(node, lhs)
+
+    if(!cmp) {
+      return !!attr
+    }
+
+    if(cmp.length === 1) {
+      return attr == rhs
+    }
+
+    if(attr === void 0 || attr === null) {
+      return false
+    }
+
+    return checkattr[cmp.charAt(0)](attr, rhs)
+  }
+}
+
+function valid_first_child(options) {
+  return function(node) {
+    return options.children(options.parent(node))[0] === node
+  }
+}
+
+function valid_last_child(options) {
+  return function(node) {
+    var children = options.children(options.parent(node))
+
+    return children[children.length - 1] === node
+  }
+}
+
+function valid_empty(options) {
+  return function(node) {
+    return options.children(node).length === 0
+  }
+}
+
+function valid_root(options) {
+  return function(node) {
+    return !options.parent(node)
+  }
+}
+
+function valid_contains(options, contents) {
+  return function(node) {
+    return options.contents(node).indexOf(contents) !== -1
+  }
+}
+
+var checkattr = {
+    '$': check_end
+  , '^': check_beg
+  , '*': check_any
+  , '~': check_spc
+  , '|': check_dsh
+}
+
+function check_end(l, r) {
+  return l.slice(l.length - r.length) === r
+}
+
+function check_beg(l, r) {
+  return l.slice(0, r.length) === r
+}
+
+function check_any(l, r) {
+  return l.indexOf(r) > -1
+}
+
+function check_spc(l, r) {
+  return l.split(/\s+/).indexOf(r) > -1
+}
+
+function check_dsh(l, r) {
+  return l.split('-').indexOf(r) > -1
+}
+
+},{"./tokenizer":4}],3:[function(require,module,exports){
+(function (process){
+var Stream = require('stream')
+
+// through
+//
+// a stream that does nothing but re-emit the input.
+// useful for aggregating a series of changing but not ending streams into one stream)
+
+exports = module.exports = through
+through.through = through
+
+//create a readable writable stream.
+
+function through (write, end, opts) {
+  write = write || function (data) { this.queue(data) }
+  end = end || function () { this.queue(null) }
+
+  var ended = false, destroyed = false, buffer = [], _ended = false
+  var stream = new Stream()
+  stream.readable = stream.writable = true
+  stream.paused = false
+
+//  stream.autoPause   = !(opts && opts.autoPause   === false)
+  stream.autoDestroy = !(opts && opts.autoDestroy === false)
+
+  stream.write = function (data) {
+    write.call(this, data)
+    return !stream.paused
+  }
+
+  function drain() {
+    while(buffer.length && !stream.paused) {
+      var data = buffer.shift()
+      if(null === data)
+        return stream.emit('end')
+      else
+        stream.emit('data', data)
+    }
+  }
+
+  stream.queue = stream.push = function (data) {
+//    console.error(ended)
+    if(_ended) return stream
+    if(data === null) _ended = true
+    buffer.push(data)
+    drain()
+    return stream
+  }
+
+  //this will be registered as the first 'end' listener
+  //must call destroy next tick, to make sure we're after any
+  //stream piped from here.
+  //this is only a problem if end is not emitted synchronously.
+  //a nicer way to do this is to make sure this is the last listener for 'end'
+
+  stream.on('end', function () {
+    stream.readable = false
+    if(!stream.writable && stream.autoDestroy)
+      process.nextTick(function () {
+        stream.destroy()
+      })
+  })
+
+  function _end () {
+    stream.writable = false
+    end.call(stream)
+    if(!stream.readable && stream.autoDestroy)
+      stream.destroy()
+  }
+
+  stream.end = function (data) {
+    if(ended) return
+    ended = true
+    if(arguments.length) stream.write(data)
+    _end() // will emit or queue
+    return stream
+  }
+
+  stream.destroy = function () {
+    if(destroyed) return
+    destroyed = true
+    ended = true
+    buffer.length = 0
+    stream.writable = stream.readable = false
+    stream.emit('close')
+    return stream
+  }
+
+  stream.pause = function () {
+    if(stream.paused) return
+    stream.paused = true
+    return stream
+  }
+
+  stream.resume = function () {
+    if(stream.paused) {
+      stream.paused = false
+      stream.emit('resume')
+    }
+    drain()
+    //may have become paused again,
+    //as drain emits 'data'.
+    if(!stream.paused)
+      stream.emit('drain')
+    return stream
+  }
+  return stream
+}
+
+
+}).call(this,require("1YiZ5S"))
+},{"1YiZ5S":10,"stream":12}],4:[function(require,module,exports){
+module.exports = tokenize
+
+var through = require('through')
+
+var PSEUDOSTART = 'pseudo-start'
+  , ATTR_START = 'attr-start'
+  , ANY_CHILD = 'any-child'
+  , ATTR_COMP = 'attr-comp'
+  , ATTR_END = 'attr-end'
+  , PSEUDOPSEUDO = '::'
+  , PSEUDOCLASS = ':'
+  , READY = '(ready)'
+  , OPERATION = 'op'
+  , CLASS = 'class'
+  , COMMA = 'comma'
+  , ATTR = 'attr'
+  , SUBJECT = '!'
+  , TAG = 'tag'
+  , STAR = '*'
+  , ID = 'id'
+
+function tokenize() {
+  var escaped = false
+    , gathered = []
+    , state = READY 
+    , data = []
+    , idx = 0
+    , stream
+    , length
+    , quote
+    , depth
+    , lhs
+    , rhs
+    , cmp
+    , c
+
+  return stream = through(ondata, onend)
+
+  function ondata(chunk) {
+    data = data.concat(chunk.split(''))
+    length = data.length
+
+    while(idx < length && (c = data[idx++])) {
+      switch(state) {
+        case READY: state_ready(); break
+        case ANY_CHILD: state_any_child(); break
+        case OPERATION: state_op(); break
+        case ATTR_START: state_attr_start(); break
+        case ATTR_COMP: state_attr_compare(); break
+        case ATTR_END: state_attr_end(); break
+        case PSEUDOCLASS:
+        case PSEUDOPSEUDO: state_pseudo(); break
+        case PSEUDOSTART: state_pseudostart(); break
+        case ID:
+        case TAG:
+        case CLASS: state_gather(); break
+      }
+    }
+
+    data = data.slice(idx)
+  }
+
+  function onend(chunk) {
+    if(arguments.length) {
+      ondata(chunk)
+    }
+
+    if(gathered.length) {
+      stream.queue(token())
+    }
+  }
+
+  function state_ready() {
+    switch(true) {
+      case '#' === c: state = ID; break
+      case '.' === c: state = CLASS; break
+      case ':' === c: state = PSEUDOCLASS; break
+      case '[' === c: state = ATTR_START; break
+      case '!' === c: subject(); break
+      case '*' === c: star(); break
+      case ',' === c: comma(); break
+      case /[>\+~]/.test(c): state = OPERATION; break
+      case /\s/.test(c): state = ANY_CHILD; break
+      case /[\w\d\-_]/.test(c): state = TAG; --idx; break
+    }
+  }
+
+  function subject() {
+    state = SUBJECT
+    gathered = ['!']
+    stream.queue(token())
+    state = READY
+  }
+
+  function star() {
+    state = STAR
+    gathered = ['*']
+    stream.queue(token())
+    state = READY
+  }
+
+  function comma() {
+    state = COMMA
+    gathered = [',']
+    stream.queue(token())
+    state = READY
+  }
+
+  function state_op() {
+    if(/[>\+~]/.test(c)) {
+      return gathered.push(c)
+    }
+
+    // chomp down the following whitespace.
+    if(/\s/.test(c)) {
+      return
+    }
+
+    stream.queue(token())
+    state = READY
+    --idx
+  }
+
+  function state_any_child() {
+    if(/\s/.test(c)) {
+      return
+    }
+
+    if(/[>\+~]/.test(c)) {
+      return --idx, state = OPERATION
+    }
+
+    stream.queue(token())
+    state = READY
+    --idx
+  }
+
+  function state_pseudo() {
+    rhs = state
+    state_gather(true)
+
+    if(state !== READY) {
+      return
+    }
+
+    if(c === '(') {
+      lhs = gathered.join('')
+      state = PSEUDOSTART
+      gathered.length = 0
+      depth = 1
+      ++idx
+
+      return
+    }
+
+    state = PSEUDOCLASS
+    stream.queue(token())
+    state = READY
+  }
+
+  function state_pseudostart() {
+    if(gathered.length === 0 && !quote) {
+      quote = /['"]/.test(c) ? c : null
+
+      if(quote) {
+        return
+      }
+    }
+
+    if(quote) {
+      if(!escaped && c === quote) {
+        quote = null
+
+        return
+      }
+
+      if(c === '\\') {
+        escaped ? gathered.push(c) : (escaped = true)
+
+        return
+      }
+
+      escaped = false
+      gathered.push(c)
+
+      return
+    }
+
+    gathered.push(c)
+
+    if(c === '(') {
+      ++depth
+    } else if(c === ')') {
+      --depth
+    }
+    
+    if(!depth) {
+      gathered.pop()
+      stream.queue({
+          type: rhs 
+        , data: lhs + '(' + gathered.join('') + ')'
+      })
+
+      state = READY
+      lhs = rhs = cmp = null
+      gathered.length = 0
+    }
+
+    return 
+  }
+
+  function state_attr_start() {
+    state_gather(true)
+
+    if(state !== READY) {
+      return
+    }
+
+    if(c === ']') {
+      state = ATTR
+      stream.queue(token())
+      state = READY
+
+      return
+    }
+
+    lhs = gathered.join('')
+    gathered.length = 0
+    state = ATTR_COMP
+  }
+
+  function state_attr_compare() {
+    if(/[=~|$^*]/.test(c)) {
+      gathered.push(c)
+    }
+
+    if(gathered.length === 2 || c === '=') {
+      cmp = gathered.join('')
+      gathered.length = 0
+      state = ATTR_END
+      quote = null
+
+      return
+    }
+  }
+
+  function state_attr_end() {
+    if(!gathered.length && !quote) {
+      quote = /['"]/.test(c) ? c : null
+
+      if(quote) {
+        return
+      }
+    }
+
+    if(quote) {
+      if(!escaped && c === quote) {
+        quote = null
+
+        return
+      }
+
+      if(c === '\\') {
+        if(escaped) {
+          gathered.push(c)
+        }
+
+        escaped = !escaped
+
+        return
+      }
+
+      escaped = false
+      gathered.push(c)
+
+      return
+    }
+
+    state_gather(true)
+
+    if(state !== READY) {
+      return
+    }
+
+    stream.queue({
+        type: ATTR
+      , data: {
+            lhs: lhs
+          , rhs: gathered.join('')
+          , cmp: cmp
+        }
+    })
+
+    state = READY
+    lhs = rhs = cmp = null
+    gathered.length = 0
+
+    return 
+  }
+
+  function state_gather(quietly) {
+    if(/[^\d\w\-_]/.test(c) && !escaped) {
+      if(c === '\\') {
+        escaped = true
+      } else {
+        !quietly && stream.queue(token())
+        state = READY
+        --idx
+      }
+
+      return
+    }
+
+    escaped = false
+    gathered.push(c)
+  }
+
+  function token() {
+    var data = gathered.join('')
+
+    gathered.length = 0
+
+    return {
+        type: state
+      , data: data
+    }
+  }
+}
+
+},{"through":3}],5:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -47894,7 +48713,7 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-},{"base64-js":3,"ieee754":4}],3:[function(require,module,exports){
+},{"base64-js":6,"ieee754":7}],6:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -48020,7 +48839,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],4:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -48106,7 +48925,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],5:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48409,7 +49228,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],6:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -48434,7 +49253,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -48499,7 +49318,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],8:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48573,7 +49392,7 @@ function onend() {
   });
 }
 
-},{"./readable.js":12,"./writable.js":14,"inherits":6,"process/browser.js":10}],9:[function(require,module,exports){
+},{"./readable.js":15,"./writable.js":17,"inherits":9,"process/browser.js":13}],12:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48702,7 +49521,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"./duplex.js":8,"./passthrough.js":11,"./readable.js":12,"./transform.js":13,"./writable.js":14,"events":5,"inherits":6}],10:[function(require,module,exports){
+},{"./duplex.js":11,"./passthrough.js":14,"./readable.js":15,"./transform.js":16,"./writable.js":17,"events":8,"inherits":9}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -48757,7 +49576,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],11:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -48800,7 +49619,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./transform.js":13,"inherits":6}],12:[function(require,module,exports){
+},{"./transform.js":16,"inherits":9}],15:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -49736,8 +50555,8 @@ function indexOf (xs, x) {
   return -1;
 }
 
-}).call(this,require("+xKvab"))
-},{"+xKvab":7,"./index.js":9,"buffer":2,"events":5,"inherits":6,"process/browser.js":10,"string_decoder":15}],13:[function(require,module,exports){
+}).call(this,require("1YiZ5S"))
+},{"./index.js":12,"1YiZ5S":10,"buffer":5,"events":8,"inherits":9,"process/browser.js":13,"string_decoder":18}],16:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -49943,7 +50762,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./duplex.js":8,"inherits":6}],14:[function(require,module,exports){
+},{"./duplex.js":11,"inherits":9}],17:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -50331,7 +51150,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"./index.js":9,"buffer":2,"inherits":6,"process/browser.js":10}],15:[function(require,module,exports){
+},{"./index.js":12,"buffer":5,"inherits":9,"process/browser.js":13}],18:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -50524,836 +51343,18 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":2}],16:[function(require,module,exports){
-module.exports = language
-
-var tokenizer = require('./tokenizer')
-
-function language(lookups) {
-  return function(selector) {
-    return parse(selector, remap(lookups))
-  }
-}
-
-function remap(opts) {
-  for(var key in opts) if(opt_okay(opts, key)) {
-    opts[key] = Function(
-        'return function(node, attr) { return node.' + opts[key] + ' }'
-    )
-    opts[key] = opts[key]()
-  }
-
-  return opts
-}
-
-function opt_okay(opts, key) {
-  return opts.hasOwnProperty(key) && typeof opts[key] === 'string'
-}
-
-function parse(selector, options) {
-  var stream = tokenizer()
-    , default_subj = true
-    , selectors = [[]]
-    , traversal
-    , bits
-
-  bits = selectors[0]
-
-  traversal = {
-      '': any_parents
-    , '>': direct_parent
-    , '+': direct_sibling
-    , '~': any_sibling
-  }
-
-  stream
-    .on('data', group)
-    .end(selector)
-
-  function group(token) {
-    var crnt
-
-    if(token.type === 'comma') {
-      selectors.unshift(bits = [])
-
-      return
-    }
-
-    if(token.type === 'op' || token.type === 'any-child') {
-      bits.unshift(traversal[token.data])
-      bits.unshift(check())
-
-      return
-    }
-
-    bits[0] = bits[0] || check()
-    crnt = bits[0]
-
-    if(token.type === '!') {
-      crnt.subject =
-      selectors[0].subject = true
-
-      return
-    }
-
-    crnt.push(
-        token.type === 'class' ? listContains(token.type, token.data) :
-        token.type === 'attr' ? attr(token) :
-        token.type === ':' || token.type === '::' ? pseudo(token) :
-        token.type === '*' ? Boolean :
-        matches(token.type, token.data)
-    )
-  }
-
-  return selector_fn
-
-  function selector_fn(node, as_boolean) {
-    var current
-      , length
-      , orig
-      , subj
-      , set
-
-    orig = node
-    set = []
-
-    for(var i = 0, len = selectors.length; i < len; ++i) {
-      bits = selectors[i]
-      current = entry
-      length = bits.length
-      node = orig
-      subj = []
-
-      for(var j = 0; j < length; j += 2) {
-        node = current(node, bits[j], subj)
-
-        if(!node) {
-          break
-        }
-
-        current = bits[j + 1]
-      }
-
-      if(j >= length) {
-        if(as_boolean) {
-          return true
-        }
-
-        add(!bits.subject ? [orig] : subj)
-      }
-    }
-
-    if(as_boolean) {
-      return false
-    }
-
-    return !set.length ? false :
-            set.length === 1 ? set[0] :
-            set
-
-    function add(items) {
-      var next
-
-      while(items.length) {
-        next = items.shift()
-
-        if(set.indexOf(next) === -1) {
-          set.push(next)
-        }
-      }
-    }
-  }
-
-  function check() {
-    _check.bits = []
-    _check.subject = false
-    _check.push = function(token) {
-      _check.bits.push(token)
-    }
-
-    return _check
-
-    function _check(node, subj) {
-      for(var i = 0, len = _check.bits.length; i < len; ++i) {
-        if(!_check.bits[i](node)) {
-          return false
-        }
-      }
-
-      if(_check.subject) {
-        subj.push(node)
-      }
-
-      return true
-    }
-  }
-
-  function listContains(type, data) {
-    return function(node) {
-      var val = options[type](node)
-      val =
-        Array.isArray(val) ? val :
-        val ? val.toString().split(/\s+/) :
-        []
-      return val.indexOf(data) >= 0
-    }
-  }
-
-  function attr(token) {
-    return token.data.lhs ?
-      valid_attr(
-          options.attr
-        , token.data.lhs
-        , token.data.cmp
-        , token.data.rhs
-      ) :
-      valid_attr(options.attr, token.data)
-  }
-
-  function matches(type, data) {
-    return function(node) {
-      return options[type](node) == data
-    }
-  }
-
-  function any_parents(node, next, subj) {
-    do {
-      node = options.parent(node)
-    } while(node && !next(node, subj))
-
-    return node
-  }
-
-  function direct_parent(node, next, subj) {
-    node = options.parent(node)
-
-    return node && next(node, subj) ? node : null
-  }
-
-  function direct_sibling(node, next, subj) {
-    var parent = options.parent(node)
-      , idx = 0
-      , children
-
-    children = options.children(parent)
-
-    for(var i = 0, len = children.length; i < len; ++i) {
-      if(children[i] === node) {
-        idx = i
-
-        break
-      }
-    }
-
-    return children[idx - 1] && next(children[idx - 1], subj) ?
-      children[idx - 1] :
-      null
-  }
-
-  function any_sibling(node, next, subj) {
-    var parent = options.parent(node)
-      , children
-
-    children = options.children(parent)
-
-    for(var i = 0, len = children.length; i < len; ++i) {
-      if(children[i] === node) {
-        return null
-      }
-
-      if(next(children[i], subj)) {
-        return children[i]
-      }
-    }
-
-    return null
-  }
-
-  function pseudo(token) {
-    return valid_pseudo(options, token.data)
-  }
-
-}
-
-function entry(node, next, subj) {
-  return next(node, subj) ? node : null
-}
-
-function valid_pseudo(options, match) {
-  switch(match) {
-    case 'empty': return valid_empty(options)
-    case 'first-child': return valid_first_child(options)
-    case 'last-child': return valid_last_child(options)
-    case 'root': return valid_root(options)
-  }
-
-  if(match.indexOf('contains') === 0) {
-    return valid_contains(options, match.slice(9, -1))
-  }
-
-  if(match.indexOf('any') === 0) {
-    return valid_any_match(options, match.slice(4, -1))
-  }
-
-  if(match.indexOf('not') === 0) {
-    return valid_not_match(options, match.slice(4, -1))
-  }
-
-  return function() {
-    return false
-  }
-}
-
-function valid_not_match(options, selector) {
-  var fn = parse(selector, options)
-
-  return not_function
-
-  function not_function(node) {
-    return !fn(node, true)
-  }
-}
-
-function valid_any_match(options, selector) {
-  var fn = parse(selector, options)
-
-  return fn
-}
-
-function valid_attr(fn, lhs, cmp, rhs) {
-  return function(node) {
-    var attr = fn(node, lhs)
-
-    if(!cmp) {
-      return !!attr
-    }
-
-    if(cmp.length === 1) {
-      return attr == rhs
-    }
-
-    if(attr === void 0 || attr === null) {
-      return false
-    }
-
-    return checkattr[cmp.charAt(0)](attr, rhs)
-  }
-}
-
-function valid_first_child(options) {
-  return function(node) {
-    return options.children(options.parent(node))[0] === node
-  }
-}
-
-function valid_last_child(options) {
-  return function(node) {
-    var children = options.children(options.parent(node))
-
-    return children[children.length - 1] === node
-  }
-}
-
-function valid_empty(options) {
-  return function(node) {
-    return options.children(node).length === 0
-  }
-}
-
-function valid_root(options) {
-  return function(node) {
-    return !options.parent(node)
-  }
-}
-
-function valid_contains(options, contents) {
-  return function(node) {
-    return options.contents(node).indexOf(contents) !== -1
-  }
-}
-
-var checkattr = {
-    '$': check_end
-  , '^': check_beg
-  , '*': check_any
-  , '~': check_spc
-  , '|': check_dsh
-}
-
-function check_end(l, r) {
-  return l.slice(l.length - r.length) === r
-}
-
-function check_beg(l, r) {
-  return l.slice(0, r.length) === r
-}
-
-function check_any(l, r) {
-  return l.indexOf(r) > -1
-}
-
-function check_spc(l, r) {
-  return l.split(/\s+/).indexOf(r) > -1
-}
-
-function check_dsh(l, r) {
-  return l.split('-').indexOf(r) > -1
-}
-
-},{"./tokenizer":18}],17:[function(require,module,exports){
-(function (process){
-var Stream = require('stream')
-
-// through
-//
-// a stream that does nothing but re-emit the input.
-// useful for aggregating a series of changing but not ending streams into one stream)
-
-exports = module.exports = through
-through.through = through
-
-//create a readable writable stream.
-
-function through (write, end, opts) {
-  write = write || function (data) { this.queue(data) }
-  end = end || function () { this.queue(null) }
-
-  var ended = false, destroyed = false, buffer = [], _ended = false
-  var stream = new Stream()
-  stream.readable = stream.writable = true
-  stream.paused = false
-
-//  stream.autoPause   = !(opts && opts.autoPause   === false)
-  stream.autoDestroy = !(opts && opts.autoDestroy === false)
-
-  stream.write = function (data) {
-    write.call(this, data)
-    return !stream.paused
-  }
-
-  function drain() {
-    while(buffer.length && !stream.paused) {
-      var data = buffer.shift()
-      if(null === data)
-        return stream.emit('end')
-      else
-        stream.emit('data', data)
-    }
-  }
-
-  stream.queue = stream.push = function (data) {
-//    console.error(ended)
-    if(_ended) return stream
-    if(data === null) _ended = true
-    buffer.push(data)
-    drain()
-    return stream
-  }
-
-  //this will be registered as the first 'end' listener
-  //must call destroy next tick, to make sure we're after any
-  //stream piped from here.
-  //this is only a problem if end is not emitted synchronously.
-  //a nicer way to do this is to make sure this is the last listener for 'end'
-
-  stream.on('end', function () {
-    stream.readable = false
-    if(!stream.writable && stream.autoDestroy)
-      process.nextTick(function () {
-        stream.destroy()
-      })
-  })
-
-  function _end () {
-    stream.writable = false
-    end.call(stream)
-    if(!stream.readable && stream.autoDestroy)
-      stream.destroy()
-  }
-
-  stream.end = function (data) {
-    if(ended) return
-    ended = true
-    if(arguments.length) stream.write(data)
-    _end() // will emit or queue
-    return stream
-  }
-
-  stream.destroy = function () {
-    if(destroyed) return
-    destroyed = true
-    ended = true
-    buffer.length = 0
-    stream.writable = stream.readable = false
-    stream.emit('close')
-    return stream
-  }
-
-  stream.pause = function () {
-    if(stream.paused) return
-    stream.paused = true
-    return stream
-  }
-
-  stream.resume = function () {
-    if(stream.paused) {
-      stream.paused = false
-      stream.emit('resume')
-    }
-    drain()
-    //may have become paused again,
-    //as drain emits 'data'.
-    if(!stream.paused)
-      stream.emit('drain')
-    return stream
-  }
-  return stream
-}
-
-
-}).call(this,require("+xKvab"))
-},{"+xKvab":7,"stream":9}],18:[function(require,module,exports){
-module.exports = tokenize
-
-var through = require('through')
-
-var PSEUDOSTART = 'pseudo-start'
-  , ATTR_START = 'attr-start'
-  , ANY_CHILD = 'any-child'
-  , ATTR_COMP = 'attr-comp'
-  , ATTR_END = 'attr-end'
-  , PSEUDOPSEUDO = '::'
-  , PSEUDOCLASS = ':'
-  , READY = '(ready)'
-  , OPERATION = 'op'
-  , CLASS = 'class'
-  , COMMA = 'comma'
-  , ATTR = 'attr'
-  , SUBJECT = '!'
-  , TAG = 'tag'
-  , STAR = '*'
-  , ID = 'id'
-
-function tokenize() {
-  var escaped = false
-    , gathered = []
-    , state = READY 
-    , data = []
-    , idx = 0
-    , stream
-    , length
-    , quote
-    , depth
-    , lhs
-    , rhs
-    , cmp
-    , c
-
-  return stream = through(ondata, onend)
-
-  function ondata(chunk) {
-    data = data.concat(chunk.split(''))
-    length = data.length
-
-    while(idx < length && (c = data[idx++])) {
-      switch(state) {
-        case READY: state_ready(); break
-        case ANY_CHILD: state_any_child(); break
-        case OPERATION: state_op(); break
-        case ATTR_START: state_attr_start(); break
-        case ATTR_COMP: state_attr_compare(); break
-        case ATTR_END: state_attr_end(); break
-        case PSEUDOCLASS:
-        case PSEUDOPSEUDO: state_pseudo(); break
-        case PSEUDOSTART: state_pseudostart(); break
-        case ID:
-        case TAG:
-        case CLASS: state_gather(); break
-      }
-    }
-
-    data = data.slice(idx)
-  }
-
-  function onend(chunk) {
-    if(arguments.length) {
-      ondata(chunk)
-    }
-
-    if(gathered.length) {
-      stream.queue(token())
-    }
-  }
-
-  function state_ready() {
-    switch(true) {
-      case '#' === c: state = ID; break
-      case '.' === c: state = CLASS; break
-      case ':' === c: state = PSEUDOCLASS; break
-      case '[' === c: state = ATTR_START; break
-      case '!' === c: subject(); break
-      case '*' === c: star(); break
-      case ',' === c: comma(); break
-      case /[>\+~]/.test(c): state = OPERATION; break
-      case /\s/.test(c): state = ANY_CHILD; break
-      case /[\w\d\-_]/.test(c): state = TAG; --idx; break
-    }
-  }
-
-  function subject() {
-    state = SUBJECT
-    gathered = ['!']
-    stream.queue(token())
-    state = READY
-  }
-
-  function star() {
-    state = STAR
-    gathered = ['*']
-    stream.queue(token())
-    state = READY
-  }
-
-  function comma() {
-    state = COMMA
-    gathered = [',']
-    stream.queue(token())
-    state = READY
-  }
-
-  function state_op() {
-    if(/[>\+~]/.test(c)) {
-      return gathered.push(c)
-    }
-
-    // chomp down the following whitespace.
-    if(/\s/.test(c)) {
-      return
-    }
-
-    stream.queue(token())
-    state = READY
-    --idx
-  }
-
-  function state_any_child() {
-    if(/\s/.test(c)) {
-      return
-    }
-
-    if(/[>\+~]/.test(c)) {
-      return --idx, state = OPERATION
-    }
-
-    stream.queue(token())
-    state = READY
-    --idx
-  }
-
-  function state_pseudo() {
-    rhs = state
-    state_gather(true)
-
-    if(state !== READY) {
-      return
-    }
-
-    if(c === '(') {
-      lhs = gathered.join('')
-      state = PSEUDOSTART
-      gathered.length = 0
-      depth = 1
-      ++idx
-
-      return
-    }
-
-    state = PSEUDOCLASS
-    stream.queue(token())
-    state = READY
-  }
-
-  function state_pseudostart() {
-    if(gathered.length === 0 && !quote) {
-      quote = /['"]/.test(c) ? c : null
-
-      if(quote) {
-        return
-      }
-    }
-
-    if(quote) {
-      if(!escaped && c === quote) {
-        quote = null
-
-        return
-      }
-
-      if(c === '\\') {
-        escaped ? gathered.push(c) : (escaped = true)
-
-        return
-      }
-
-      escaped = false
-      gathered.push(c)
-
-      return
-    }
-
-    gathered.push(c)
-
-    if(c === '(') {
-      ++depth
-    } else if(c === ')') {
-      --depth
-    }
-    
-    if(!depth) {
-      gathered.pop()
-      stream.queue({
-          type: rhs 
-        , data: lhs + '(' + gathered.join('') + ')'
-      })
-
-      state = READY
-      lhs = rhs = cmp = null
-      gathered.length = 0
-    }
-
-    return 
-  }
-
-  function state_attr_start() {
-    state_gather(true)
-
-    if(state !== READY) {
-      return
-    }
-
-    if(c === ']') {
-      state = ATTR
-      stream.queue(token())
-      state = READY
-
-      return
-    }
-
-    lhs = gathered.join('')
-    gathered.length = 0
-    state = ATTR_COMP
-  }
-
-  function state_attr_compare() {
-    if(/[=~|$^*]/.test(c)) {
-      gathered.push(c)
-    }
-
-    if(gathered.length === 2 || c === '=') {
-      cmp = gathered.join('')
-      gathered.length = 0
-      state = ATTR_END
-      quote = null
-
-      return
-    }
-  }
-
-  function state_attr_end() {
-    if(!gathered.length && !quote) {
-      quote = /['"]/.test(c) ? c : null
-
-      if(quote) {
-        return
-      }
-    }
-
-    if(quote) {
-      if(!escaped && c === quote) {
-        quote = null
-
-        return
-      }
-
-      if(c === '\\') {
-        if(escaped) {
-          gathered.push(c)
-        }
-
-        escaped = !escaped
-
-        return
-      }
-
-      escaped = false
-      gathered.push(c)
-
-      return
-    }
-
-    state_gather(true)
-
-    if(state !== READY) {
-      return
-    }
-
-    stream.queue({
-        type: ATTR
-      , data: {
-            lhs: lhs
-          , rhs: gathered.join('')
-          , cmp: cmp
-        }
-    })
-
-    state = READY
-    lhs = rhs = cmp = null
-    gathered.length = 0
-
-    return 
-  }
-
-  function state_gather(quietly) {
-    if(/[^\d\w\-_]/.test(c) && !escaped) {
-      if(c === '\\') {
-        escaped = true
-      } else {
-        !quietly && stream.queue(token())
-        state = READY
-        --idx
-      }
-
-      return
-    }
-
-    escaped = false
-    gathered.push(c)
-  }
-
-  function token() {
-    var data = gathered.join('')
-
-    gathered.length = 0
-
-    return {
-        type: state
-      , data: data
-    }
-  }
-}
-
-},{"through":17}],19:[function(require,module,exports){
-var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+},{"buffer":5}],19:[function(require,module,exports){
+var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 exports.setOrigin = function(vec, dimensions, origin) {
   var w, x, y, z;
   if (+dimensions === dimensions) {
     dimensions = [dimensions];
   }
-  x = __indexOf.call(dimensions, 1) >= 0 ? 0 : origin.x;
-  y = __indexOf.call(dimensions, 2) >= 0 ? 0 : origin.y;
-  z = __indexOf.call(dimensions, 3) >= 0 ? 0 : origin.z;
-  w = __indexOf.call(dimensions, 4) >= 0 ? 0 : origin.w;
+  x = indexOf.call(dimensions, 1) >= 0 ? 0 : origin.x;
+  y = indexOf.call(dimensions, 2) >= 0 ? 0 : origin.y;
+  z = indexOf.call(dimensions, 3) >= 0 ? 0 : origin.z;
+  w = indexOf.call(dimensions, 4) >= 0 ? 0 : origin.w;
   return vec.set(x, y, z, w);
 };
 
@@ -51409,6 +51410,7 @@ exports.recenterAxis = (function() {
 })();
 
 
+
 },{}],20:[function(require,module,exports){
 var getSizes;
 
@@ -51424,7 +51426,7 @@ exports.getSizes = getSizes = function(data) {
 };
 
 exports.getDimensions = function(data, spec) {
-  var channels, depth, dims, height, items, levels, n, nesting, sizes, width, _ref, _ref1, _ref2, _ref3, _ref4;
+  var channels, depth, dims, height, items, levels, n, nesting, ref, ref1, ref2, ref3, ref4, sizes, width;
   if (spec == null) {
     spec = {};
   }
@@ -51459,18 +51461,18 @@ exports.getDimensions = function(data, spec) {
   if (height === 1 && levels > 3) {
     levels++;
   }
-  n = (_ref = sizes.pop()) != null ? _ref : 1;
+  n = (ref = sizes.pop()) != null ? ref : 1;
   if (levels <= 1) {
-    n /= (_ref1 = dims.channels) != null ? _ref1 : 1;
+    n /= (ref1 = dims.channels) != null ? ref1 : 1;
   }
   if (levels <= 2) {
-    n /= (_ref2 = dims.items) != null ? _ref2 : 1;
+    n /= (ref2 = dims.items) != null ? ref2 : 1;
   }
   if (levels <= 3) {
-    n /= (_ref3 = dims.width) != null ? _ref3 : 1;
+    n /= (ref3 = dims.width) != null ? ref3 : 1;
   }
   if (levels <= 4) {
-    n /= (_ref4 = dims.height) != null ? _ref4 : 1;
+    n /= (ref4 = dims.height) != null ? ref4 : 1;
   }
   n = Math.floor(n);
   if (dims.width == null) {
@@ -51539,7 +51541,7 @@ exports.repeatCall = function(call, times) {
 };
 
 exports.makeEmitter = function(thunk, items, channels) {
-  var inner, outer;
+  var inner, n, next, outer;
   inner = (function() {
     switch (channels) {
       case 0:
@@ -51572,63 +51574,95 @@ exports.makeEmitter = function(thunk, items, channels) {
         };
     }
   })();
-  outer = (function() {
-    switch (items) {
-      case 0:
-        return function() {
-          return true;
-        };
-      case 1:
+  next = null;
+  while (items > 0) {
+    n = Math.min(items, 8);
+    outer = (function() {
+      switch (n) {
+        case 1:
+          return function(emit) {
+            return inner(emit);
+          };
+        case 2:
+          return function(emit) {
+            inner(emit);
+            return inner(emit);
+          };
+        case 3:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 4:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 5:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 6:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 7:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 8:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+      }
+    })();
+    if (next != null) {
+      next = (function(outer, next) {
         return function(emit) {
-          return inner(emit);
+          outer(emit);
+          return next(emit);
         };
-      case 2:
-        return function(emit) {
-          inner(emit);
-          return inner(emit);
-        };
-      case 3:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 4:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 6:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 8:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
+      })(outer, next);
+    } else {
+      next = outer;
     }
-  })();
+    items -= n;
+  }
+  outer = next != null ? next : function() {
+    return true;
+  };
   outer.reset = thunk.reset;
   outer.rebind = thunk.rebind;
   return outer;
 };
 
 exports.getThunk = function(data) {
-  var a, b, c, d, done, first, fourth, i, j, k, l, m, nesting, second, sizes, third, thunk, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+  var a, b, c, d, done, first, fourth, i, j, k, l, m, nesting, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, second, sizes, third, thunk;
   sizes = getSizes(data);
   nesting = sizes.length;
   a = sizes.pop();
@@ -51654,29 +51688,29 @@ exports.getThunk = function(data) {
       break;
     case 2:
       i = j = 0;
-      first = (_ref = data[j]) != null ? _ref : [];
+      first = (ref = data[j]) != null ? ref : [];
       thunk = function() {
-        var x, _ref1;
+        var ref1, x;
         x = first[i++];
         if (i === a) {
           i = 0;
           j++;
-          first = (_ref1 = data[j]) != null ? _ref1 : [];
+          first = (ref1 = data[j]) != null ? ref1 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref1;
+        var ref1;
         i = j = 0;
-        first = (_ref1 = data[j]) != null ? _ref1 : [];
+        first = (ref1 = data[j]) != null ? ref1 : [];
       };
       break;
     case 3:
       i = j = k = 0;
-      second = (_ref1 = data[k]) != null ? _ref1 : [];
-      first = (_ref2 = second[j]) != null ? _ref2 : [];
+      second = (ref1 = data[k]) != null ? ref1 : [];
+      first = (ref2 = second[j]) != null ? ref2 : [];
       thunk = function() {
-        var x, _ref3, _ref4;
+        var ref3, ref4, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -51684,26 +51718,26 @@ exports.getThunk = function(data) {
           if (j === b) {
             j = 0;
             k++;
-            second = (_ref3 = data[k]) != null ? _ref3 : [];
+            second = (ref3 = data[k]) != null ? ref3 : [];
           }
-          first = (_ref4 = second[j]) != null ? _ref4 : [];
+          first = (ref4 = second[j]) != null ? ref4 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref3, _ref4;
+        var ref3, ref4;
         i = j = k = 0;
-        second = (_ref3 = data[k]) != null ? _ref3 : [];
-        first = (_ref4 = second[j]) != null ? _ref4 : [];
+        second = (ref3 = data[k]) != null ? ref3 : [];
+        first = (ref4 = second[j]) != null ? ref4 : [];
       };
       break;
     case 4:
       i = j = k = l = 0;
-      third = (_ref3 = data[l]) != null ? _ref3 : [];
-      second = (_ref4 = third[k]) != null ? _ref4 : [];
-      first = (_ref5 = second[j]) != null ? _ref5 : [];
+      third = (ref3 = data[l]) != null ? ref3 : [];
+      second = (ref4 = third[k]) != null ? ref4 : [];
+      first = (ref5 = second[j]) != null ? ref5 : [];
       thunk = function() {
-        var x, _ref6, _ref7, _ref8;
+        var ref6, ref7, ref8, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -51714,30 +51748,30 @@ exports.getThunk = function(data) {
             if (k === c) {
               k = 0;
               l++;
-              third = (_ref6 = data[l]) != null ? _ref6 : [];
+              third = (ref6 = data[l]) != null ? ref6 : [];
             }
-            second = (_ref7 = third[k]) != null ? _ref7 : [];
+            second = (ref7 = third[k]) != null ? ref7 : [];
           }
-          first = (_ref8 = second[j]) != null ? _ref8 : [];
+          first = (ref8 = second[j]) != null ? ref8 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref6, _ref7, _ref8;
+        var ref6, ref7, ref8;
         i = j = k = l = 0;
-        third = (_ref6 = data[l]) != null ? _ref6 : [];
-        second = (_ref7 = third[k]) != null ? _ref7 : [];
-        first = (_ref8 = second[j]) != null ? _ref8 : [];
+        third = (ref6 = data[l]) != null ? ref6 : [];
+        second = (ref7 = third[k]) != null ? ref7 : [];
+        first = (ref8 = second[j]) != null ? ref8 : [];
       };
       break;
     case 5:
       i = j = k = l = m = 0;
-      fourth = (_ref6 = data[m]) != null ? _ref6 : [];
-      third = (_ref7 = fourth[l]) != null ? _ref7 : [];
-      second = (_ref8 = third[k]) != null ? _ref8 : [];
-      first = (_ref9 = second[j]) != null ? _ref9 : [];
+      fourth = (ref6 = data[m]) != null ? ref6 : [];
+      third = (ref7 = fourth[l]) != null ? ref7 : [];
+      second = (ref8 = third[k]) != null ? ref8 : [];
+      first = (ref9 = second[j]) != null ? ref9 : [];
       thunk = function() {
-        var x, _ref10, _ref11, _ref12, _ref13;
+        var ref10, ref11, ref12, ref13, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -51751,23 +51785,23 @@ exports.getThunk = function(data) {
               if (l === d) {
                 l = 0;
                 m++;
-                fourth = (_ref10 = data[m]) != null ? _ref10 : [];
+                fourth = (ref10 = data[m]) != null ? ref10 : [];
               }
-              third = (_ref11 = fourth[l]) != null ? _ref11 : [];
+              third = (ref11 = fourth[l]) != null ? ref11 : [];
             }
-            second = (_ref12 = third[k]) != null ? _ref12 : [];
+            second = (ref12 = third[k]) != null ? ref12 : [];
           }
-          first = (_ref13 = second[j]) != null ? _ref13 : [];
+          first = (ref13 = second[j]) != null ? ref13 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref10, _ref11, _ref12, _ref13;
+        var ref10, ref11, ref12, ref13;
         i = j = k = l = m = 0;
-        fourth = (_ref10 = data[m]) != null ? _ref10 : [];
-        third = (_ref11 = fourth[l]) != null ? _ref11 : [];
-        second = (_ref12 = third[k]) != null ? _ref12 : [];
-        first = (_ref13 = second[j]) != null ? _ref13 : [];
+        fourth = (ref10 = data[m]) != null ? ref10 : [];
+        third = (ref11 = fourth[l]) != null ? ref11 : [];
+        second = (ref12 = third[k]) != null ? ref12 : [];
+        first = (ref13 = second[j]) != null ? ref13 : [];
       };
   }
   thunk.rebind = function(d) {
@@ -51915,81 +51949,110 @@ exports.getLerpEmitter = function(expr1, expr2) {
   args = Math.max(expr1.length, expr2.length);
   if (args <= 3) {
     emitter = function(emit, x, i) {
-      var k, l, n, _i, _results;
+      var k, l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, i);
       expr2(emit2, x, i);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 5) {
     emitter = function(emit, x, y, i, j) {
-      var k, l, n, _i, _results;
+      var k, l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, i, j);
       expr2(emit2, x, y, i, j);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 7) {
     emitter = function(emit, x, y, z, i, j, k) {
-      var l, n, _i, _results;
+      var l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, z, i, j, k);
       expr2(emit2, x, y, z, i, j, k);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 9) {
     emitter = function(emit, x, y, z, w, i, j, k, l) {
-      var n, _i, _results;
+      var n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, z, w, i, j, k, l);
       expr2(emit2, x, y, z, w, i, j, k, l);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else {
     emitter = function(emit, x, y, z, w, i, j, k, l, d, t) {
-      var n, _i, _results;
+      var n, o, ref, results;
       p = q = 0;
       expr1(emit1, x, y, z, w, i, j, k, l, d, t);
       expr2(emit2, x, y, z, w, i, j, k, l, d, t);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   }
   emitter.lerp = function(f) {
-    var _ref;
-    return _ref = [1 - f, f], lerp1 = _ref[0], lerp2 = _ref[1], _ref;
+    var ref;
+    return ref = [1 - f, f], lerp1 = ref[0], lerp2 = ref[1], ref;
   };
   return emitter;
 };
+
+exports.getLerpThunk = function(data1, data2) {
+  var n, n1, n2, scratch, thunk1, thunk2;
+  n1 = exports.getSizes(data1).reduce(function(a, b) {
+    return a * b;
+  });
+  n2 = exports.getSizes(data2).reduce(function(a, b) {
+    return a * b;
+  });
+  n = Math.min(n1, n2);
+  thunk1 = exports.getThunk(data1);
+  thunk2 = exports.getThunk(data2);
+  scratch = new Float32Array(n);
+  scratch.lerp = function(f) {
+    var a, b, i, results;
+    thunk1.reset();
+    thunk2.reset();
+    i = 0;
+    results = [];
+    while (i < n) {
+      a = thunk1();
+      b = thunk2();
+      results.push(scratch[i++] = a + (b - a) * f);
+    }
+    return results;
+  };
+  return scratch;
+};
+
 
 
 },{}],21:[function(require,module,exports){
@@ -52009,9 +52072,10 @@ ease = {
 module.exports = ease;
 
 
+
 },{}],22:[function(require,module,exports){
 var index, letters, parseOrder, toFloatString, toType,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 letters = 'xyzw'.split('');
 
@@ -52078,14 +52142,14 @@ exports.sample2DArray = function(textures) {
 exports.binaryOperator = function(type, op, curry) {
   type = toType(type);
   if (curry != null) {
-    return "" + type + " binaryOperator(" + type + " a) {\n  return a " + op + " " + curry + ";\n}";
+    return type + " binaryOperator(" + type + " a) {\n  return a " + op + " " + curry + ";\n}";
   } else {
-    return "" + type + " binaryOperator(" + type + " a, " + type + " b) {\n  return a " + op + " b;\n}";
+    return type + " binaryOperator(" + type + " a, " + type + " b) {\n  return a " + op + " b;\n}";
   }
 };
 
 exports.extendVec = function(from, to, value) {
-  var ctor, diff, parts, _i, _results;
+  var ctor, diff, k, parts, results;
   if (value == null) {
     value = 0;
   }
@@ -52097,9 +52161,9 @@ exports.extendVec = function(from, to, value) {
   to = toType(to);
   value = toFloatString(value);
   parts = (function() {
-    _results = [];
-    for (var _i = 0; 0 <= diff ? _i <= diff : _i >= diff; 0 <= diff ? _i++ : _i--){ _results.push(_i); }
-    return _results;
+    results = [];
+    for (var k = 0; 0 <= diff ? k <= diff : k >= diff; 0 <= diff ? k++ : k--){ results.push(k); }
+    return results;
   }).apply(this).map(function(x) {
     if (x) {
       return value;
@@ -52108,7 +52172,7 @@ exports.extendVec = function(from, to, value) {
     }
   });
   ctor = parts.join(',');
-  return "" + to + " extendVec(" + from + " v) { return " + to + "(" + ctor + "); }";
+  return to + " extendVec(" + from + " v) { return " + to + "(" + ctor + "); }";
 };
 
 exports.truncateVec = function(from, to) {
@@ -52119,11 +52183,11 @@ exports.truncateVec = function(from, to) {
   swizzle = '.' + ('xyzw'.substr(0, to));
   from = toType(from);
   to = toType(to);
-  return "" + to + " truncateVec(" + from + " v) { return v" + swizzle + "; }";
+  return to + " truncateVec(" + from + " v) { return v" + swizzle + "; }";
 };
 
 exports.injectVec4 = function(order) {
-  var args, channel, i, mask, swizzler, _i, _len;
+  var args, channel, i, k, len, mask, swizzler;
   swizzler = ['0.0', '0.0', '0.0', '0.0'];
   order = parseOrder(order);
   order = order.map(function(v) {
@@ -52133,7 +52197,7 @@ exports.injectVec4 = function(order) {
       return v;
     }
   });
-  for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+  for (i = k = 0, len = order.length; k < len; i = ++k) {
     channel = order[i];
     swizzler[channel] = ['a', 'b', 'c', 'd'][i];
   }
@@ -52153,7 +52217,8 @@ exports.swizzleVec4 = function(order, size) {
   }
   order = parseOrder(order);
   order = order.map(function(v) {
-    if (__indexOf.call([0, 1, 2, 3, 4], +v) >= 0) {
+    var ref;
+    if (ref = +v, indexOf.call([0, 1, 2, 3, 4], ref) >= 0) {
       v = +v;
     }
     if (v === "" + v) {
@@ -52169,7 +52234,7 @@ exports.swizzleVec4 = function(order, size) {
 };
 
 exports.invertSwizzleVec4 = function(order) {
-  var i, j, letter, mask, src, swizzler, _i, _len;
+  var i, j, k, len, letter, mask, src, swizzler;
   swizzler = ['0.0', '0.0', '0.0', '0.0'];
   order = parseOrder(order);
   order = order.map(function(v) {
@@ -52179,7 +52244,7 @@ exports.invertSwizzleVec4 = function(order) {
       return v;
     }
   });
-  for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+  for (i = k = 0, len = order.length; k < len; i = ++k) {
     letter = order[i];
     src = letters[i];
     j = index[letter];
@@ -52199,15 +52264,16 @@ exports.identity = function(type) {
     args = args.join(', ');
     return "void identity(" + args + ") { }";
   } else {
-    return "" + type + " identity(" + type + " x) {\n  return x;\n}";
+    return type + " identity(" + type + " x) {\n  return x;\n}";
   }
 };
 
 exports.constant = function(type, value) {
-  return "" + type + " constant() {\n  return " + value + ";\n}";
+  return type + " constant() {\n  return " + value + ";\n}";
 };
 
 exports.toType = toType;
+
 
 
 },{}],23:[function(require,module,exports){
@@ -52230,12 +52296,13 @@ exports.Ticks = require('./ticks');
 exports.VDOM = require('./vdom');
 
 
+
 },{"./axis":19,"./data":20,"./ease":21,"./glsl":22,"./js":24,"./pretty":25,"./three":26,"./ticks":27,"./vdom":28}],24:[function(require,module,exports){
 exports.merge = function() {
-  var k, obj, v, x, _i, _len;
+  var i, k, len, obj, v, x;
   x = {};
-  for (_i = 0, _len = arguments.length; _i < _len; _i++) {
-    obj = arguments[_i];
+  for (i = 0, len = arguments.length; i < len; i++) {
+    obj = arguments[i];
     for (k in obj) {
       v = obj[k];
       x[k] = v;
@@ -52249,7 +52316,7 @@ exports.clone = function(o) {
 };
 
 exports.parseQuoted = function(str) {
-  var accum, char, chunk, list, munch, quote, token, unescape, _i, _len;
+  var accum, char, chunk, i, len, list, munch, quote, token, unescape;
   accum = "";
   unescape = function(str) {
     return str = str.replace(/\\/g, '');
@@ -52263,8 +52330,8 @@ exports.parseQuoted = function(str) {
   str = str.split(/(?=(?:\\.|["' ,]))/g);
   quote = false;
   list = [];
-  for (_i = 0, _len = str.length; _i < _len; _i++) {
-    chunk = str[_i];
+  for (i = 0, len = str.length; i < len; i++) {
+    chunk = str[i];
     char = chunk[0];
     token = chunk.slice(1);
     switch (char) {
@@ -52302,6 +52369,7 @@ exports.parseQuoted = function(str) {
 };
 
 
+
 },{}],25:[function(require,module,exports){
 var NUMBER_PRECISION, NUMBER_THRESHOLD, checkFactor, checkUnit, escapeHTML, formatFactors, formatFraction, formatMultiple, formatPrimes, prettyFormat, prettyJSXBind, prettyJSXPair, prettyJSXProp, prettyMarkup, prettyNumber, prettyPrint;
 
@@ -52332,7 +52400,7 @@ formatMultiple = function(v, f, k, compact) {
   if (compact) {
     return "" + d + k;
   } else {
-    return "" + d + "*" + k;
+    return d + "*" + k;
   }
 };
 
@@ -52345,7 +52413,7 @@ formatFraction = function(v, f, k, compact) {
   } else if (k !== '1') {
     d += compact ? "" + k : "*" + k;
   }
-  return "" + d + "/" + f;
+  return d + "/" + f;
 };
 
 formatFactors = [
@@ -52398,7 +52466,7 @@ prettyNumber = function(options) {
   cacheIndex = formatIndex + threshold + precision;
   numberCache = cache ? {} : null;
   return function(v) {
-    var best, cached, d, denom, f, k, list, match, n, numer, out, p, _i, _j, _len, _len1, _ref, _ref1;
+    var best, cached, d, denom, f, i, j, k, len, len1, list, match, n, numer, out, p, ref, ref1;
     if (numberCache != null) {
       if ((cached = numberCache[v]) != null) {
         return cached;
@@ -52417,18 +52485,18 @@ prettyNumber = function(options) {
         return best = d;
       }
     };
-    _ref = formatFactors[formatIndex];
-    for (k in _ref) {
-      f = _ref[k];
+    ref = formatFactors[formatIndex];
+    for (k in ref) {
+      f = ref[k];
       if (checkUnit(v / f)) {
         match("" + (formatMultiple(v / f, 1, k, compact)));
       } else {
-        for (_i = 0, _len = formatPrimes.length; _i < _len; _i++) {
-          _ref1 = formatPrimes[_i], denom = _ref1[0], list = _ref1[1];
+        for (i = 0, len = formatPrimes.length; i < len; i++) {
+          ref1 = formatPrimes[i], denom = ref1[0], list = ref1[1];
           numer = v / f * denom;
           if (checkUnit(numer)) {
-            for (_j = 0, _len1 = list.length; _j < _len1; _j++) {
-              p = list[_j];
+            for (j = 0, len1 = list.length; j < len1; j++) {
+              p = list[j];
               while (checkUnit(n = numer / p) && checkUnit(d = denom / p)) {
                 numer = n;
                 denom = d;
@@ -52500,7 +52568,7 @@ prettyMarkup = function(markup) {
           quoted = !quoted;
           if (quoted) {
             args.push(nested ? attr : str);
-            return "" + char + "%c";
+            return char + "%c";
           } else {
             args.push(nested ? obj : tag);
             return "%c" + char;
@@ -52517,7 +52585,7 @@ prettyMarkup = function(markup) {
         case '}':
           if (--nested === 0) {
             args.push(tag);
-            return "" + char + "%c";
+            return char + "%c";
           } else {
             return char;
           }
@@ -52594,15 +52662,15 @@ prettyJSXPair = (function() {
               return v.toString();
             } else {
               return "{" + ((function() {
-                var _results;
-                _results = [];
+                var results;
+                results = [];
                 for (kk in v) {
                   vv = v[kk];
                   if (v.hasOwnProperty(kk)) {
-                    _results.push("" + (key(kk)) + ": " + (value(vv)));
+                    results.push((key(kk)) + ": " + (value(vv)));
                   }
                 }
-                return _results;
+                return results;
               })()).join(", ") + "}";
             }
           } else {
@@ -52621,13 +52689,13 @@ escapeHTML = function(str) {
 };
 
 prettyFormat = function(str) {
-  var arg, args, out, _i, _len;
+  var arg, args, i, len, out;
   args = [].slice.call(arguments);
   args.shift();
   out = "<span>";
   str = escapeHTML(str);
-  for (_i = 0, _len = args.length; _i < _len; _i++) {
-    arg = args[_i];
+  for (i = 0, len = args.length; i < len; i++) {
+    arg = args[i];
     str = str.replace(/%([a-z])/, function(_, f) {
       var v;
       v = args.shift();
@@ -52659,6 +52727,7 @@ module.exports = {
 for x in [1, 2, 1/2, 3, 1/3, Math.PI, Math.PI / 2, Math.PI * 2, Math.PI * 3, Math.PI * 4, Math.PI * 3 / 4, Math.E * 100, Math.E / 100]
   console.log prettyNumber({})(x)
  */
+
 
 
 },{}],26:[function(require,module,exports){
@@ -52847,6 +52916,7 @@ exports.transformComposer = function() {
 };
 
 
+
 },{}],27:[function(require,module,exports){
 
 /*
@@ -52877,12 +52947,12 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   ideal = span / n;
   if (!nice) {
     ticks = (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
-        _results.push(min + i * ideal);
+      var j, ref1, results;
+      results = [];
+      for (i = j = 0, ref1 = n; 0 <= ref1 ? j <= ref1 : j >= ref1; i = 0 <= ref1 ? ++j : --j) {
+        results.push(min + i * ideal);
       }
-      return _results;
+      return results;
     })();
     if (!start) {
       ticks.shift();
@@ -52902,13 +52972,13 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   ref = unit * (Math.pow(base, Math.floor(Math.log(ideal / unit) / Math.log(base))));
   factors = base % 2 === 0 ? [base / 2, 1, 1 / 2] : base % 3 === 0 ? [base / 3, 1, 1 / 3] : [1];
   steps = (function() {
-    var _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = factors.length; _i < _len; _i++) {
-      f = factors[_i];
-      _results.push(ref * f);
+    var j, len, results;
+    results = [];
+    for (j = 0, len = factors.length; j < len; j++) {
+      f = factors[j];
+      results.push(ref * f);
     }
-    return _results;
+    return results;
   })();
   distance = Infinity;
   step = steps.reduce(function(ref, step) {
@@ -52927,12 +52997,12 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   max = (Math.floor(max / step) - +(!end)) * step;
   n = Math.ceil((max - min) / step);
   ticks = (function() {
-    var _i, _results;
-    _results = [];
-    for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
-      _results.push(min + i * step);
+    var j, ref1, results;
+    results = [];
+    for (i = j = 0, ref1 = n; 0 <= ref1 ? j <= ref1 : j >= ref1; i = 0 <= ref1 ? ++j : --j) {
+      results.push(min + i * step);
     }
-    return _results;
+    return results;
   })();
   if (!zero) {
     ticks = ticks.filter(function(x) {
@@ -52971,8 +53041,9 @@ exports.linear = linear;
 exports.log = log;
 
 
+
 },{}],28:[function(require,module,exports){
-var HEAP, Types, apply, createClass, descriptor, element, hint, id, key, map, mount, prop, recycle, set, unmount, unset, _i, _len, _ref;
+var HEAP, Types, apply, createClass, descriptor, element, hint, id, j, key, len, map, mount, prop, recycle, ref1, set, unmount, unset;
 
 HEAP = [];
 
@@ -53002,14 +53073,14 @@ descriptor = function() {
 };
 
 hint = function(n) {
-  var i, _i, _results;
+  var i, j, ref1, results;
   n *= 2;
   n = Math.max(0, HEAP.length - n);
-  _results = [];
-  for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
-    _results.push(HEAP.push(descriptor()));
+  results = [];
+  for (i = j = 0, ref1 = n; 0 <= ref1 ? j < ref1 : j > ref1; i = 0 <= ref1 ? ++j : --j) {
+    results.push(HEAP.push(descriptor()));
   }
-  return _results;
+  return results;
 };
 
 element = function(type, props, children) {
@@ -53022,7 +53093,7 @@ element = function(type, props, children) {
 };
 
 recycle = function(el) {
-  var child, children, _i, _len;
+  var child, children, j, len;
   if (!el.type) {
     return;
   }
@@ -53030,15 +53101,15 @@ recycle = function(el) {
   el.type = el.props = el.children = el.instance = null;
   HEAP.push(el);
   if (children != null) {
-    for (_i = 0, _len = children.length; _i < _len; _i++) {
-      child = children[_i];
+    for (j = 0, len = children.length; j < len; j++) {
+      child = children[j];
       recycle(child);
     }
   }
 };
 
 apply = function(el, last, node, parent, index) {
-  var child, childNodes, children, comp, dirty, i, k, key, nextChildren, nextProps, nextState, prevProps, prevState, props, ref, same, should, type, v, value, _base, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _ref4;
+  var base, child, childNodes, children, comp, dirty, i, j, k, key, l, len, len1, nextChildren, nextProps, nextState, prevProps, prevState, props, ref, ref1, ref2, ref3, ref4, ref5, same, should, type, v, value;
   if (el != null) {
     if (last == null) {
       return mount(el, parent, index);
@@ -53057,10 +53128,10 @@ apply = function(el, last, node, parent, index) {
         return mount(el, parent, index);
       } else {
         el.instance = last.instance;
-        type = ((_ref = el.type) != null ? _ref.isComponentClass : void 0) ? el.type : Types[el.type];
+        type = ((ref1 = el.type) != null ? ref1.isComponentClass : void 0) ? el.type : Types[el.type];
         props = last != null ? last.props : void 0;
         nextProps = el.props;
-        children = (_ref1 = last != null ? last.children : void 0) != null ? _ref1 : null;
+        children = (ref2 = last != null ? last.children : void 0) != null ? ref2 : null;
         nextChildren = el.children;
         if (nextProps != null) {
           nextProps.children = nextChildren;
@@ -53095,18 +53166,18 @@ apply = function(el, last, node, parent, index) {
             if (el.props == null) {
               el.props = {};
             }
-            _ref2 = comp.defaultProps;
-            for (k in _ref2) {
-              v = _ref2[k];
-              if ((_base = el.props)[k] == null) {
-                _base[k] = v;
+            ref3 = comp.defaultProps;
+            for (k in ref3) {
+              v = ref3[k];
+              if ((base = el.props)[k] == null) {
+                base[k] = v;
               }
             }
             el.props.children = el.children;
             if (typeof comp.willReceiveProps === "function") {
               comp.willReceiveProps(el.props);
             }
-            should = node._COMPONENT_FORCE || ((_ref3 = typeof comp.shouldUpdate === "function" ? comp.shouldUpdate(el.props) : void 0) != null ? _ref3 : true);
+            should = node._COMPONENT_FORCE || ((ref4 = typeof comp.shouldUpdate === "function" ? comp.shouldUpdate(el.props) : void 0) != null ? ref4 : true);
             if (should) {
               nextState = comp.getNextState();
               if (typeof comp.willUpdate === "function") {
@@ -53143,7 +53214,7 @@ apply = function(el, last, node, parent, index) {
             }
           }
           if (nextChildren != null) {
-            if ((_ref4 = typeof nextChildren) === 'string' || _ref4 === 'number') {
+            if ((ref5 = typeof nextChildren) === 'string' || ref5 === 'number') {
               if (nextChildren !== children) {
                 node.textContent = nextChildren;
               }
@@ -53153,12 +53224,12 @@ apply = function(el, last, node, parent, index) {
               } else {
                 childNodes = node.childNodes;
                 if (children != null) {
-                  for (i = _i = 0, _len = nextChildren.length; _i < _len; i = ++_i) {
+                  for (i = j = 0, len = nextChildren.length; j < len; i = ++j) {
                     child = nextChildren[i];
                     apply(child, children[i], childNodes[i], node, i);
                   }
                 } else {
-                  for (i = _j = 0, _len1 = nextChildren.length; _j < _len1; i = ++_j) {
+                  for (i = l = 0, len1 = nextChildren.length; l < len1; i = ++l) {
                     child = nextChildren[i];
                     apply(child, null, childNodes[i], node, i);
                   }
@@ -53181,16 +53252,16 @@ apply = function(el, last, node, parent, index) {
 };
 
 mount = function(el, parent, index) {
-  var child, children, comp, ctor, i, k, key, node, type, v, value, _base, _i, _len, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+  var base, child, children, comp, ctor, i, j, k, key, len, node, ref1, ref2, ref3, ref4, ref5, ref6, type, v, value;
   if (index == null) {
     index = 0;
   }
-  type = ((_ref = el.type) != null ? _ref.isComponentClass : void 0) ? el.type : Types[el.type];
+  type = ((ref1 = el.type) != null ? ref1.isComponentClass : void 0) ? el.type : Types[el.type];
   if (el instanceof Node) {
     node = el;
   } else {
     if (type != null) {
-      ctor = ((_ref1 = el.type) != null ? _ref1.isComponentClass : void 0) ? el.type : Types[el.type];
+      ctor = ((ref2 = el.type) != null ? ref2.isComponentClass : void 0) ? el.type : Types[el.type];
       if (!ctor) {
         el = el.rendered = element('noscript');
         node = mount(el, parent, index);
@@ -53200,11 +53271,11 @@ mount = function(el, parent, index) {
       if (el.props == null) {
         el.props = {};
       }
-      _ref2 = comp.defaultProps;
-      for (k in _ref2) {
-        v = _ref2[k];
-        if ((_base = el.props)[k] == null) {
-          _base[k] = v;
+      ref3 = comp.defaultProps;
+      for (k in ref3) {
+        v = ref3[k];
+        if ((base = el.props)[k] == null) {
+          base[k] = v;
         }
       }
       el.props.children = el.children;
@@ -53221,25 +53292,25 @@ mount = function(el, parent, index) {
       }
       node._COMPONENT = comp;
       return node;
-    } else if ((_ref3 = typeof el) === 'string' || _ref3 === 'number') {
+    } else if ((ref4 = typeof el) === 'string' || ref4 === 'number') {
       node = document.createTextNode(el);
     } else {
       node = document.createElement(el.type);
-      _ref4 = el.props;
-      for (key in _ref4) {
-        value = _ref4[key];
+      ref5 = el.props;
+      for (key in ref5) {
+        value = ref5[key];
         set(node, key, value);
       }
     }
     children = el.children;
     if (children != null) {
-      if ((_ref5 = typeof children) === 'string' || _ref5 === 'number') {
+      if ((ref6 = typeof children) === 'string' || ref6 === 'number') {
         node.textContent = children;
       } else {
         if (children.type != null) {
           mount(children, node, 0);
         } else {
-          for (i = _i = 0, _len = children.length; _i < _len; i = ++_i) {
+          for (i = j = 0, len = children.length; j < len; i = ++j) {
             child = children[i];
             mount(child, node, i);
           }
@@ -53252,7 +53323,7 @@ mount = function(el, parent, index) {
 };
 
 unmount = function(comp, node) {
-  var child, k, _i, _len, _ref, _results;
+  var child, j, k, len, ref1, results;
   if (comp) {
     if (typeof comp.willUnmount === "function") {
       comp.willUnmount();
@@ -53261,18 +53332,18 @@ unmount = function(comp, node) {
       delete comp[k];
     }
   }
-  _ref = node.childNodes;
-  _results = [];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    child = _ref[_i];
+  ref1 = node.childNodes;
+  results = [];
+  for (j = 0, len = ref1.length; j < len; j++) {
+    child = ref1[j];
     unmount(child._COMPONENT, child);
-    _results.push(delete child._COMPONENT);
+    results.push(delete child._COMPONENT);
   }
-  return _results;
+  return results;
 };
 
 prop = function(key) {
-  var prefix, prefixes, _i, _len;
+  var j, len, prefix, prefixes;
   if (typeof document === 'undefined') {
     return true;
   }
@@ -53281,8 +53352,8 @@ prop = function(key) {
   }
   key = key[0].toUpperCase() + key.slice(1);
   prefixes = ['webkit', 'moz', 'ms', 'o'];
-  for (_i = 0, _len = prefixes.length; _i < _len; _i++) {
-    prefix = prefixes[_i];
+  for (j = 0, len = prefixes.length; j < len; j++) {
+    prefix = prefixes[j];
     if (document.documentElement.style[prefix + key] != null) {
       return prefix + key;
     }
@@ -53291,19 +53362,19 @@ prop = function(key) {
 
 map = {};
 
-_ref = ['transform'];
-for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-  key = _ref[_i];
+ref1 = ['transform'];
+for (j = 0, len = ref1.length; j < len; j++) {
+  key = ref1[j];
   map[key] = prop(key);
 }
 
 set = function(node, key, value, orig) {
-  var k, v, _ref1;
+  var k, ref2, v;
   if (key === 'style') {
     for (k in value) {
       v = value[k];
       if ((orig != null ? orig[k] : void 0) !== v) {
-        node.style[(_ref1 = map[k]) != null ? _ref1 : k] = v;
+        node.style[(ref2 = map[k]) != null ? ref2 : k] = v;
       }
     }
     return;
@@ -53318,11 +53389,11 @@ set = function(node, key, value, orig) {
 };
 
 unset = function(node, key, orig) {
-  var k, v, _ref1;
+  var k, ref2, v;
   if (key === 'style') {
     for (k in orig) {
       v = orig[k];
-      node.style[(_ref1 = map[k]) != null ? _ref1 : k] = '';
+      node.style[(ref2 = map[k]) != null ? ref2 : k] = '';
     }
     return;
   }
@@ -53335,7 +53406,7 @@ unset = function(node, key, orig) {
 };
 
 createClass = function(prototype) {
-  var Component, a, aliases, b, _ref1;
+  var Component, a, aliases, b, ref2;
   aliases = {
     willMount: 'componentWillMount',
     didMount: 'componentDidMount',
@@ -53352,11 +53423,11 @@ createClass = function(prototype) {
     }
   }
   Component = (function() {
-    function Component(node, props, state, children) {
+    function Component(node, props1, state1, children1) {
       var bind, k, nextState, v;
-      this.props = props != null ? props : {};
-      this.state = state != null ? state : null;
-      this.children = children != null ? children : null;
+      this.props = props1 != null ? props1 : {};
+      this.state = state1 != null ? state1 : null;
+      this.children = children1 != null ? children1 : null;
       bind = function(f, self) {
         if (typeof f === 'function') {
           return f.bind(self);
@@ -53380,27 +53451,27 @@ createClass = function(prototype) {
         node._COMPONENT_DIRTY = true;
       };
       this.forceUpdate = function() {
-        var el, _results;
+        var el, results;
         node._COMPONENT_FORCE = node._COMPONENT_DIRTY = true;
         el = node;
-        _results = [];
+        results = [];
         while (el = el.parentNode) {
           if (el._COMPONENT) {
-            _results.push(el._COMPONENT_FORCE = true);
+            results.push(el._COMPONENT_FORCE = true);
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
       this.getNextState = function() {
         return nextState;
       };
       this.applyNextState = function() {
-        var prevState, _ref1;
+        var prevState, ref2;
         node._COMPONENT_FORCE = node._COMPONENT_DIRTY = false;
         prevState = this.state;
-        _ref1 = [null, nextState], nextState = _ref1[0], this.state = _ref1[1];
+        ref2 = [null, nextState], nextState = ref2[0], this.state = ref2[1];
         return prevState;
       };
       return;
@@ -53410,7 +53481,7 @@ createClass = function(prototype) {
 
   })();
   Component.isComponentClass = true;
-  Component.prototype.defaultProps = (_ref1 = typeof prototype.getDefaultProps === "function" ? prototype.getDefaultProps() : void 0) != null ? _ref1 : {};
+  Component.prototype.defaultProps = (ref2 = typeof prototype.getDefaultProps === "function" ? prototype.getDefaultProps() : void 0) != null ? ref2 : {};
   return Component;
 };
 
@@ -53422,6 +53493,7 @@ module.exports = {
   Types: Types,
   createClass: createClass
 };
+
 
 
 },{}],29:[function(require,module,exports){
@@ -53541,7 +53613,7 @@ Context = (function() {
   };
 
   Context.prototype.pre = function(time) {
-    var _base;
+    var base;
     if (!time) {
       time = {
         now: +new Date() / 1000,
@@ -53559,14 +53631,14 @@ Context = (function() {
       time.clock = this.time.clock + time.step;
     }
     this.time = time;
-    if (typeof (_base = this.root.controller).pre === "function") {
-      _base.pre();
+    if (typeof (base = this.root.controller).pre === "function") {
+      base.pre();
     }
     return this;
   };
 
   Context.prototype.update = function() {
-    var _base;
+    var base;
     this.animator.update(this.time);
     this.attributes.compute();
     this.guard.iterate({
@@ -53584,8 +53656,8 @@ Context = (function() {
         };
       }
     });
-    if (typeof (_base = this.root.controller).update === "function") {
-      _base.update();
+    if (typeof (base = this.root.controller).update === "function") {
+      base.update();
     }
     this.camera = this.root.controller.getCamera();
     this.speed = this.root.controller.getSpeed();
@@ -53593,18 +53665,18 @@ Context = (function() {
   };
 
   Context.prototype.render = function() {
-    var _base;
-    if (typeof (_base = this.root.controller).render === "function") {
-      _base.render();
+    var base;
+    if (typeof (base = this.root.controller).render === "function") {
+      base.render();
     }
     this.scene.render();
     return this;
   };
 
   Context.prototype.post = function() {
-    var _base;
-    if (typeof (_base = this.root.controller).post === "function") {
-      _base.post();
+    var base;
+    if (typeof (base = this.root.controller).post === "function") {
+      base.post();
     }
     return this;
   };
@@ -53625,11 +53697,12 @@ Context = (function() {
 module.exports = Context;
 
 
-},{"./model":34,"./overlay":40,"./primitives":43,"./render":146,"./shaders":161,"./stage":166,"./util":172}],30:[function(require,module,exports){
-var Context, k, mathBox, v, _ref;
+
+},{"./model":34,"./overlay":40,"./primitives":43,"./render":147,"./shaders":162,"./stage":167,"./util":173}],30:[function(require,module,exports){
+var Context, k, mathBox, ref, v;
 
 mathBox = function(options) {
-  var three, _ref;
+  var ref, three;
   three = THREE.Bootstrap(options);
   if (!three.fallback) {
     if (!three.Time) {
@@ -53639,7 +53712,7 @@ mathBox = function(options) {
       three.install(['mathbox', 'splash']);
     }
   }
-  return (_ref = three.mathbox) != null ? _ref : three;
+  return (ref = three.mathbox) != null ? ref : three;
 };
 
 window.π = Math.PI;
@@ -53652,13 +53725,13 @@ window.MathBox = exports;
 
 window.mathBox = exports.mathBox = mathBox;
 
-exports.version = '2';
+exports.version = '0.0.4';
 
 exports.Context = Context = require('./context');
 
-_ref = Context.Namespace;
-for (k in _ref) {
-  v = _ref[k];
+ref = Context.Namespace;
+for (k in ref) {
+  v = ref[k];
   exports[k] = v;
 }
 
@@ -53700,7 +53773,7 @@ THREE.Bootstrap.registerPlugin('mathbox', {
           _this.context.setWarmup(_this.options.warmup);
           _this.pending = 0;
           _this.warm = !_this.options.warmup;
-          console.log('MathBox', MathBox.version);
+          console.log('MathBox²', MathBox.version);
           return three.trigger({
             type: 'mathbox/init',
             version: MathBox.version,
@@ -53726,8 +53799,8 @@ THREE.Bootstrap.registerPlugin('mathbox', {
       })(this),
       object: (function(_this) {
         return function() {
-          var _ref1;
-          return (_ref1 = _this.context) != null ? _ref1.scene.root : void 0;
+          var ref1;
+          return (ref1 = _this.context) != null ? ref1.scene.root : void 0;
         };
       })(this)
     };
@@ -53770,30 +53843,30 @@ THREE.Bootstrap.registerPlugin('mathbox', {
     return console.log('Geometry  ', fmt(info.faces) + ' faces  ', fmt(info.vertices) + ' vertices  ', fmt(info.calls) + ' draw calls  ');
   },
   resize: function(event, three) {
-    var _ref1;
-    return (_ref1 = this.context) != null ? _ref1.resize(three.Size) : void 0;
+    var ref1;
+    return (ref1 = this.context) != null ? ref1.resize(three.Size) : void 0;
   },
   pre: function(event, three) {
-    var _ref1;
-    return (_ref1 = this.context) != null ? _ref1.pre(three.Time) : void 0;
+    var ref1;
+    return (ref1 = this.context) != null ? ref1.pre(three.Time) : void 0;
   },
   update: function(event, three) {
-    var camera, _ref1, _ref2, _ref3;
-    if ((_ref1 = this.context) != null) {
-      _ref1.update();
+    var camera, ref1, ref2, ref3;
+    if ((ref1 = this.context) != null) {
+      ref1.update();
     }
-    if ((camera = (_ref2 = this.context) != null ? _ref2.camera : void 0) && camera !== three.camera) {
+    if ((camera = (ref2 = this.context) != null ? ref2.camera : void 0) && camera !== three.camera) {
       three.camera = camera;
     }
     three.Time.set({
       speed: this.context.speed
     });
     this.progress(this.context.getPending(), three);
-    return (_ref3 = this.context) != null ? _ref3.render() : void 0;
+    return (ref3 = this.context) != null ? ref3.render() : void 0;
   },
   post: function(event, three) {
-    var _ref1;
-    return (_ref1 = this.context) != null ? _ref1.post() : void 0;
+    var ref1;
+    return (ref1 = this.context) != null ? ref1.post() : void 0;
   },
   progress: function(remain, three) {
     var current, pending, total;
@@ -53822,7 +53895,8 @@ THREE.Bootstrap.registerPlugin('mathbox', {
 });
 
 
-},{"./context":29,"./splash":162}],31:[function(require,module,exports){
+
+},{"./context":29,"./splash":163}],31:[function(require,module,exports){
 
 /*
  Custom attribute model
@@ -53872,16 +53946,16 @@ Attributes = (function() {
   Attributes.prototype.unbind = function(callback) {
     var cb;
     return this.bound = (function() {
-      var _i, _len, _ref, _results;
-      _ref = this.bound;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        cb = _ref[_i];
+      var j, len, ref, results;
+      ref = this.bound;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        cb = ref[j];
         if (cb !== callback) {
-          _results.push(cb);
+          results.push(cb);
         }
       }
-      return _results;
+      return results;
     }).call(this);
   };
 
@@ -53897,24 +53971,24 @@ Attributes = (function() {
   };
 
   Attributes.prototype.compute = function() {
-    var cb, _i, _len, _ref;
+    var cb, j, len, ref;
     if (this.bound.length) {
-      _ref = this.bound;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        cb = _ref[_i];
+      ref = this.bound;
+      for (j = 0, len = ref.length; j < len; j++) {
+        cb = ref[j];
         this.invoke(cb);
       }
     }
   };
 
   Attributes.prototype.digest = function() {
-    var callback, calls, _i, _len, _ref;
+    var callback, calls, j, len, ref;
     if (!this.pending.length) {
       return false;
     }
-    _ref = [this.pending, []], calls = _ref[0], this.pending = _ref[1];
-    for (_i = 0, _len = calls.length; _i < _len; _i++) {
-      callback = calls[_i];
+    ref = [this.pending, []], calls = ref[0], this.pending = ref[1];
+    for (j = 0, len = calls.length; j < len; j++) {
+      callback = calls[j];
       callback();
     }
     return true;
@@ -53925,7 +53999,7 @@ Attributes = (function() {
   };
 
   Attributes.prototype.getLastTrigger = function() {
-    return "" + (this.lastObject.toString()) + " - " + this.lastKey + "=`" + this.lastValue + "`";
+    return (this.lastObject.toString()) + " - " + this.lastKey + "=`" + this.lastValue + "`";
   };
 
   return Attributes;
@@ -53944,7 +54018,7 @@ shallowCopy = function(x) {
 
 Data = (function() {
   function Data(object, config, _attributes) {
-    var addSpec, bind, change, changed, changes, constant, data, define, digest, dirty, equalors, equals, evaluate, event, expr, finals, flattened, freeform, get, getNS, key, list, makers, mapTo, name, ns, oldComputed, oldExpr, oldOrig, oldProps, originals, props, set, shorthand, spec, to, touched, touches, trait, traits, unbind, unique, validate, validators, value, values, _bound, _computed, _eval, _expr, _finals, _i, _len, _ref, _ref1;
+    var _bound, _computed, _eval, _expr, _finals, addSpec, bind, change, changed, changes, constant, data, define, digest, dirty, equalors, equals, evaluate, event, expr, finals, flattened, freeform, get, getNS, j, key, len, list, makers, mapTo, name, ns, oldComputed, oldExpr, oldOrig, oldProps, originals, props, ref, ref1, set, shorthand, spec, to, touched, touches, trait, traits, unbind, unique, validate, validators, value, values;
     traits = config.traits, props = config.props, finals = config.finals, freeform = config.freeform;
     data = this;
     if ((object.props != null) && (object.expr != null) && (object.orig != null) && (object.computed != null) && (object.attributes != null)) {
@@ -53952,33 +54026,33 @@ Data = (function() {
       oldExpr = shallowCopy(object.expr);
       oldOrig = object.orig();
       oldComputed = object.computed();
-      if ((_ref = object.attributes) != null) {
-        _ref.dispose();
+      if ((ref = object.attributes) != null) {
+        ref.dispose();
       }
     }
     flattened = {};
     originals = {};
     mapTo = {};
     to = function(name) {
-      var _ref1;
-      return (_ref1 = mapTo[name]) != null ? _ref1 : name;
+      var ref1;
+      return (ref1 = mapTo[name]) != null ? ref1 : name;
     };
     define = function(name, alias) {
       if (mapTo[alias]) {
-        throw new Error("" + (object.toString()) + " - Duplicate property `" + alias + "`");
+        throw new Error((object.toString()) + " - Duplicate property `" + alias + "`");
       }
       return mapTo[alias] = name;
     };
     get = function(key) {
-      var _ref1, _ref2, _ref3;
-      return (_ref1 = (_ref2 = data[key]) != null ? _ref2.value : void 0) != null ? _ref1 : (_ref3 = data[to(key)]) != null ? _ref3.value : void 0;
+      var ref1, ref2, ref3;
+      return (ref1 = (ref2 = data[key]) != null ? ref2.value : void 0) != null ? ref1 : (ref3 = data[to(key)]) != null ? ref3.value : void 0;
     };
     set = function(key, value, ignore, initial) {
-      var attr, short, valid, validated, _ref1;
+      var attr, ref1, short, valid, validated;
       key = to(key);
       if ((attr = data[key]) == null) {
         if (!freeform) {
-          throw new Error("" + (object.toString()) + " - Setting unknown property `" + key + "={" + value + "}`");
+          throw new Error((object.toString()) + " - Setting unknown property `" + key + "={" + value + "}`");
         }
         attr = data[key] = {
           short: key,
@@ -53992,13 +54066,13 @@ Data = (function() {
       }
       if (!ignore) {
         if (_expr[key]) {
-          throw new Error("" + (object.toString()) + " - Can't set bound property `" + key + "={" + value + "}`");
+          throw new Error((object.toString()) + " - Can't set bound property `" + key + "={" + value + "}`");
         }
         if (_computed[key]) {
-          throw new Error("" + (object.toString()) + " - Can't set computed property `" + key + "={" + value + "}`");
+          throw new Error((object.toString()) + " - Can't set computed property `" + key + "={" + value + "}`");
         }
         if (_finals[key]) {
-          throw new Error("" + (object.toString()) + " - Can't set final property `" + key + "={" + value + "}`");
+          throw new Error((object.toString()) + " - Can't set final property `" + key + "={" + value + "}`");
         }
       }
       valid = true;
@@ -54007,7 +54081,7 @@ Data = (function() {
         return null;
       });
       if (valid) {
-        _ref1 = [validated, attr.value], attr.value = _ref1[0], attr.last = _ref1[1];
+        ref1 = [validated, attr.value], attr.value = ref1[0], attr.last = ref1[1];
         short = attr.short;
         flattened[short] = validated;
         if (!ignore) {
@@ -54022,7 +54096,7 @@ Data = (function() {
     constant = function(key, value, initial) {
       key = to(key);
       set(key, value, true, initial);
-      return finals[key] = true;
+      return _finals[key] = true;
     };
     expr = {};
     _bound = {};
@@ -54037,16 +54111,16 @@ Data = (function() {
       }
       key = to(key);
       if (typeof expression !== 'function') {
-        throw new Error("" + (object.toString()) + " - Expression `" + key + "=>{" + expr + "}` is not a function");
+        throw new Error((object.toString()) + " - Expression `" + key + "=>{" + expr + "}` is not a function");
       }
       if (_expr[key]) {
-        throw new Error("" + (object.toString()) + " - Property `" + key + "=>{" + expr + "}` is already bound");
+        throw new Error((object.toString()) + " - Property `" + key + "=>{" + expr + "}` is already bound");
       }
       if (_computed[key]) {
-        throw new Error("" + (object.toString()) + " - Property `" + key + "` is computed");
+        throw new Error((object.toString()) + " - Property `" + key + "` is computed");
       }
       if (_finals[key]) {
-        throw new Error("" + (object.toString()) + " - Property `" + key + "` is final");
+        throw new Error((object.toString()) + " - Property `" + key + "` is final");
       }
       list = computed ? _computed : _expr;
       list[key] = expression;
@@ -54057,8 +54131,8 @@ Data = (function() {
       _eval[key] = expression;
       expression = expression.bind(object);
       _bound[key] = function(t, d) {
-        var clock, _ref1;
-        if (clock = (_ref1 = object.clock) != null ? _ref1.getTime() : void 0) {
+        var clock, ref1;
+        if (clock = (ref1 = object.clock) != null ? ref1.getTime() : void 0) {
           t = clock.clock;
           d = clock.step;
         }
@@ -54085,9 +54159,9 @@ Data = (function() {
       return delete expr[key];
     };
     evaluate = function(key, time) {
-      var _ref1;
+      var ref1;
       key = to(key);
-      return (_ref1 = typeof _eval[key] === "function" ? _eval[key](time, 0) : void 0) != null ? _ref1 : data[key].value;
+      return (ref1 = typeof _eval[key] === "function" ? _eval[key](time, 0) : void 0) != null ? ref1 : data[key].value;
     };
     object.expr = expr;
     object.props = flattened;
@@ -54187,7 +54261,7 @@ Data = (function() {
         target = make();
       }
       return target = validate(key, value, target, function() {
-        throw new Error("" + (object.toString()) + " - Invalid value `" + key + "={" + value + "}`");
+        throw new Error((object.toString()) + " - Invalid value `" + key + "={" + value + "}`");
       });
     };
     dirty = false;
@@ -54214,7 +54288,7 @@ Data = (function() {
       touched: null
     };
     digest = function() {
-      var k, trait, _results;
+      var k, results, trait;
       event.changed = changes;
       event.touched = touches;
       changes = changed;
@@ -54230,12 +54304,12 @@ Data = (function() {
       }
       event.type = 'change';
       object.trigger(event);
-      _results = [];
+      results = [];
       for (trait in event.touched) {
         event.type = "change:" + trait;
-        _results.push(object.trigger(event));
+        results.push(object.trigger(event));
       }
-      return _results;
+      return results;
     };
     shorthand = function(name) {
       var parts, suffix;
@@ -54248,8 +54322,8 @@ Data = (function() {
       });
     };
     addSpec = function(name, spec) {
-      var attr, key, short, type, value, _ref1, _ref2, _results;
-      _results = [];
+      var attr, key, ref1, ref2, results, short, type, value;
+      results = [];
       for (key in spec) {
         type = spec[key];
         key = [name, key].join('.');
@@ -54266,20 +54340,20 @@ Data = (function() {
         define(key, short);
         flattened[short] = value;
         makers[key] = type.make;
-        validators[key] = (_ref1 = type.validate) != null ? _ref1 : function(a) {
+        validators[key] = (ref1 = type.validate) != null ? ref1 : function(a) {
           return a;
         };
-        _results.push(equalors[key] = (_ref2 = type.equals) != null ? _ref2 : function(a, b) {
+        results.push(equalors[key] = (ref2 = type.equals) != null ? ref2 : function(a, b) {
           return a === b;
         });
       }
-      return _results;
+      return results;
     };
     list = [];
     values = {};
-    for (_i = 0, _len = traits.length; _i < _len; _i++) {
-      trait = traits[_i];
-      _ref1 = trait.split(':'), trait = _ref1[0], ns = _ref1[1];
+    for (j = 0, len = traits.length; j < len; j++) {
+      trait = traits[j];
+      ref1 = trait.split(':'), trait = ref1[0], ns = ref1[1];
       name = ns ? [ns, trait].join('.') : trait;
       spec = _attributes.getTrait(trait);
       list.push(trait);
@@ -54303,7 +54377,7 @@ Data = (function() {
     if (finals != null) {
       for (key in finals) {
         value = finals[key];
-        constant(key, value);
+        constant(key, value, true);
       }
     }
     if (oldOrig != null) {
@@ -54337,37 +54411,38 @@ Data = (function() {
 module.exports = Attributes;
 
 
+
 },{}],32:[function(require,module,exports){
 var Group, Node,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Node = require('./node');
 
-Group = (function(_super) {
-  __extends(Group, _super);
+Group = (function(superClass) {
+  extend(Group, superClass);
 
   function Group(type, defaults, options, binds, config, attributes) {
     Group.__super__.constructor.call(this, type, defaults, options, binds, config, attributes);
     this.children = [];
     this.on('reindex', (function(_this) {
       return function(event) {
-        var child, _i, _len, _ref, _results;
-        _ref = _this.children;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          child = _ref[_i];
-          _results.push(child.trigger(event));
+        var child, j, len, ref, results;
+        ref = _this.children;
+        results = [];
+        for (j = 0, len = ref.length; j < len; j++) {
+          child = ref[j];
+          results.push(child.trigger(event));
         }
-        return _results;
+        return results;
       };
     })(this));
   }
 
   Group.prototype.add = function(node) {
-    var _ref;
-    if ((_ref = node.parent) != null) {
-      _ref.remove(node);
+    var ref;
+    if ((ref = node.parent) != null) {
+      ref.remove(node);
     }
     node._index(this.children.length, this);
     this.children.push(node);
@@ -54375,8 +54450,8 @@ Group = (function(_super) {
   };
 
   Group.prototype.remove = function(node) {
-    var i, index, _i, _len, _ref, _ref1;
-    if ((_ref = node.children) != null ? _ref.length : void 0) {
+    var i, index, j, len, ref, ref1;
+    if ((ref = node.children) != null ? ref.length : void 0) {
       node.empty();
     }
     index = this.children.indexOf(node);
@@ -54386,9 +54461,9 @@ Group = (function(_super) {
     this.children.splice(index, 1);
     node._index(null);
     node._removed(this);
-    _ref1 = this.children;
-    for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
-      node = _ref1[i];
+    ref1 = this.children;
+    for (i = j = 0, len = ref1.length; j < len; i = ++j) {
+      node = ref1[i];
       if (i >= index) {
         node._index(i);
       }
@@ -54396,10 +54471,10 @@ Group = (function(_super) {
   };
 
   Group.prototype.empty = function() {
-    var children, node, _i, _len;
+    var children, j, len, node;
     children = this.children.slice().reverse();
-    for (_i = 0, _len = children.length; _i < _len; _i++) {
-      node = children[_i];
+    for (j = 0, len = children.length; j < len; j++) {
+      node = children[j];
       this.remove(node);
     }
   };
@@ -54411,12 +54486,13 @@ Group = (function(_super) {
 module.exports = Group;
 
 
+
 },{"./node":36}],33:[function(require,module,exports){
 var Guard;
 
 Guard = (function() {
-  function Guard(limit) {
-    this.limit = limit != null ? limit : 10;
+  function Guard(limit1) {
+    this.limit = limit1 != null ? limit1 : 10;
   }
 
   Guard.prototype.iterate = function(options) {
@@ -54439,6 +54515,7 @@ Guard = (function() {
 module.exports = Guard;
 
 
+
 },{}],34:[function(require,module,exports){
 exports.Attributes = require('./attributes');
 
@@ -54451,9 +54528,10 @@ exports.Model = require('./model');
 exports.Node = require('./node');
 
 
+
 },{"./attributes":31,"./group":32,"./guard":33,"./model":35,"./node":36}],35:[function(require,module,exports){
 var ALL, CLASS, ID, Model, TRAIT, TYPE, cssauron, language,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 cssauron = require('cssauron');
 
@@ -54543,10 +54621,10 @@ Model = (function() {
     })(this);
     prime = (function(_this) {
       return function(node) {
-        var watcher, _i, _len, _ref;
-        _ref = _this.watchers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          watcher = _ref[_i];
+        var i, len, ref, watcher;
+        ref = _this.watchers;
+        for (i = 0, len = ref.length; i < len; i++) {
+          watcher = ref[i];
           watcher.match = watcher.matcher(node);
         }
         return null;
@@ -54554,10 +54632,10 @@ Model = (function() {
     })(this);
     check = (function(_this) {
       return function(node) {
-        var fire, watcher, _i, _len, _ref;
-        _ref = _this.watchers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          watcher = _ref[_i];
+        var fire, i, len, ref, watcher;
+        ref = _this.watchers;
+        for (i = 0, len = ref.length; i < len; i++) {
+          watcher = ref[i];
           fire = watcher.fire || (watcher.fire = watcher.match !== watcher.matcher(node));
           if (fire) {
             _this.lastNode = node;
@@ -54569,10 +54647,10 @@ Model = (function() {
     })(this);
     force = (function(_this) {
       return function(node) {
-        var fire, watcher, _i, _len, _ref;
-        _ref = _this.watchers;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          watcher = _ref[_i];
+        var fire, i, len, ref, watcher;
+        ref = _this.watchers;
+        for (i = 0, len = ref.length; i < len; i++) {
+          watcher = ref[i];
           fire = watcher.fire || (watcher.fire = watcher.matcher(node));
           if (fire) {
             _this.lastNode = node;
@@ -54584,13 +54662,13 @@ Model = (function() {
     })(this);
     this.digest = (function(_this) {
       return function() {
-        var watcher, _i, _len, _ref;
+        var i, len, ref, watcher;
         if (!_this.fire) {
           return false;
         }
-        _ref = _this.watchers.slice();
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          watcher = _ref[_i];
+        ref = _this.watchers.slice();
+        for (i = 0, len = ref.length; i < len; i++) {
+          watcher = ref[i];
           if (!watcher.fire) {
             continue;
           }
@@ -54603,7 +54681,7 @@ Model = (function() {
     })(this);
     update = (function(_this) {
       return function(event, node, init) {
-        var classes, id, klass, primed, _id, _klass, _ref, _ref1;
+        var _id, _klass, classes, id, klass, primed, ref, ref1;
         _id = init || event.changed['node.id'];
         _klass = init || event.changed['node.classes'];
         primed = false;
@@ -54621,9 +54699,9 @@ Model = (function() {
           }
         }
         if (_klass) {
-          classes = (_ref = node.get('node.classes')) != null ? _ref : [];
+          classes = (ref = node.get('node.classes')) != null ? ref : [];
           klass = classes.join(',');
-          if (klass !== ((_ref1 = node.classes) != null ? _ref1.klass : void 0)) {
+          if (klass !== ((ref1 = node.classes) != null ? ref1.klass : void 0)) {
             classes = classes.slice();
             if (!(init || primed)) {
               prime(node);
@@ -54644,25 +54722,25 @@ Model = (function() {
       };
     })(this);
     addTags = function(sets, tags, node) {
-      var k, list, _i, _len, _ref;
+      var i, k, len, list, ref;
       if (tags == null) {
         return;
       }
-      for (_i = 0, _len = tags.length; _i < _len; _i++) {
-        k = tags[_i];
-        list = (_ref = sets[k]) != null ? _ref : [];
+      for (i = 0, len = tags.length; i < len; i++) {
+        k = tags[i];
+        list = (ref = sets[k]) != null ? ref : [];
         list.push(node);
         sets[k] = list;
       }
       return null;
     };
     removeTags = function(sets, tags, node) {
-      var index, k, list, _i, _len;
+      var i, index, k, len, list;
       if (tags == null) {
         return;
       }
-      for (_i = 0, _len = tags.length; _i < _len; _i++) {
-        k = tags[_i];
+      for (i = 0, len = tags.length; i < len; i++) {
+        k = tags[i];
         list = sets[k];
         index = list.indexOf(node);
         if (index >= 0) {
@@ -54675,17 +54753,17 @@ Model = (function() {
       return null;
     };
     hashTags = function(array) {
-      var hash, klass, _i, _len, _results;
+      var hash, i, klass, len, results;
       if (!(array.length > 0)) {
         return;
       }
       hash = array.hash = {};
-      _results = [];
-      for (_i = 0, _len = array.length; _i < _len; _i++) {
-        klass = array[_i];
-        _results.push(hash[klass] = true);
+      results = [];
+      for (i = 0, len = array.length; i < len; i++) {
+        klass = array[i];
+        results.push(hash[klass] = true);
       }
-      return _results;
+      return results;
     };
     unhashTags = function(array) {
       return delete array.hash;
@@ -54764,26 +54842,26 @@ Model = (function() {
   }
 
   Model.prototype.filter = function(nodes, selector) {
-    var matcher, node, _i, _len, _results;
+    var i, len, matcher, node, results;
     matcher = this._matcher(selector);
-    _results = [];
-    for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-      node = nodes[_i];
+    results = [];
+    for (i = 0, len = nodes.length; i < len; i++) {
+      node = nodes[i];
       if (matcher(node)) {
-        _results.push(node);
+        results.push(node);
       }
     }
-    return _results;
+    return results;
   };
 
   Model.prototype.ancestry = function(nodes, parents) {
-    var node, out, parent, _i, _len;
+    var i, len, node, out, parent;
     out = [];
-    for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-      node = nodes[_i];
+    for (i = 0, len = nodes.length; i < len; i++) {
+      node = nodes[i];
       parent = node.parent;
       while (parent != null) {
-        if (__indexOf.call(parents, parent) >= 0) {
+        if (indexOf.call(parents, parent) >= 0) {
           out.push(node);
           break;
         }
@@ -54834,28 +54912,28 @@ Model = (function() {
   };
 
   Model.prototype._simplify = function(s) {
-    var all, found, id, klass, trait, type, _ref, _ref1, _ref2, _ref3;
+    var all, found, id, klass, ref, ref1, ref2, ref3, trait, type;
     s = s.replace(/^\s+/, '');
     s = s.replace(/\s+$/, '');
     found = all = s === ALL;
     if (!found) {
-      found = id = (_ref = s.match(ID)) != null ? _ref[1] : void 0;
+      found = id = (ref = s.match(ID)) != null ? ref[1] : void 0;
     }
     if (!found) {
-      found = klass = (_ref1 = s.match(CLASS)) != null ? _ref1[1] : void 0;
+      found = klass = (ref1 = s.match(CLASS)) != null ? ref1[1] : void 0;
     }
     if (!found) {
-      found = trait = (_ref2 = s.match(TRAIT)) != null ? _ref2[1] : void 0;
+      found = trait = (ref2 = s.match(TRAIT)) != null ? ref2[1] : void 0;
     }
     if (!found) {
-      found = type = (_ref3 = s.match(TYPE)) != null ? _ref3[0] : void 0;
+      found = type = (ref3 = s.match(TYPE)) != null ? ref3[0] : void 0;
     }
     return [all, id, klass, trait, type];
   };
 
   Model.prototype._matcher = function(s) {
-    var all, id, klass, trait, type, _ref;
-    _ref = this._simplify(s), all = _ref[0], id = _ref[1], klass = _ref[2], trait = _ref[3], type = _ref[4];
+    var all, id, klass, ref, trait, type;
+    ref = this._simplify(s), all = ref[0], id = ref[1], klass = ref[2], trait = ref[3], type = ref[4];
     if (all) {
       return (function(node) {
         return true;
@@ -54868,14 +54946,14 @@ Model = (function() {
     }
     if (klass) {
       return (function(node) {
-        var _ref1, _ref2;
-        return (_ref1 = node.classes) != null ? (_ref2 = _ref1.hash) != null ? _ref2[klass] : void 0 : void 0;
+        var ref1, ref2;
+        return (ref1 = node.classes) != null ? (ref2 = ref1.hash) != null ? ref2[klass] : void 0 : void 0;
       });
     }
     if (trait) {
       return (function(node) {
-        var _ref1, _ref2;
-        return (_ref1 = node.traits) != null ? (_ref2 = _ref1.hash) != null ? _ref2[trait] : void 0 : void 0;
+        var ref1, ref2;
+        return (ref1 = node.traits) != null ? (ref2 = ref1.hash) != null ? ref2[trait] : void 0 : void 0;
       });
     }
     if (type) {
@@ -54887,22 +54965,22 @@ Model = (function() {
   };
 
   Model.prototype._select = function(s) {
-    var all, id, klass, trait, type, _ref, _ref1, _ref2, _ref3, _ref4;
-    _ref = this._simplify(s), all = _ref[0], id = _ref[1], klass = _ref[2], trait = _ref[3], type = _ref[4];
+    var all, id, klass, ref, ref1, ref2, ref3, ref4, trait, type;
+    ref = this._simplify(s), all = ref[0], id = ref[1], klass = ref[2], trait = ref[3], type = ref[4];
     if (all) {
       return this.nodes;
     }
     if (id) {
-      return (_ref1 = this.ids[id]) != null ? _ref1 : [];
+      return (ref1 = this.ids[id]) != null ? ref1 : [];
     }
     if (klass) {
-      return (_ref2 = this.classes[klass]) != null ? _ref2 : [];
+      return (ref2 = this.classes[klass]) != null ? ref2 : [];
     }
     if (trait) {
-      return (_ref3 = this.traits[trait]) != null ? _ref3 : [];
+      return (ref3 = this.traits[trait]) != null ? ref3 : [];
     }
     if (type) {
-      return (_ref4 = this.types[type]) != null ? _ref4 : [];
+      return (ref4 = this.types[type]) != null ? ref4 : [];
     }
     return this.filter(this.nodes, s);
   };
@@ -54922,7 +55000,8 @@ Model = (function() {
 module.exports = Model;
 
 
-},{"cssauron":16}],36:[function(require,module,exports){
+
+},{"cssauron":2}],36:[function(require,module,exports){
 var Binder, Node, Util, nodeIndex;
 
 Util = require('../util');
@@ -54941,19 +55020,19 @@ Node = (function() {
   }
 
   Node.prototype.configure = function(config, attributes) {
-    var finals, freeform, props, traits, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7;
+    var finals, freeform, props, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, traits;
     traits = config.traits, props = config.props, finals = config.finals, freeform = config.freeform;
     if (traits == null) {
-      traits = (_ref = (_ref1 = this._config) != null ? _ref1.traits : void 0) != null ? _ref : [];
+      traits = (ref = (ref1 = this._config) != null ? ref1.traits : void 0) != null ? ref : [];
     }
     if (props == null) {
-      props = (_ref2 = (_ref3 = this._config) != null ? _ref3.props : void 0) != null ? _ref2 : {};
+      props = (ref2 = (ref3 = this._config) != null ? ref3.props : void 0) != null ? ref2 : {};
     }
     if (finals == null) {
-      finals = (_ref4 = (_ref5 = this._config) != null ? _ref5.finals : void 0) != null ? _ref4 : {};
+      finals = (ref4 = (ref5 = this._config) != null ? ref5.finals : void 0) != null ? ref4 : {};
     }
     if (freeform == null) {
-      freeform = (_ref6 = (_ref7 = this._config) != null ? _ref7.freeform : void 0) != null ? _ref6 : false;
+      freeform = (ref6 = (ref7 = this._config) != null ? ref7.freeform : void 0) != null ? ref6 : false;
     }
     this._config = {
       traits: traits,
@@ -55000,12 +55079,12 @@ Node = (function() {
   };
 
   Node.prototype._index = function(index, parent) {
-    var path, _ref;
+    var path, ref;
     if (parent == null) {
       parent = this.parent;
     }
     this.index = index;
-    this.path = path = index != null ? ((_ref = parent != null ? parent.path : void 0) != null ? _ref : []).concat([index]) : null;
+    this.path = path = index != null ? ((ref = parent != null ? parent.path : void 0) != null ? ref : []).concat([index]) : null;
     this.order = path != null ? this._encode(path) : Infinity;
     if (this.root != null) {
       return this.trigger({
@@ -55015,7 +55094,7 @@ Node = (function() {
   };
 
   Node.prototype._encode = function(path) {
-    var a, b, f, g, index, k, lerp, map, _i, _len, _ref;
+    var a, b, f, g, i, index, k, len, lerp, map, ref;
     k = 3;
     map = function(x) {
       return k / (x + k);
@@ -55025,22 +55104,22 @@ Node = (function() {
     };
     a = 1 + 1 / k;
     b = 0;
-    for (_i = 0, _len = path.length; _i < _len; _i++) {
-      index = path[_i];
+    for (i = 0, len = path.length; i < len; i++) {
+      index = path[i];
       f = map(index + 1);
       g = map(index + 2);
-      _ref = [lerp(f), lerp(g)], a = _ref[0], b = _ref[1];
+      ref = [lerp(f), lerp(g)], a = ref[0], b = ref[1];
     }
     return a;
   };
 
   Node.prototype.toString = function() {
-    var count, id, tag, _id, _ref, _ref1, _ref2;
-    _id = (_ref = this.id) != null ? _ref : this._id;
-    tag = (_ref1 = this.type) != null ? _ref1 : 'node';
+    var _id, count, id, ref, ref1, ref2, tag;
+    _id = (ref = this.id) != null ? ref : this._id;
+    tag = (ref1 = this.type) != null ? ref1 : 'node';
     id = tag;
     id += "#" + _id;
-    if ((_ref2 = this.classes) != null ? _ref2.length : void 0) {
+    if ((ref2 = this.classes) != null ? ref2.length : void 0) {
       id += "." + (this.classes.join('.'));
     }
     if (this.children != null) {
@@ -55055,7 +55134,7 @@ Node = (function() {
   };
 
   Node.prototype.toMarkup = function(selector, indent) {
-    var attr, child, children, close, expr, k, open, orig, props, recurse, tag, v, _ref, _ref1, _ref2, _ref3;
+    var attr, child, children, close, expr, k, open, orig, props, recurse, ref, ref1, ref2, ref3, tag, v;
     if (selector == null) {
       selector = null;
     }
@@ -55063,39 +55142,39 @@ Node = (function() {
       indent = '';
     }
     if (selector && typeof selector !== 'function') {
-      selector = (_ref = (_ref1 = this.root) != null ? _ref1.model._matcher(selector) : void 0) != null ? _ref : function() {
+      selector = (ref = (ref1 = this.root) != null ? ref1.model._matcher(selector) : void 0) != null ? ref : function() {
         return true;
       };
     }
-    tag = (_ref2 = this.type) != null ? _ref2 : 'node';
+    tag = (ref2 = this.type) != null ? ref2 : 'node';
     expr = this.expr;
     orig = {
       id: this._id
     };
-    _ref3 = typeof this.orig === "function" ? this.orig() : void 0;
-    for (k in _ref3) {
-      v = _ref3[k];
+    ref3 = typeof this.orig === "function" ? this.orig() : void 0;
+    for (k in ref3) {
+      v = ref3[k];
       orig[k] = v;
     }
     props = (function() {
-      var _results;
-      _results = [];
+      var results;
+      results = [];
       for (k in orig) {
         v = orig[k];
         if (!this.expr[k]) {
-          _results.push(Util.Pretty.JSX.prop(k, v));
+          results.push(Util.Pretty.JSX.prop(k, v));
         }
       }
-      return _results;
+      return results;
     }).call(this);
     expr = (function() {
-      var _results;
-      _results = [];
+      var results;
+      results = [];
       for (k in expr) {
         v = expr[k];
-        _results.push(Util.Pretty.JSX.bind(k, v));
+        results.push(Util.Pretty.JSX.bind(k, v));
       }
-      return _results;
+      return results;
     })();
     attr = [''];
     if (props.length) {
@@ -55108,8 +55187,8 @@ Node = (function() {
     child = indent;
     recurse = (function(_this) {
       return function() {
-        var children, _ref4;
-        if (!((_ref4 = _this.children) != null ? _ref4.length : void 0)) {
+        var children, ref4;
+        if (!((ref4 = _this.children) != null ? ref4.length : void 0)) {
           return '';
         }
         return children = _this.children.map(function(x) {
@@ -55135,7 +55214,7 @@ Node = (function() {
       }
       return indent + open + children + close;
     } else {
-      return "" + indent + "<" + tag + attr + " />";
+      return indent + "<" + tag + attr + " />";
     }
   };
 
@@ -55154,7 +55233,8 @@ Binder.apply(Node.prototype);
 module.exports = Node;
 
 
-},{"../util":172,"../util/binder":168}],37:[function(require,module,exports){
+
+},{"../util":173,"../util/binder":169}],37:[function(require,module,exports){
 var Classes;
 
 Classes = {
@@ -55164,17 +55244,18 @@ Classes = {
 module.exports = Classes;
 
 
+
 },{"./dom":38}],38:[function(require,module,exports){
 var DOM, Overlay, VDOM,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Overlay = require('./overlay');
 
 VDOM = require('../util').VDOM;
 
-DOM = (function(_super) {
-  __extends(DOM, _super);
+DOM = (function(superClass) {
+  extend(DOM, superClass);
 
   function DOM() {
     return DOM.__super__.constructor.apply(this, arguments);
@@ -55213,11 +55294,11 @@ DOM = (function(_super) {
   };
 
   DOM.prototype.render = function(el) {
-    var last, naked, node, overlay, parent, _ref;
+    var last, naked, node, overlay, parent, ref;
     if (!this.overlay) {
       this.mount();
     }
-    if ((_ref = typeof el) === 'string' || _ref === 'number') {
+    if ((ref = typeof el) === 'string' || ref === 'number') {
       el = this.el('div', null, el);
     }
     if (el instanceof Array) {
@@ -55245,7 +55326,8 @@ DOM = (function(_super) {
 module.exports = DOM;
 
 
-},{"../util":172,"./overlay":41}],39:[function(require,module,exports){
+
+},{"../util":173,"./overlay":41}],39:[function(require,module,exports){
 var OverlayFactory;
 
 OverlayFactory = (function() {
@@ -55288,12 +55370,14 @@ OverlayFactory = (function() {
 module.exports = OverlayFactory;
 
 
+
 },{}],40:[function(require,module,exports){
 exports.Factory = require('./factory');
 
 exports.Classes = require('./classes');
 
 exports.Overlay = require('./overlay');
+
 
 
 },{"./classes":37,"./factory":39,"./overlay":41}],41:[function(require,module,exports){
@@ -55314,6 +55398,7 @@ Overlay = (function() {
 })();
 
 module.exports = Overlay;
+
 
 
 },{}],42:[function(require,module,exports){
@@ -55356,7 +55441,8 @@ PrimitiveFactory = (function() {
 module.exports = PrimitiveFactory;
 
 
-},{"../util":172}],43:[function(require,module,exports){
+
+},{"../util":173}],43:[function(require,module,exports){
 exports.Factory = require('./factory');
 
 exports.Primitive = require('./primitive');
@@ -55364,9 +55450,10 @@ exports.Primitive = require('./primitive');
 exports.Types = require('./types');
 
 
+
 },{"./factory":42,"./primitive":44,"./types":72}],44:[function(require,module,exports){
 var Binder, Model, Primitive,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Model = require('../model');
 
@@ -55387,8 +55474,8 @@ Primitive = (function() {
 
   Primitive.freeform = false;
 
-  function Primitive(node, _context, helpers) {
-    this.node = node;
+  function Primitive(node1, _context, helpers) {
+    this.node = node1;
     this._context = _context;
     this._renderables = this._context.renderables;
     this._attributes = this._context.attributes;
@@ -55463,26 +55550,26 @@ Primitive = (function() {
   };
 
   Primitive.prototype._added = function() {
-    var e, _ref, _ref1, _ref2;
-    this._parent = (_ref = this.node.parent) != null ? _ref.controller : void 0;
-    this._root = (_ref1 = this.node.root) != null ? _ref1.controller : void 0;
-    this.node.clock = (_ref2 = this._inherit('clock')) != null ? _ref2 : this._root;
+    var e, error, error1, ref, ref1, ref2;
+    this._parent = (ref = this.node.parent) != null ? ref.controller : void 0;
+    this._root = (ref1 = this.node.root) != null ? ref1.controller : void 0;
+    this.node.clock = (ref2 = this._inherit('clock')) != null ? ref2 : this._root;
     try {
       try {
         this.make();
         this.refresh();
         return this.made();
-      } catch (_error) {
-        e = _error;
+      } catch (error) {
+        e = error;
         this.node.print('warn');
         console.error(e);
         throw e;
       }
-    } catch (_error) {
-      e = _error;
+    } catch (error1) {
+      e = error1;
       try {
         return this._removed();
-      } catch (_error) {}
+      } catch (undefined) {}
     }
   };
 
@@ -55500,13 +55587,13 @@ Primitive = (function() {
   };
 
   Primitive.prototype._listen = function(object, type, method, self) {
-    var o, _i, _len;
+    var i, len, o;
     if (self == null) {
       self = this;
     }
     if (object instanceof Array) {
-      for (_i = 0, _len = object.length; _i < _len; _i++) {
-        o = object[_i];
+      for (i = 0, len = object.length; i < len; i++) {
+        o = object[i];
         return this.__listen(o, type, method, self);
       }
     }
@@ -55531,33 +55618,33 @@ Primitive = (function() {
   };
 
   Primitive.prototype._unlisten = function() {
-    var handler, object, type, _i, _len, _ref, _ref1;
+    var handler, i, len, object, ref, ref1, type;
     if (!this._handlers.listen.length) {
       return;
     }
-    _ref = this._handlers.listen;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      _ref1 = _ref[_i], object = _ref1[0], type = _ref1[1], handler = _ref1[2];
+    ref = this._handlers.listen;
+    for (i = 0, len = ref.length; i < len; i++) {
+      ref1 = ref[i], object = ref1[0], type = ref1[1], handler = ref1[2];
       object.off(type, handler);
     }
     return this._handlers.listen = [];
   };
 
   Primitive.prototype._inherit = function(trait) {
-    var cached, _ref;
+    var cached, ref;
     cached = this._handlers.inherit[trait];
     if (cached !== void 0) {
       return cached;
     }
-    return this._handlers.inherit[trait] = (_ref = this._parent) != null ? _ref._find(trait != null ? trait : null) : void 0;
+    return this._handlers.inherit[trait] = (ref = this._parent) != null ? ref._find(trait != null ? trait : null) : void 0;
   };
 
   Primitive.prototype._find = function(trait) {
-    var _ref;
+    var ref;
     if (this.is(trait)) {
       return this;
     }
-    return (_ref = this._parent) != null ? _ref._find(trait) : void 0;
+    return (ref = this._parent) != null ? ref._find(trait) : void 0;
   };
 
   Primitive.prototype._uninherit = function() {
@@ -55579,7 +55666,7 @@ Primitive = (function() {
       multiple = false;
     }
     filter = function(node) {
-      if ((node != null) && __indexOf.call(node.traits, trait) >= 0) {
+      if ((node != null) && indexOf.call(node.traits, trait) >= 0) {
         return node.controller;
       }
     };
@@ -55587,10 +55674,10 @@ Primitive = (function() {
       return node != null ? node.controller : void 0;
     };
     flatten = function(list) {
-      var out, sub, _i, _len;
+      var i, len, out, sub;
       out = [];
-      for (_i = 0, _len = list.length; _i < _len; _i++) {
-        sub = list[_i];
+      for (i = 0, len = list.length; i < len; i++) {
+        sub = list[i];
         if (sub instanceof Array) {
           out = out.concat(sub);
         } else {
@@ -55694,7 +55781,7 @@ Primitive = (function() {
     }
     if (!optional) {
       console.warn(this.node.toMarkup());
-      throw new Error("" + (this.node.toString()) + " - Could not find " + trait + " `" + selector + "`");
+      throw new Error((this.node.toString()) + " - Could not find " + trait + " `" + selector + "`");
     }
     if (multiple) {
       return [];
@@ -55704,13 +55791,13 @@ Primitive = (function() {
   };
 
   Primitive.prototype._unattach = function() {
-    var watcher, _i, _len, _ref;
+    var i, len, ref, watcher;
     if (!this._handlers.watch.length) {
       return;
     }
-    _ref = this._handlers.watch;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      watcher = _ref[_i];
+    ref = this._handlers.watch;
+    for (i = 0, len = ref.length; i < len; i++) {
+      watcher = ref[i];
       if (watcher != null) {
         watcher.unwatch();
       }
@@ -55724,13 +55811,13 @@ Primitive = (function() {
   };
 
   Primitive.prototype._uncompute = function() {
-    var key, _i, _len, _ref;
+    var i, key, len, ref;
     if (!this._handlers.compute.length) {
       return;
     }
-    _ref = this._handlers.compute;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      key = _ref[_i];
+    ref = this._handlers.compute;
+    for (i = 0, len = ref.length; i < len; i++) {
+      key = ref[i];
       this.node.unbind(key, true);
     }
     return this._handlers.compute = [];
@@ -55747,15 +55834,16 @@ Binder.apply(Primitive.prototype);
 module.exports = Primitive;
 
 
-},{"../model":34,"../util/binder":168}],45:[function(require,module,exports){
+
+},{"../model":34,"../util/binder":169}],45:[function(require,module,exports){
 var Group, Parent,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('./parent');
 
-Group = (function(_super) {
-  __extends(Group, _super);
+Group = (function(superClass) {
+  extend(Group, superClass);
 
   function Group() {
     return Group.__super__.constructor.apply(this, arguments);
@@ -55780,16 +55868,17 @@ Group = (function(_super) {
 module.exports = Group;
 
 
+
 },{"./parent":47}],46:[function(require,module,exports){
 var Inherit, Parent,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Parent = require('./parent');
 
-Inherit = (function(_super) {
-  __extends(Inherit, _super);
+Inherit = (function(superClass) {
+  extend(Inherit, superClass);
 
   function Inherit() {
     return Inherit.__super__.constructor.apply(this, arguments);
@@ -55811,7 +55900,7 @@ Inherit = (function(_super) {
   };
 
   Inherit.prototype._find = function(trait) {
-    if (this.bind.source && (__indexOf.call(this.props.traits, trait) >= 0)) {
+    if (this.bind.source && (indexOf.call(this.props.traits, trait) >= 0)) {
       return this.bind.source._inherit(trait);
     }
     return Inherit.__super__._find.apply(this, arguments);
@@ -55824,15 +55913,16 @@ Inherit = (function(_super) {
 module.exports = Inherit;
 
 
+
 },{"./parent":47}],47:[function(require,module,exports){
 var Parent, Primitive,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
-Parent = (function(_super) {
-  __extends(Parent, _super);
+Parent = (function(superClass) {
+  extend(Parent, superClass);
 
   function Parent() {
     return Parent.__super__.constructor.apply(this, arguments);
@@ -55849,17 +55939,18 @@ Parent = (function(_super) {
 module.exports = Parent;
 
 
+
 },{"../../primitive":44}],48:[function(require,module,exports){
 var Parent, Root, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('./parent');
 
 Util = require('../../../util');
 
-Root = (function(_super) {
-  __extends(Root, _super);
+Root = (function(superClass) {
+  extend(Root, superClass);
 
   function Root() {
     return Root.__super__.constructor.apply(this, arguments);
@@ -55907,25 +55998,25 @@ Root = (function(_super) {
   };
 
   Root.prototype.adopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this._context.scene.add(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this._context.scene.add(object));
     }
-    return _results;
+    return results;
   };
 
   Root.prototype.unadopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this._context.scene.remove(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this._context.scene.remove(object));
     }
-    return _results;
+    return results;
   };
 
   Root.prototype.select = function(selector) {
@@ -55983,8 +56074,8 @@ Root = (function(_super) {
   };
 
   Root.prototype.setCamera = function() {
-    var camera, _ref;
-    camera = (_ref = this.select(this.props.camera)[0]) != null ? _ref.controller : void 0;
+    var camera, ref;
+    camera = (ref = this.select(this.props.camera)[0]) != null ? ref.controller : void 0;
     if (this.camera !== camera) {
       this.camera = camera;
       return this.trigger({
@@ -55994,8 +56085,8 @@ Root = (function(_super) {
   };
 
   Root.prototype.getCamera = function() {
-    var _ref, _ref1;
-    return (_ref = (_ref1 = this.camera) != null ? _ref1.getCamera() : void 0) != null ? _ref : this._context.defaultCamera;
+    var ref, ref1;
+    return (ref = (ref1 = this.camera) != null ? ref1.getCamera() : void 0) != null ? ref : this._context.defaultCamera;
   };
 
   Root.prototype.getTime = function() {
@@ -56019,17 +56110,18 @@ Root = (function(_super) {
 module.exports = Root;
 
 
-},{"../../../util":172,"./parent":47}],49:[function(require,module,exports){
+
+},{"../../../util":173,"./parent":47}],49:[function(require,module,exports){
 var Primitive, Source, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Source = (function(_super) {
-  __extends(Source, _super);
+Source = (function(superClass) {
+  extend(Source, superClass);
 
   function Source() {
     return Source.__super__.constructor.apply(this, arguments);
@@ -56079,17 +56171,18 @@ Source = (function(_super) {
 module.exports = Source;
 
 
-},{"../../../util":172,"../../primitive":44}],50:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],50:[function(require,module,exports){
 var Parent, Unit, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('./parent');
 
 Util = require('../../../util');
 
-Unit = (function(_super) {
-  __extends(Unit, _super);
+Unit = (function(superClass) {
+  extend(Unit, superClass);
 
   function Unit() {
     return Unit.__super__.constructor.apply(this, arguments);
@@ -56120,17 +56213,18 @@ Unit = (function(_super) {
 module.exports = Unit;
 
 
-},{"../../../util":172,"./parent":47}],51:[function(require,module,exports){
+
+},{"../../../util":173,"./parent":47}],51:[function(require,module,exports){
 var Camera, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Camera = (function(_super) {
-  __extends(Camera, _super);
+Camera = (function(superClass) {
+  extend(Camera, superClass);
 
   function Camera() {
     return Camera.__super__.constructor.apply(this, arguments);
@@ -56155,9 +56249,9 @@ Camera = (function(_super) {
   };
 
   Camera.prototype.change = function(changed, touched, init) {
-    var aspect, fov, lookAt, position, quaternion, rotation, up, _ref;
+    var aspect, fov, lookAt, position, quaternion, ref, rotation, up;
     if (changed['camera.position'] || changed['camera.quaternion'] || changed['camera.rotation'] || changed['camera.lookAt'] || changed['camera.up'] || changed['camera.fov'] || init) {
-      _ref = this.props, position = _ref.position, quaternion = _ref.quaternion, rotation = _ref.rotation, lookAt = _ref.lookAt, up = _ref.up, fov = _ref.fov, aspect = _ref.aspect;
+      ref = this.props, position = ref.position, quaternion = ref.quaternion, rotation = ref.rotation, lookAt = ref.lookAt, up = ref.up, fov = ref.fov, aspect = ref.aspect;
       if (position != null) {
         this.camera.position.copy(position);
       }
@@ -56193,7 +56287,8 @@ Camera = (function(_super) {
 module.exports = Camera;
 
 
-},{"../../../util":172,"../../primitive":44}],52:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],52:[function(require,module,exports){
 var Classes;
 
 Classes = {
@@ -56236,6 +56331,7 @@ Classes = {
   join: require('./operator/join'),
   lerp: require('./operator/lerp'),
   memo: require('./operator/memo'),
+  readback: require('./operator/readback'),
   resample: require('./operator/resample'),
   repeat: require('./operator/repeat'),
   swizzle: require('./operator/swizzle'),
@@ -56264,17 +56360,18 @@ Classes = {
 module.exports = Classes;
 
 
-},{"./base/group":45,"./base/inherit":46,"./base/root":48,"./base/unit":50,"./camera/camera":51,"./data/area":53,"./data/array":54,"./data/interval":57,"./data/matrix":58,"./data/scale":59,"./data/volume":60,"./data/voxel":61,"./draw/axis":62,"./draw/face":63,"./draw/grid":64,"./draw/line":65,"./draw/point":66,"./draw/strip":67,"./draw/surface":68,"./draw/ticks":69,"./draw/vector":70,"./operator/grow":73,"./operator/join":74,"./operator/lerp":75,"./operator/memo":76,"./operator/repeat":78,"./operator/resample":79,"./operator/slice":80,"./operator/split":81,"./operator/spread":82,"./operator/swizzle":83,"./operator/transpose":84,"./overlay/dom":85,"./overlay/html":86,"./present/move":87,"./present/play":88,"./present/present":89,"./present/reveal":90,"./present/slide":91,"./present/step":92,"./rtt/compose":95,"./rtt/rtt":96,"./shader/shader":97,"./text/format":98,"./text/label":99,"./text/retext":100,"./text/text":101,"./time/clock":102,"./time/now":103,"./transform/fragment":105,"./transform/layer":106,"./transform/mask":107,"./transform/transform3":109,"./transform/transform4":110,"./transform/vertex":111,"./view/cartesian":113,"./view/cartesian4":114,"./view/polar":115,"./view/spherical":116,"./view/stereographic":117,"./view/stereographic4":118,"./view/view":119}],53:[function(require,module,exports){
+
+},{"./base/group":45,"./base/inherit":46,"./base/root":48,"./base/unit":50,"./camera/camera":51,"./data/area":53,"./data/array":54,"./data/interval":57,"./data/matrix":58,"./data/scale":59,"./data/volume":60,"./data/voxel":61,"./draw/axis":62,"./draw/face":63,"./draw/grid":64,"./draw/line":65,"./draw/point":66,"./draw/strip":67,"./draw/surface":68,"./draw/ticks":69,"./draw/vector":70,"./operator/grow":73,"./operator/join":74,"./operator/lerp":75,"./operator/memo":76,"./operator/readback":78,"./operator/repeat":79,"./operator/resample":80,"./operator/slice":81,"./operator/split":82,"./operator/spread":83,"./operator/swizzle":84,"./operator/transpose":85,"./overlay/dom":86,"./overlay/html":87,"./present/move":88,"./present/play":89,"./present/present":90,"./present/reveal":91,"./present/slide":92,"./present/step":93,"./rtt/compose":96,"./rtt/rtt":97,"./shader/shader":98,"./text/format":99,"./text/label":100,"./text/retext":101,"./text/text":102,"./time/clock":103,"./time/now":104,"./transform/fragment":106,"./transform/layer":107,"./transform/mask":108,"./transform/transform3":110,"./transform/transform4":111,"./transform/vertex":112,"./view/cartesian":114,"./view/cartesian4":115,"./view/polar":116,"./view/spherical":117,"./view/stereographic":118,"./view/stereographic4":119,"./view/view":120}],53:[function(require,module,exports){
 var Area, Matrix, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Matrix = require('./matrix');
 
 Util = require('../../../util');
 
-Area = (function(_super) {
-  __extends(Area, _super);
+Area = (function(superClass) {
+  extend(Area, superClass);
 
   function Area() {
     return Area.__super__.constructor.apply(this, arguments);
@@ -56362,17 +56459,18 @@ Area = (function(_super) {
 module.exports = Area;
 
 
-},{"../../../util":172,"./matrix":58}],54:[function(require,module,exports){
+
+},{"../../../util":173,"./matrix":58}],54:[function(require,module,exports){
 var Array_, Buffer, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Buffer = require('./buffer');
 
 Util = require('../../../util');
 
-Array_ = (function(_super) {
-  __extends(Array_, _super);
+Array_ = (function(superClass) {
+  extend(Array_, superClass);
 
   function Array_() {
     return Array_.__super__.constructor.apply(this, arguments);
@@ -56437,11 +56535,11 @@ Array_ = (function(_super) {
   };
 
   Array_.prototype.make = function() {
-    var channels, data, dims, history, items, length, magFilter, minFilter, reserve, space, type, _base, _ref, _ref1, _ref2;
+    var channels, data, dims, history, items, length, magFilter, minFilter, ref, ref1, ref2, reserve, space, type;
     Array_.__super__.make.apply(this, arguments);
-    minFilter = (_ref = this.minFilter) != null ? _ref : this.props.minFilter;
-    magFilter = (_ref1 = this.magFilter) != null ? _ref1 : this.props.magFilter;
-    type = (_ref2 = this.type) != null ? _ref2 : this.props.type;
+    minFilter = (ref = this.minFilter) != null ? ref : this.props.minFilter;
+    magFilter = (ref1 = this.magFilter) != null ? ref1 : this.props.magFilter;
+    type = (ref2 = this.type) != null ? ref2 : this.props.type;
     length = this.props.length;
     history = this.props.history;
     reserve = this.props.bufferLength;
@@ -56459,9 +56557,6 @@ Array_ = (function(_super) {
     space = this.space;
     space.length = Math.max(reserve, dims.width || 1);
     space.history = history;
-    if ((_base = this.spec).width == null) {
-      _base.width = 1;
-    }
     return this.buffer = this._renderables.make(this.storage, {
       length: space.length,
       history: space.history,
@@ -56523,7 +56618,7 @@ Array_ = (function(_super) {
     filled = this.buffer.getFilled();
     this.syncBuffer((function(_this) {
       return function(abort) {
-        var dims, length, _base;
+        var base, dims, length, width;
         if (data != null) {
           dims = Util.Data.getDimensions(data, _this.spec);
           if (dims.width > space.length) {
@@ -56532,12 +56627,13 @@ Array_ = (function(_super) {
           }
           used.length = dims.width;
           _this.buffer.setActive(used.length);
-          if (typeof (_base = _this.buffer.callback).rebind === "function") {
-            _base.rebind(data);
+          if (typeof (base = _this.buffer.callback).rebind === "function") {
+            base.rebind(data);
           }
           return _this.buffer.update();
         } else {
-          _this.buffer.setActive(_this.spec.width);
+          width = _this.spec.width || 1;
+          _this.buffer.setActive(width);
           length = _this.buffer.update();
           return used.length = length;
         }
@@ -56557,17 +56653,18 @@ Array_ = (function(_super) {
 module.exports = Array_;
 
 
-},{"../../../util":172,"./buffer":55}],55:[function(require,module,exports){
+
+},{"../../../util":173,"./buffer":55}],55:[function(require,module,exports){
 var Buffer, Data, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Data = require('./data');
 
 Util = require('../../../util');
 
-Buffer = (function(_super) {
-  __extends(Buffer, _super);
+Buffer = (function(superClass) {
+  extend(Buffer, superClass);
 
   function Buffer() {
     return Buffer.__super__.constructor.apply(this, arguments);
@@ -56599,8 +56696,8 @@ Buffer = (function(_super) {
   };
 
   Buffer.prototype.emitter = function() {
-    var channels, items, _ref;
-    _ref = this.props, channels = _ref.channels, items = _ref.items;
+    var channels, items, ref;
+    ref = this.props, channels = ref.channels, items = ref.items;
     return Buffer.__super__.emitter.call(this, channels, items);
   };
 
@@ -56613,11 +56710,11 @@ Buffer = (function(_super) {
   };
 
   Buffer.prototype.syncBuffer = function(callback) {
-    var abort, delta, filled, fps, frame, frames, hurry, i, limit, live, observe, realtime, slack, speed, step, stop, time, _i, _ref, _results;
+    var abort, delta, filled, fps, frame, frames, hurry, i, j, limit, live, observe, realtime, ref, ref1, results, slack, speed, step, stop, time;
     if (!this.buffer) {
       return;
     }
-    _ref = this.props, live = _ref.live, fps = _ref.fps, hurry = _ref.hurry, limit = _ref.limit, realtime = _ref.realtime, observe = _ref.observe;
+    ref = this.props, live = ref.live, fps = ref.fps, hurry = ref.hurry, limit = ref.limit, realtime = ref.realtime, observe = ref.observe;
     filled = this.buffer.getFilled();
     if (!(!filled || live)) {
       return;
@@ -56640,17 +56737,17 @@ Buffer = (function(_super) {
       abort = function() {
         return stop = true;
       };
-      _results = [];
-      for (i = _i = 0; 0 <= frames ? _i < frames : _i > frames; i = 0 <= frames ? ++_i : --_i) {
+      results = [];
+      for (i = j = 0, ref1 = frames; 0 <= ref1 ? j < ref1 : j > ref1; i = 0 <= ref1 ? ++j : --j) {
         this.bufferTime += delta;
         this.bufferClock += step;
         if (stop) {
           break;
         }
         callback(abort, this.bufferFrames++, i, frames);
-        _results.push(this.bufferSlack -= frame);
+        results.push(this.bufferSlack -= frame);
       }
-      return _results;
+      return results;
     } else {
       this.bufferTime = time.time;
       this.bufferDelta = time.delta;
@@ -56667,17 +56764,18 @@ Buffer = (function(_super) {
 module.exports = Buffer;
 
 
-},{"../../../util":172,"./data":56}],56:[function(require,module,exports){
+
+},{"../../../util":173,"./data":56}],56:[function(require,module,exports){
 var Data, Source, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Source = require('../base/source');
 
 Util = require('../../../util');
 
-Data = (function(_super) {
-  __extends(Data, _super);
+Data = (function(superClass) {
+  extend(Data, superClass);
 
   function Data() {
     return Data.__super__.constructor.apply(this, arguments);
@@ -56747,17 +56845,18 @@ Data = (function(_super) {
 module.exports = Data;
 
 
-},{"../../../util":172,"../base/source":49}],57:[function(require,module,exports){
+
+},{"../../../util":173,"../base/source":49}],57:[function(require,module,exports){
 var Interval, Util, _Array,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 _Array = require('./array');
 
 Util = require('../../../util');
 
-Interval = (function(_super) {
-  __extends(Interval, _super);
+Interval = (function(superClass) {
+  extend(Interval, superClass);
 
   function Interval() {
     return Interval.__super__.constructor.apply(this, arguments);
@@ -56828,17 +56927,18 @@ Interval = (function(_super) {
 module.exports = Interval;
 
 
-},{"../../../util":172,"./array":54}],58:[function(require,module,exports){
+
+},{"../../../util":173,"./array":54}],58:[function(require,module,exports){
 var Buffer, Matrix, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Buffer = require('./buffer');
 
 Util = require('../../../util');
 
-Matrix = (function(_super) {
-  __extends(Matrix, _super);
+Matrix = (function(superClass) {
+  extend(Matrix, superClass);
 
   function Matrix() {
     return Matrix.__super__.constructor.apply(this, arguments);
@@ -56905,11 +57005,11 @@ Matrix = (function(_super) {
   };
 
   Matrix.prototype.make = function() {
-    var channels, data, dims, height, history, items, magFilter, minFilter, reserveX, reserveY, space, type, width, _base, _base1, _ref, _ref1, _ref2;
+    var channels, data, dims, height, history, items, magFilter, minFilter, ref, ref1, ref2, reserveX, reserveY, space, type, width;
     Matrix.__super__.make.apply(this, arguments);
-    minFilter = (_ref = this.minFilter) != null ? _ref : this.props.minFilter;
-    magFilter = (_ref1 = this.magFilter) != null ? _ref1 : this.props.magFilter;
-    type = (_ref2 = this.type) != null ? _ref2 : this.props.type;
+    minFilter = (ref = this.minFilter) != null ? ref : this.props.minFilter;
+    magFilter = (ref1 = this.magFilter) != null ? ref1 : this.props.magFilter;
+    type = (ref2 = this.type) != null ? ref2 : this.props.type;
     width = this.props.width;
     height = this.props.height;
     history = this.props.history;
@@ -56931,12 +57031,6 @@ Matrix = (function(_super) {
     space.width = Math.max(reserveX, dims.width || 1);
     space.height = Math.max(reserveY, dims.height || 1);
     space.history = history;
-    if ((_base = this.spec).width == null) {
-      _base.width = 1;
-    }
-    if ((_base1 = this.spec).height == null) {
-      _base1.height = 1;
-    }
     return this.buffer = this._renderables.make(this.storage, {
       width: space.width,
       height: space.height,
@@ -57006,7 +57100,7 @@ Matrix = (function(_super) {
     filled = this.buffer.getFilled();
     this.syncBuffer((function(_this) {
       return function(abort) {
-        var dims, length, _base, _w;
+        var _w, base, dims, height, length, width;
         if (data != null) {
           dims = Util.Data.getDimensions(data, _this.spec);
           if (dims.width > space.width || dims.height > space.height) {
@@ -57016,14 +57110,16 @@ Matrix = (function(_super) {
           used.width = dims.width;
           used.height = dims.height;
           _this.buffer.setActive(used.width, used.height);
-          if (typeof (_base = _this.buffer.callback).rebind === "function") {
-            _base.rebind(data);
+          if (typeof (base = _this.buffer.callback).rebind === "function") {
+            base.rebind(data);
           }
           return _this.buffer.update();
         } else {
-          _this.buffer.setActive(_this.spec.width, _this.spec.height);
+          width = _this.spec.width || 1;
+          height = _this.spec.height || 1;
+          _this.buffer.setActive(width, height);
           length = _this.buffer.update();
-          used.width = _w = _this.spec.width;
+          used.width = _w = width;
           used.height = Math.ceil(length / _w);
           if (used.height === 1) {
             return used.width = length;
@@ -57045,17 +57141,18 @@ Matrix = (function(_super) {
 module.exports = Matrix;
 
 
-},{"../../../util":172,"./buffer":55}],59:[function(require,module,exports){
+
+},{"../../../util":173,"./buffer":55}],59:[function(require,module,exports){
 var Scale, Source, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Source = require('../base/source');
 
 Util = require('../../../util');
 
-Scale = (function(_super) {
-  __extends(Scale, _super);
+Scale = (function(superClass) {
+  extend(Scale, superClass);
 
   function Scale() {
     return Scale.__super__.constructor.apply(this, arguments);
@@ -57133,9 +57230,9 @@ Scale = (function(_super) {
   };
 
   Scale.prototype.updateRanges = function() {
-    var axis, max, min, origin, range, ticks, used, _ref;
+    var axis, max, min, origin, range, ref, ticks, used;
     used = this.used;
-    _ref = this.props, axis = _ref.axis, origin = _ref.origin;
+    ref = this.props, axis = ref.axis, origin = ref.origin;
     range = this._helpers.span.get('', axis);
     min = range.x;
     max = range.y;
@@ -57157,17 +57254,18 @@ Scale = (function(_super) {
 module.exports = Scale;
 
 
-},{"../../../util":172,"../base/source":49}],60:[function(require,module,exports){
+
+},{"../../../util":173,"../base/source":49}],60:[function(require,module,exports){
 var Util, Volume, Voxel,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Voxel = require('./voxel');
 
 Util = require('../../../util');
 
-Volume = (function(_super) {
-  __extends(Volume, _super);
+Volume = (function(superClass) {
+  extend(Volume, superClass);
 
   function Volume() {
     return Volume.__super__.constructor.apply(this, arguments);
@@ -57272,21 +57370,22 @@ Volume = (function(_super) {
 module.exports = Volume;
 
 
-},{"../../../util":172,"./voxel":61}],61:[function(require,module,exports){
+
+},{"../../../util":173,"./voxel":61}],61:[function(require,module,exports){
 var Buffer, Util, Voxel,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Buffer = require('./buffer');
 
 Util = require('../../../util');
 
-Voxel = (function(_super) {
-  __extends(Voxel, _super);
+Voxel = (function(superClass) {
+  extend(Voxel, superClass);
 
   function Voxel() {
-    this.update = __bind(this.update, this);
+    this.update = bind(this.update, this);
     return Voxel.__super__.constructor.apply(this, arguments);
   }
 
@@ -57338,11 +57437,11 @@ Voxel = (function(_super) {
   };
 
   Voxel.prototype.make = function() {
-    var channels, data, depth, dims, height, items, magFilter, minFilter, reserveX, reserveY, reserveZ, space, type, width, _base, _base1, _base2, _ref, _ref1, _ref2;
+    var channels, data, depth, dims, height, items, magFilter, minFilter, ref, ref1, ref2, reserveX, reserveY, reserveZ, space, type, width;
     Voxel.__super__.make.apply(this, arguments);
-    minFilter = (_ref = this.minFilter) != null ? _ref : this.props.minFilter;
-    magFilter = (_ref1 = this.magFilter) != null ? _ref1 : this.props.magFilter;
-    type = (_ref2 = this.type) != null ? _ref2 : this.props.type;
+    minFilter = (ref = this.minFilter) != null ? ref : this.props.minFilter;
+    magFilter = (ref1 = this.magFilter) != null ? ref1 : this.props.magFilter;
+    type = (ref2 = this.type) != null ? ref2 : this.props.type;
     width = this.props.width;
     height = this.props.height;
     depth = this.props.depth;
@@ -57366,15 +57465,6 @@ Voxel = (function(_super) {
     space.width = Math.max(reserveX, dims.width || 1);
     space.height = Math.max(reserveY, dims.height || 1);
     space.depth = Math.max(reserveZ, dims.depth || 1);
-    if ((_base = this.spec).width == null) {
-      _base.width = 1;
-    }
-    if ((_base1 = this.spec).height == null) {
-      _base1.height = 1;
-    }
-    if ((_base2 = this.spec).depth == null) {
-      _base2.depth = 1;
-    }
     return this.buffer = this._renderables.make(this.storage, {
       width: space.width,
       height: space.height,
@@ -57451,7 +57541,7 @@ Voxel = (function(_super) {
     filled = this.buffer.getFilled();
     this.syncBuffer((function(_this) {
       return function(abort) {
-        var dims, length, _base, _h, _w;
+        var _h, _w, base, depth, dims, height, length, width;
         if (data != null) {
           dims = Util.Data.getDimensions(data, _this.spec);
           if (dims.width > space.width || dims.height > space.height || dims.depth > space.depth) {
@@ -57462,15 +57552,18 @@ Voxel = (function(_super) {
           used.height = dims.height;
           used.depth = dims.depth;
           _this.buffer.setActive(used.width, used.height, used.depth);
-          if (typeof (_base = _this.buffer.callback).rebind === "function") {
-            _base.rebind(data);
+          if (typeof (base = _this.buffer.callback).rebind === "function") {
+            base.rebind(data);
           }
           return _this.buffer.update();
         } else {
-          _this.buffer.setActive(_this.spec.width, _this.spec.height, _this.spec.depth);
+          width = _this.spec.width || 1;
+          height = _this.spec.height || 1;
+          depth = _this.spec.depth || 1;
+          _this.buffer.setActive(width, height, depth);
           length = _this.buffer.update();
-          used.width = _w = _this.spec.width;
-          used.height = _h = _this.spec.height;
+          used.width = _w = width;
+          used.height = _h = height;
           used.depth = Math.ceil(length / _w / _h);
           if (used.depth === 1) {
             used.height = Math.ceil(length / _w);
@@ -57495,24 +57588,24 @@ Voxel = (function(_super) {
 module.exports = Voxel;
 
 
-},{"../../../util":172,"./buffer":55}],62:[function(require,module,exports){
+
+},{"../../../util":173,"./buffer":55}],62:[function(require,module,exports){
 var Axis, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Axis = (function(_super) {
-  __extends(Axis, _super);
+Axis = (function(superClass) {
+  extend(Axis, superClass);
 
-  Axis.traits = ['node', 'object', 'visible', 'style', 'line', 'axis', 'span', 'interval', 'arrow', 'position', 'origin'];
+  Axis.traits = ['node', 'object', 'visible', 'style', 'line', 'axis', 'span', 'interval', 'arrow', 'position', 'origin', 'shade'];
 
   Axis.defaults = {
     end: true,
-    zBias: -1,
-    zOrder: -1
+    zBias: -1
   };
 
   function Axis(node, context, helpers) {
@@ -57521,7 +57614,7 @@ Axis = (function(_super) {
   }
 
   Axis.prototype.make = function() {
-    var arrowUniforms, axis, crossed, detail, end, lineUniforms, mask, position, positionUniforms, samples, start, stroke, styleUniforms, swizzle, uniforms, unitUniforms, _ref, _ref1;
+    var arrowUniforms, axis, crossed, detail, end, lineUniforms, mask, material, position, positionUniforms, ref, ref1, samples, start, stroke, styleUniforms, swizzle, uniforms, unitUniforms;
     positionUniforms = {
       axisPosition: this._attributes.make(this._types.vec4()),
       axisStep: this._attributes.make(this._types.vec4())
@@ -57538,10 +57631,11 @@ Axis = (function(_super) {
     detail = this.props.detail;
     samples = detail + 1;
     this.resolution = 1 / detail;
-    _ref = this.props, start = _ref.start, end = _ref.end;
+    ref = this.props, start = ref.start, end = ref.end;
     stroke = this.props.stroke;
     mask = this._helpers.object.mask();
-    _ref1 = this.props, crossed = _ref1.crossed, axis = _ref1.axis;
+    material = this._helpers.shade.pipeline() || false;
+    ref1 = this.props, crossed = ref1.crossed, axis = ref1.axis;
     if (!crossed && (mask != null) && axis > 1) {
       swizzle = ['x000', 'y000', 'z000', 'w000'][axis];
       mask = this._helpers.position.swizzle(mask, swizzle);
@@ -57553,7 +57647,8 @@ Axis = (function(_super) {
       position: position,
       clip: start || end,
       stroke: stroke,
-      mask: mask
+      mask: mask,
+      material: material
     });
     this.arrows = [];
     if (start) {
@@ -57562,7 +57657,8 @@ Axis = (function(_super) {
         flip: true,
         samples: samples,
         position: position,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     if (end) {
@@ -57570,7 +57666,8 @@ Axis = (function(_super) {
         uniforms: uniforms,
         samples: samples,
         position: position,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     this._helpers.visible.make();
@@ -57595,8 +57692,8 @@ Axis = (function(_super) {
   };
 
   Axis.prototype.updateRanges = function() {
-    var axis, max, min, origin, range, _ref;
-    _ref = this.props, axis = _ref.axis, origin = _ref.origin;
+    var axis, max, min, origin, range, ref;
+    ref = this.props, axis = ref.axis, origin = ref.origin;
     range = this._helpers.span.get('', axis);
     min = range.x;
     max = range.y;
@@ -57612,17 +57709,18 @@ Axis = (function(_super) {
 module.exports = Axis;
 
 
-},{"../../../util":172,"../../primitive":44}],63:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],63:[function(require,module,exports){
 var Face, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Face = (function(_super) {
-  __extends(Face, _super);
+Face = (function(superClass) {
+  extend(Face, superClass);
 
   Face.traits = ['node', 'object', 'visible', 'style', 'line', 'mesh', 'face', 'geometry', 'position', 'bind', 'shade'];
 
@@ -57653,7 +57751,7 @@ Face = (function(_super) {
   };
 
   Face.prototype.make = function() {
-    var color, depth, dims, fill, height, items, line, lineUniforms, map, mask, material, objects, position, shaded, styleUniforms, swizzle, uniforms, unitUniforms, width, wireUniforms, _ref;
+    var color, depth, dims, faceMaterial, fill, height, items, line, lineMaterial, lineUniforms, map, mask, material, objects, position, ref, shaded, styleUniforms, swizzle, uniforms, unitUniforms, width, wireUniforms;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -57687,8 +57785,10 @@ Face = (function(_super) {
       this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
-    map = this._helpers.shade.map((_ref = this.bind.map) != null ? _ref.sourceShader(this._shaders.shader()) : void 0);
-    material = this._helpers.shade.pipeline() || shaded;
+    map = this._helpers.shade.map((ref = this.bind.map) != null ? ref.sourceShader(this._shaders.shader()) : void 0);
+    material = this._helpers.shade.pipeline();
+    faceMaterial = material || shaded;
+    lineMaterial = material || false;
     objects = [];
     if (line) {
       swizzle = this._shaders.shader();
@@ -57703,6 +57803,7 @@ Face = (function(_super) {
         layers: depth,
         position: swizzle,
         color: color,
+        material: lineMaterial,
         mask: mask,
         closed: true
       });
@@ -57718,7 +57819,7 @@ Face = (function(_super) {
         items: items,
         position: position,
         color: color,
-        material: material,
+        material: faceMaterial,
         mask: mask,
         map: map
       });
@@ -57740,13 +57841,13 @@ Face = (function(_super) {
   };
 
   Face.prototype.change = function(changed, touched, init) {
-    var fill, zBias, _ref;
+    var fill, lineBias, ref, zBias;
     if (changed['geometry.points'] || touched['mesh']) {
       return this.rebuild();
     }
-    if (changed['style.zBias'] || init) {
-      _ref = this.props, fill = _ref.fill, zBias = _ref.zBias;
-      return this.wireZBias.value = zBias + (fill ? 5 : 0);
+    if (changed['style.zBias'] || changed['mesh.lineBias'] || init) {
+      ref = this.props, fill = ref.fill, zBias = ref.zBias, lineBias = ref.lineBias;
+      return this.wireZBias.value = zBias + (fill ? lineBias : 0);
     }
   };
 
@@ -57757,24 +57858,24 @@ Face = (function(_super) {
 module.exports = Face;
 
 
-},{"../../../util":172,"../../primitive":44}],64:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],64:[function(require,module,exports){
 var Grid, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Grid = (function(_super) {
-  __extends(Grid, _super);
+Grid = (function(superClass) {
+  extend(Grid, superClass);
 
-  Grid.traits = ['node', 'object', 'visible', 'style', 'line', 'grid', 'area', 'position', 'origin', 'axis:x', 'axis:y', 'scale:x', 'scale:y', 'span:x', 'span:y'];
+  Grid.traits = ['node', 'object', 'visible', 'style', 'line', 'grid', 'area', 'position', 'origin', 'shade', 'axis:x', 'axis:y', 'scale:x', 'scale:y', 'span:x', 'span:y'];
 
   Grid.defaults = {
     width: 1,
-    zBias: -2,
-    zOrder: -2
+    zBias: -2
   };
 
   function Grid(node, context, helpers) {
@@ -57783,8 +57884,9 @@ Grid = (function(_super) {
   }
 
   Grid.prototype.make = function() {
-    var axes, axis, crossed, lineX, lineY, lines, mask, stroke, transpose, _ref;
+    var axes, axis, crossed, lineX, lineY, lines, mask, material, ref, stroke, transpose;
     mask = this._helpers.object.mask();
+    material = this._helpers.shade.pipeline() || false;
     axis = (function(_this) {
       return function(first, second, transpose) {
         var buffer, detail, line, lineUniforms, p, position, positionUniforms, resolution, samples, strips, styleUniforms, uniforms, unitUniforms, values;
@@ -57823,7 +57925,8 @@ Grid = (function(_super) {
           strips: strips,
           position: position,
           stroke: stroke,
-          mask: mask
+          mask: mask,
+          material: material
         });
         return {
           first: first,
@@ -57836,21 +57939,21 @@ Grid = (function(_super) {
         };
       };
     })(this);
-    _ref = this.props, lineX = _ref.lineX, lineY = _ref.lineY, crossed = _ref.crossed, axes = _ref.axes;
+    ref = this.props, lineX = ref.lineX, lineY = ref.lineY, crossed = ref.crossed, axes = ref.axes;
     transpose = ['0000', 'x000', 'y000', 'z000', 'w000'][axes[1]];
     stroke = this.props.stroke;
     this.axes = [];
     lineX && this.axes.push(axis('x.', 'y.', null));
     lineY && this.axes.push(axis('y.', 'x.', crossed ? null : transpose));
     lines = (function() {
-      var _i, _len, _ref1, _results;
-      _ref1 = this.axes;
-      _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        axis = _ref1[_i];
-        _results.push(axis.line);
+      var i, len, ref1, results;
+      ref1 = this.axes;
+      results = [];
+      for (i = 0, len = ref1.length; i < len; i++) {
+        axis = ref1[i];
+        results.push(axis.line);
       }
-      return _results;
+      return results;
     }).call(this);
     this._helpers.visible.make();
     this._helpers.object.make(lines);
@@ -57859,13 +57962,13 @@ Grid = (function(_super) {
   };
 
   Grid.prototype.unmake = function() {
-    var axis, _i, _len, _ref;
+    var axis, i, len, ref;
     this._helpers.visible.unmake();
     this._helpers.object.unmake();
     this._helpers.span.unmake();
-    _ref = this.axes;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      axis = _ref[_i];
+    ref = this.axes;
+    for (i = 0, len = ref.length; i < len; i++) {
+      axis = ref[i];
       axis.buffer.dispose();
     }
     return this.axes = null;
@@ -57881,7 +57984,7 @@ Grid = (function(_super) {
   };
 
   Grid.prototype.updateRanges = function() {
-    var axes, axis, lineX, lineY, origin, range1, range2, _ref, _ref1;
+    var axes, axis, lineX, lineY, origin, range1, range2, ref, ref1;
     axis = (function(_this) {
       return function(x, y, range1, range2, axis) {
         var buffer, first, line, max, min, n, resolution, samples, second, ticks, values;
@@ -57899,10 +58002,10 @@ Grid = (function(_super) {
         return line.geometry.clip(samples, n, 1, 1);
       };
     })(this);
-    _ref = this.props, axes = _ref.axes, origin = _ref.origin;
+    ref = this.props, axes = ref.axes, origin = ref.origin;
     range1 = this._helpers.span.get('x.', axes[0]);
     range2 = this._helpers.span.get('y.', axes[1]);
-    _ref1 = this.props, lineX = _ref1.lineX, lineY = _ref1.lineY;
+    ref1 = this.props, lineX = ref1.lineX, lineY = ref1.lineY;
     if (lineX) {
       axis(axes[0], axes[1], range1, range2, this.axes[0]);
     }
@@ -57918,19 +58021,20 @@ Grid = (function(_super) {
 module.exports = Grid;
 
 
-},{"../../../util":172,"../../primitive":44}],65:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],65:[function(require,module,exports){
 var Line, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Line = (function(_super) {
-  __extends(Line, _super);
+Line = (function(superClass) {
+  extend(Line, superClass);
 
-  Line.traits = ['node', 'object', 'visible', 'style', 'line', 'arrow', 'geometry', 'position', 'bind'];
+  Line.traits = ['node', 'object', 'visible', 'style', 'line', 'arrow', 'geometry', 'position', 'bind', 'shade'];
 
   function Line(node, context, helpers) {
     Line.__super__.constructor.call(this, node, context, helpers);
@@ -57938,7 +58042,7 @@ Line = (function(_super) {
   }
 
   Line.prototype.resize = function() {
-    var arrow, dims, layers, ribbons, samples, strips, _i, _len, _ref, _results;
+    var arrow, dims, i, layers, len, ref, results, ribbons, samples, strips;
     if (this.bind.points == null) {
       return;
     }
@@ -57948,17 +58052,17 @@ Line = (function(_super) {
     ribbons = dims.depth;
     layers = dims.items;
     this.line.geometry.clip(samples, strips, ribbons, layers);
-    _ref = this.arrows;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      arrow = _ref[_i];
-      _results.push(arrow.geometry.clip(samples, strips, ribbons, layers));
+    ref = this.arrows;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      arrow = ref[i];
+      results.push(arrow.geometry.clip(samples, strips, ribbons, layers));
     }
-    return _results;
+    return results;
   };
 
   Line.prototype.make = function() {
-    var arrowUniforms, color, dims, end, layers, lineUniforms, mask, position, proximity, ribbons, samples, start, strips, stroke, styleUniforms, uniforms, unitUniforms, _ref, _ref1;
+    var arrowUniforms, color, dims, end, layers, lineUniforms, mask, material, position, proximity, ref, ref1, ribbons, samples, start, strips, stroke, styleUniforms, uniforms, unitUniforms;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -57978,8 +58082,8 @@ Line = (function(_super) {
     lineUniforms = this._helpers.line.uniforms();
     arrowUniforms = this._helpers.arrow.uniforms();
     unitUniforms = this._inherit('unit').getUnitUniforms();
-    _ref = this.props, start = _ref.start, end = _ref.end;
-    _ref1 = this.props, stroke = _ref1.stroke, proximity = _ref1.proximity;
+    ref = this.props, start = ref.start, end = ref.end;
+    ref1 = this.props, stroke = ref1.stroke, proximity = ref1.proximity;
     this.proximity = proximity;
     dims = this.bind.points.getDimensions();
     samples = dims.width;
@@ -57991,6 +58095,7 @@ Line = (function(_super) {
       this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
+    material = this._helpers.shade.pipeline() || false;
     uniforms = Util.JS.merge(arrowUniforms, lineUniforms, styleUniforms, unitUniforms);
     this.line = this._renderables.make('line', {
       uniforms: uniforms,
@@ -58003,7 +58108,8 @@ Line = (function(_super) {
       clip: start || end,
       stroke: stroke,
       proximity: proximity,
-      mask: mask
+      mask: mask,
+      material: material
     });
     this.arrows = [];
     if (start) {
@@ -58016,7 +58122,8 @@ Line = (function(_super) {
         layers: layers,
         position: position,
         color: color,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     if (end) {
@@ -58028,7 +58135,8 @@ Line = (function(_super) {
         layers: layers,
         position: position,
         color: color,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     this._helpers.visible.make();
@@ -58064,19 +58172,20 @@ Line = (function(_super) {
 module.exports = Line;
 
 
-},{"../../../util":172,"../../primitive":44}],66:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],66:[function(require,module,exports){
 var Point, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Point = (function(_super) {
-  __extends(Point, _super);
+Point = (function(superClass) {
+  extend(Point, superClass);
 
-  Point.traits = ['node', 'object', 'visible', 'style', 'point', 'geometry', 'position', 'bind'];
+  Point.traits = ['node', 'object', 'visible', 'style', 'point', 'geometry', 'position', 'bind', 'shade'];
 
   function Point(node, context, helpers) {
     Point.__super__.constructor.call(this, node, context, helpers);
@@ -58094,7 +58203,7 @@ Point = (function(_super) {
   };
 
   Point.prototype.make = function() {
-    var color, depth, dims, fill, height, items, mask, optical, pointUniforms, position, shape, size, styleUniforms, uniforms, unitUniforms, width;
+    var color, depth, dims, fill, height, items, mask, material, optical, pointUniforms, position, shape, size, styleUniforms, uniforms, unitUniforms, width;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -58127,6 +58236,7 @@ Point = (function(_super) {
       this.bind.sizes.sourceShader(size);
     }
     mask = this._helpers.object.mask();
+    material = this._helpers.shade.pipeline() || false;
     shape = this.props.shape;
     fill = this.props.fill;
     optical = this.props.optical;
@@ -58143,7 +58253,8 @@ Point = (function(_super) {
       shape: shape,
       optical: optical,
       fill: fill,
-      mask: mask
+      mask: mask,
+      material: material
     });
     this._helpers.visible.make();
     return this._helpers.object.make([this.point]);
@@ -58173,17 +58284,18 @@ Point = (function(_super) {
 module.exports = Point;
 
 
-},{"../../../util":172,"../../primitive":44}],67:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],67:[function(require,module,exports){
 var Primitive, Strip, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Strip = (function(_super) {
-  __extends(Strip, _super);
+Strip = (function(superClass) {
+  extend(Strip, superClass);
 
   Strip.traits = ['node', 'object', 'visible', 'style', 'line', 'mesh', 'strip', 'geometry', 'position', 'bind', 'shade'];
 
@@ -58214,7 +58326,7 @@ Strip = (function(_super) {
   };
 
   Strip.prototype.make = function() {
-    var color, depth, dims, fill, height, items, line, lineUniforms, mask, objects, position, shaded, styleUniforms, swizzle, uniforms, unitUniforms, width;
+    var color, depth, dims, faceMaterial, fill, height, items, line, lineMaterial, lineUniforms, map, mask, material, objects, position, ref, shaded, styleUniforms, swizzle, uniforms, unitUniforms, width, wireUniforms;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -58239,6 +58351,9 @@ Strip = (function(_super) {
     line = this.props.line;
     shaded = this.props.shaded;
     fill = this.props.fill;
+    wireUniforms = {};
+    wireUniforms.styleZBias = this._attributes.make(this._types.number());
+    this.wireZBias = wireUniforms.styleZBias;
     dims = this.bind.points.getDimensions();
     items = dims.items, width = dims.width, height = dims.height, depth = dims.depth;
     if (this.bind.colors) {
@@ -58246,12 +58361,16 @@ Strip = (function(_super) {
       color = this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
+    map = this._helpers.shade.map((ref = this.bind.map) != null ? ref.sourceShader(this._shaders.shader()) : void 0);
+    material = this._helpers.shade.pipeline();
+    faceMaterial = material || shaded;
+    lineMaterial = material || false;
     objects = [];
     if (line) {
       swizzle = this._shaders.shader();
       swizzle.pipe(Util.GLSL.swizzleVec4('yzwx'));
       swizzle.pipe(position);
-      uniforms = Util.JS.merge(unitUniforms, lineUniforms, styleUniforms);
+      uniforms = Util.JS.merge(unitUniforms, lineUniforms, styleUniforms, wireUniforms);
       this.line = this._renderables.make('line', {
         uniforms: uniforms,
         samples: items,
@@ -58260,7 +58379,8 @@ Strip = (function(_super) {
         layers: depth,
         position: swizzle,
         color: color,
-        mask: mask
+        mask: mask,
+        material: lineMaterial
       });
       objects.push(this.line);
     }
@@ -58274,7 +58394,7 @@ Strip = (function(_super) {
         items: items,
         position: position,
         color: color,
-        material: shaded
+        material: faceMaterial
       });
       objects.push(this.strip);
     }
@@ -58294,8 +58414,13 @@ Strip = (function(_super) {
   };
 
   Strip.prototype.change = function(changed, touched, init) {
+    var fill, lineBias, ref, zBias;
     if (changed['geometry.points'] || touched['mesh']) {
       return this.rebuild();
+    }
+    if (changed['style.zBias'] || changed['mesh.lineBias'] || init) {
+      ref = this.props, fill = ref.fill, zBias = ref.zBias, lineBias = ref.lineBias;
+      return this.wireZBias.value = zBias + (fill ? lineBias : 0);
     }
   };
 
@@ -58306,17 +58431,18 @@ Strip = (function(_super) {
 module.exports = Strip;
 
 
-},{"../../../util":172,"../../primitive":44}],68:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],68:[function(require,module,exports){
 var Primitive, Surface, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Surface = (function(_super) {
-  __extends(Surface, _super);
+Surface = (function(superClass) {
+  extend(Surface, superClass);
 
   Surface.traits = ['node', 'object', 'visible', 'style', 'line', 'mesh', 'geometry', 'surface', 'position', 'grid', 'bind', 'shade'];
 
@@ -58355,7 +58481,7 @@ Surface = (function(_super) {
   };
 
   Surface.prototype.make = function() {
-    var closedX, closedY, color, crossed, depth, dims, fill, height, items, lineUniforms, lineX, lineY, map, mask, material, objects, position, proximity, shaded, stroke, styleUniforms, surfaceUniforms, swizzle, swizzle2, uniforms, unitUniforms, width, wireUniforms, zUnits, _ref, _ref1, _ref2;
+    var closedX, closedY, color, crossed, depth, dims, faceMaterial, fill, height, items, lineMaterial, lineUniforms, lineX, lineY, map, mask, material, objects, position, proximity, ref, ref1, ref2, shaded, stroke, styleUniforms, surfaceUniforms, swizzle, swizzle2, uniforms, unitUniforms, width, wireUniforms, zUnits;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -58386,7 +58512,7 @@ Surface = (function(_super) {
     this.wireScratch = new THREE.Color;
     dims = this.bind.points.getDimensions();
     width = dims.width, height = dims.height, depth = dims.depth, items = dims.items;
-    _ref = this.props, shaded = _ref.shaded, fill = _ref.fill, lineX = _ref.lineX, lineY = _ref.lineY, closedX = _ref.closedX, closedY = _ref.closedY, stroke = _ref.stroke, proximity = _ref.proximity, crossed = _ref.crossed;
+    ref = this.props, shaded = ref.shaded, fill = ref.fill, lineX = ref.lineX, lineY = ref.lineY, closedX = ref.closedX, closedY = ref.closedY, stroke = ref.stroke, proximity = ref.proximity, crossed = ref.crossed;
     objects = [];
     this.proximity = proximity;
     if (this.bind.colors) {
@@ -58394,9 +58520,11 @@ Surface = (function(_super) {
       this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
-    map = this._helpers.shade.map((_ref1 = this.bind.map) != null ? _ref1.sourceShader(this._shaders.shader()) : void 0);
-    material = this._helpers.shade.pipeline() || shaded;
-    _ref2 = this._helpers.position, swizzle = _ref2.swizzle, swizzle2 = _ref2.swizzle2;
+    map = this._helpers.shade.map((ref1 = this.bind.map) != null ? ref1.sourceShader(this._shaders.shader()) : void 0);
+    material = this._helpers.shade.pipeline();
+    faceMaterial = material || shaded;
+    lineMaterial = material || false;
+    ref2 = this._helpers.position, swizzle = ref2.swizzle, swizzle2 = ref2.swizzle2;
     uniforms = Util.JS.merge(unitUniforms, lineUniforms, styleUniforms, wireUniforms);
     zUnits = lineX || lineY ? -50 : 0;
     if (lineX) {
@@ -58411,6 +58539,7 @@ Surface = (function(_super) {
         zUnits: -zUnits,
         stroke: stroke,
         mask: mask,
+        material: lineMaterial,
         proximity: proximity,
         closed: closedX || closed
       });
@@ -58428,6 +58557,7 @@ Surface = (function(_super) {
         zUnits: -zUnits,
         stroke: stroke,
         mask: swizzle(mask, crossed ? 'xyzw' : 'yxzw'),
+        material: lineMaterial,
         proximity: proximity,
         closed: closedY || closed
       });
@@ -58443,9 +58573,9 @@ Surface = (function(_super) {
         layers: items,
         position: position,
         color: color,
-        material: shaded,
         zUnits: zUnits,
         stroke: stroke,
+        material: faceMaterial,
         mask: mask,
         map: map,
         intUV: true,
@@ -58470,13 +58600,13 @@ Surface = (function(_super) {
   };
 
   Surface.prototype.change = function(changed, touched, init) {
-    var c, color, fill, zBias, _ref;
+    var c, color, fill, lineBias, ref, zBias;
     if (changed['geometry.points'] || changed['mesh.shaded'] || changed['mesh.fill'] || changed['line.stroke'] || touched['grid']) {
       return this.rebuild();
     }
-    if (changed['style.color'] || changed['style.zBias'] || changed['mesh.fill'] || init) {
-      _ref = this.props, fill = _ref.fill, color = _ref.color, zBias = _ref.zBias;
-      this.wireZBias.value = zBias + (fill ? 5 : 0);
+    if (changed['style.color'] || changed['style.zBias'] || changed['mesh.fill'] || changed['mesh.lineBias'] || init) {
+      ref = this.props, fill = ref.fill, color = ref.color, zBias = ref.zBias, lineBias = ref.lineBias;
+      this.wireZBias.value = zBias + (fill ? lineBias : 0);
       this.wireColor.copy(color);
       if (fill) {
         c = this.wireScratch;
@@ -58501,23 +58631,24 @@ Surface = (function(_super) {
 module.exports = Surface;
 
 
-},{"../../../util":172,"../../primitive":44}],69:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],69:[function(require,module,exports){
 var Primitive, Ticks, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Ticks = (function(_super) {
-  __extends(Ticks, _super);
+Ticks = (function(superClass) {
+  extend(Ticks, superClass);
 
   function Ticks() {
     return Ticks.__super__.constructor.apply(this, arguments);
   }
 
-  Ticks.traits = ['node', 'object', 'visible', 'style', 'line', 'ticks', 'geometry', 'position', 'bind'];
+  Ticks.traits = ['node', 'object', 'visible', 'style', 'line', 'ticks', 'geometry', 'position', 'bind', 'shade'];
 
   Ticks.prototype.init = function() {
     return this.tickStrip = this.line = null;
@@ -58538,7 +58669,7 @@ Ticks = (function(_super) {
   };
 
   Ticks.prototype.make = function() {
-    var color, dims, layers, lineUniforms, mask, p, position, positionUniforms, ribbons, strips, stroke, styleUniforms, swizzle, uniforms, unitUniforms;
+    var color, dims, layers, lineUniforms, mask, material, p, position, positionUniforms, ref, ribbons, strips, stroke, styleUniforms, swizzle, swizzle2, uniforms, unitUniforms;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -58578,7 +58709,8 @@ Ticks = (function(_super) {
       this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
-    swizzle = this._helpers.position.swizzle;
+    material = this._helpers.shade.pipeline() || false;
+    ref = this._helpers.position, swizzle = ref.swizzle, swizzle2 = ref.swizzle2;
     this.line = this._renderables.make('line', {
       uniforms: uniforms,
       samples: 2,
@@ -58588,7 +58720,8 @@ Ticks = (function(_super) {
       position: position,
       color: color,
       stroke: stroke,
-      mask: swizzle(mask, 'yzwx')
+      mask: swizzle(mask, 'yzwx'),
+      material: material
     });
     this._helpers.visible.make();
     return this._helpers.object.make([this.line]);
@@ -58617,19 +58750,20 @@ Ticks = (function(_super) {
 module.exports = Ticks;
 
 
-},{"../../../util":172,"../../primitive":44}],70:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],70:[function(require,module,exports){
 var Primitive, Util, Vector,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Vector = (function(_super) {
-  __extends(Vector, _super);
+Vector = (function(superClass) {
+  extend(Vector, superClass);
 
-  Vector.traits = ['node', 'object', 'visible', 'style', 'line', 'arrow', 'geometry', 'position', 'bind'];
+  Vector.traits = ['node', 'object', 'visible', 'style', 'line', 'arrow', 'geometry', 'position', 'bind', 'shade'];
 
   function Vector(node, context, helpers) {
     Vector.__super__.constructor.call(this, node, context, helpers);
@@ -58637,7 +58771,7 @@ Vector = (function(_super) {
   }
 
   Vector.prototype.resize = function() {
-    var arrow, dims, layers, ribbons, samples, strips, _i, _len, _ref, _results;
+    var arrow, dims, i, layers, len, ref, results, ribbons, samples, strips;
     if (this.bind.points == null) {
       return;
     }
@@ -58647,17 +58781,17 @@ Vector = (function(_super) {
     ribbons = dims.height;
     layers = dims.depth;
     this.line.geometry.clip(samples, strips, ribbons, layers);
-    _ref = this.arrows;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      arrow = _ref[_i];
-      _results.push(arrow.geometry.clip(samples, strips, ribbons, layers));
+    ref = this.arrows;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      arrow = ref[i];
+      results.push(arrow.geometry.clip(samples, strips, ribbons, layers));
     }
-    return _results;
+    return results;
   };
 
   Vector.prototype.make = function() {
-    var arrowUniforms, color, dims, end, layers, lineUniforms, mask, position, proximity, ribbons, samples, start, strips, stroke, styleUniforms, swizzle, swizzle2, uniforms, unitUniforms, _ref, _ref1, _ref2;
+    var arrowUniforms, color, dims, end, layers, lineUniforms, mask, material, position, proximity, ref, ref1, ref2, ribbons, samples, start, strips, stroke, styleUniforms, swizzle, swizzle2, uniforms, unitUniforms;
     this._helpers.bind.make([
       {
         to: 'geometry.points',
@@ -58677,8 +58811,8 @@ Vector = (function(_super) {
     lineUniforms = this._helpers.line.uniforms();
     arrowUniforms = this._helpers.arrow.uniforms();
     unitUniforms = this._inherit('unit').getUnitUniforms();
-    _ref = this.props, start = _ref.start, end = _ref.end;
-    _ref1 = this.props, stroke = _ref1.stroke, proximity = _ref1.proximity;
+    ref = this.props, start = ref.start, end = ref.end;
+    ref1 = this.props, stroke = ref1.stroke, proximity = ref1.proximity;
     this.proximity = proximity;
     dims = this.bind.points.getDimensions();
     samples = dims.items;
@@ -58690,10 +58824,12 @@ Vector = (function(_super) {
       this.bind.colors.sourceShader(color);
     }
     mask = this._helpers.object.mask();
-    _ref2 = this._helpers.position, swizzle = _ref2.swizzle, swizzle2 = _ref2.swizzle2;
+    material = this._helpers.shade.pipeline() || false;
+    ref2 = this._helpers.position, swizzle = ref2.swizzle, swizzle2 = ref2.swizzle2;
     position = swizzle2(position, 'yzwx', 'yzwx');
     color = swizzle(color, 'yzwx');
     mask = swizzle(mask, 'yzwx');
+    material = swizzle(material, 'yzwx');
     uniforms = Util.JS.merge(arrowUniforms, lineUniforms, styleUniforms, unitUniforms);
     this.line = this._renderables.make('line', {
       uniforms: uniforms,
@@ -58706,7 +58842,8 @@ Vector = (function(_super) {
       clip: start || end,
       stroke: stroke,
       proximity: proximity,
-      mask: mask
+      mask: mask,
+      material: material
     });
     this.arrows = [];
     if (start) {
@@ -58719,7 +58856,8 @@ Vector = (function(_super) {
         layers: layers,
         position: position,
         color: color,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     if (end) {
@@ -58731,7 +58869,8 @@ Vector = (function(_super) {
         layers: layers,
         position: position,
         color: color,
-        mask: mask
+        mask: mask,
+        material: material
       }));
     }
     this._helpers.visible.make();
@@ -58767,9 +58906,10 @@ Vector = (function(_super) {
 module.exports = Vector;
 
 
-},{"../../../util":172,"../../primitive":44}],71:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],71:[function(require,module,exports){
 var Util, View, helpers,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Util = require('../../util');
 
@@ -58786,15 +58926,15 @@ Helpers are auto-attached to primitives that have the matching trait
 helpers = {
   bind: {
     make: function(slots) {
-      var callback, done, isUnique, multiple, name, optional, s, selector, slot, source, start, to, trait, unique, _i, _j, _len, _len1;
+      var callback, done, i, isUnique, j, len, len1, multiple, name, optional, s, selector, slot, source, start, to, trait, unique;
       if (this.bind == null) {
         this.bind = {};
       }
       if (this.bound == null) {
         this.bound = [];
       }
-      for (_i = 0, _len = slots.length; _i < _len; _i++) {
-        slot = slots[_i];
+      for (i = 0, len = slots.length; i < len; i++) {
+        slot = slots[i];
         to = slot.to, trait = slot.trait, optional = slot.optional, unique = slot.unique, multiple = slot.multiple, callback = slot.callback;
         if (callback == null) {
           callback = this.rebuild;
@@ -58819,8 +58959,8 @@ helpers = {
             this._listen(source, 'source.rebuild', callback);
           }
           if (multiple) {
-            for (_j = 0, _len1 = source.length; _j < _len1; _j++) {
-              s = source[_j];
+            for (j = 0, len1 = source.length; j < len1; j++) {
+              s = source[j];
               this.bound.push(s);
             }
           } else {
@@ -58857,12 +58997,12 @@ helpers = {
       var def;
       def = new THREE.Vector2(-1, 1);
       return function(prefix, dimension) {
-        var range, _ref, _ref1;
+        var range, ref, ref1;
         range = this._get(prefix + 'span.range');
         if (range != null) {
           return range;
         }
-        return (_ref = (_ref1 = this.spanView) != null ? _ref1.axis(dimension) : void 0) != null ? _ref : def;
+        return (ref = (ref1 = this.spanView) != null ? ref1.axis(dimension) : void 0) != null ? ref : def;
       };
     })()
   },
@@ -58940,15 +59080,15 @@ helpers = {
   },
   shade: {
     pipeline: function(shader) {
-      var pass, _i, _ref;
+      var i, pass, ref;
       if (!this._inherit('fragment')) {
         return shader;
       }
       if (shader == null) {
         shader = this._shaders.shader();
       }
-      for (pass = _i = 0; _i <= 2; pass = ++_i) {
-        shader = (_ref = this._inherit('fragment')) != null ? _ref.fragment(shader, pass) : void 0;
+      for (pass = i = 0; i <= 2; pass = ++i) {
+        shader = (ref = this._inherit('fragment')) != null ? ref.fragment(shader, pass) : void 0;
       }
       shader.pipe('fragment.map.rgba');
       return shader;
@@ -58962,15 +59102,15 @@ helpers = {
   },
   position: {
     pipeline: function(shader) {
-      var pass, _i, _ref;
+      var i, pass, ref;
       if (!this._inherit('vertex')) {
         return shader;
       }
       if (shader == null) {
         shader = this._shaders.shader();
       }
-      for (pass = _i = 0; _i <= 3; pass = ++_i) {
-        shader = (_ref = this._inherit('vertex')) != null ? _ref.vertex(shader, pass) : void 0;
+      for (pass = i = 0; i <= 3; pass = ++i) {
+        shader = (ref = this._inherit('vertex')) != null ? ref.vertex(shader, pass) : void 0;
       }
       return shader;
     },
@@ -59000,9 +59140,9 @@ helpers = {
       };
       onVisible = (function(_this) {
         return function() {
-          var last, self, _ref;
+          var last, ref, self;
           last = _this.isVisible;
-          self = (_ref = visible != null ? visible : _this._get('object.visible')) != null ? _ref : true;
+          self = (ref = visible != null ? visible : _this._get('object.visible')) != null ? ref : true;
           if (typeof visibleParent !== "undefined" && visibleParent !== null) {
             self && (self = visibleParent.isVisible);
           }
@@ -59040,9 +59180,9 @@ helpers = {
       };
       onActive = (function(_this) {
         return function() {
-          var last, self, _ref;
+          var last, ref, self;
           last = _this.isActive;
-          self = (_ref = active != null ? active : _this._get('entity.active')) != null ? _ref : true;
+          self = (ref = active != null ? active : _this._get('entity.active')) != null ? ref : true;
           if (typeof activeParent !== "undefined" && activeParent !== null) {
             self && (self = activeParent.isActive);
           }
@@ -59067,14 +59207,14 @@ helpers = {
   },
   object: {
     make: function(objects) {
-      var blending, hasStyle, last, object, objectScene, onChange, onVisible, opacity, zOrder, zTest, zWrite, _i, _len, _ref;
+      var blending, hasStyle, i, last, len, object, objectScene, onChange, onVisible, opacity, ref, zOrder, zTest, zWrite;
       this.objects = objects != null ? objects : [];
       this.renders = this.objects.reduce((function(a, b) {
         return a.concat(b.renders);
       }), []);
       objectScene = this._inherit('scene');
       opacity = blending = zOrder = null;
-      hasStyle = __indexOf.call(this.traits, 'style') >= 0;
+      hasStyle = indexOf.call(this.traits, 'style') >= 0;
       opacity = 1;
       blending = THREE.NormalBlending;
       zWrite = true;
@@ -59114,51 +59254,51 @@ helpers = {
       last = null;
       onVisible = (function(_this) {
         return function() {
-          var o, order, visible, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _results, _results1, _results2;
+          var i, j, l, len, len1, len2, o, order, ref, ref1, ref2, ref3, results, results1, results2, visible;
           order = zOrder != null ? zOrder : _this.node.order;
-          visible = ((_ref = _this.isVisible) != null ? _ref : true) && opacity > 0;
+          visible = ((ref = _this.isVisible) != null ? ref : true) && opacity > 0;
           if (visible) {
             if (hasStyle) {
-              _ref1 = _this.objects;
-              _results = [];
-              for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-                o = _ref1[_i];
+              ref1 = _this.objects;
+              results = [];
+              for (i = 0, len = ref1.length; i < len; i++) {
+                o = ref1[i];
                 o.show(opacity < 1, blending, order);
-                _results.push(o.depth(zWrite, zTest));
+                results.push(o.depth(zWrite, zTest));
               }
-              return _results;
+              return results;
             } else {
-              _ref2 = _this.objects;
-              _results1 = [];
-              for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-                o = _ref2[_j];
-                _results1.push(o.show(true, blending, order));
+              ref2 = _this.objects;
+              results1 = [];
+              for (j = 0, len1 = ref2.length; j < len1; j++) {
+                o = ref2[j];
+                results1.push(o.show(true, blending, order));
               }
-              return _results1;
+              return results1;
             }
           } else {
-            _ref3 = _this.objects;
-            _results2 = [];
-            for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
-              o = _ref3[_k];
-              _results2.push(o.hide());
+            ref3 = _this.objects;
+            results2 = [];
+            for (l = 0, len2 = ref3.length; l < len2; l++) {
+              o = ref3[l];
+              results2.push(o.hide());
             }
-            return _results2;
+            return results2;
           }
         };
       })(this);
       this._listen(this.node, 'change:style', onChange);
       this._listen(this.node, 'reindex', onVisible);
       this._listen(this, 'visible.change', onVisible);
-      _ref = this.objects;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        object = _ref[_i];
+      ref = this.objects;
+      for (i = 0, len = ref.length; i < len; i++) {
+        object = ref[i];
         objectScene.adopt(object);
       }
       return onVisible();
     },
     unmake: function(dispose) {
-      var object, objectScene, _i, _j, _len, _len1, _ref, _ref1, _results;
+      var i, j, len, len1, object, objectScene, ref, ref1, results;
       if (dispose == null) {
         dispose = true;
       }
@@ -59166,19 +59306,19 @@ helpers = {
         return;
       }
       objectScene = this._inherit('scene');
-      _ref = this.objects;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        object = _ref[_i];
+      ref = this.objects;
+      for (i = 0, len = ref.length; i < len; i++) {
+        object = ref[i];
         objectScene.unadopt(object);
       }
       if (dispose) {
-        _ref1 = this.objects;
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          object = _ref1[_j];
-          _results.push(object.dispose());
+        ref1 = this.objects;
+        results = [];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          object = ref1[j];
+          results.push(object.dispose());
         }
-        return _results;
+        return results;
       }
     },
     mask: function() {
@@ -59211,14 +59351,14 @@ helpers = {
       bottom = new THREE.Vector3();
       handler = (function(_this) {
         return function() {
-          var camera, dpr, focus, fov, fovtan, isAbsolute, m, measure, pixel, rscale, scale, size, world, _ref;
+          var camera, dpr, focus, fov, fovtan, isAbsolute, m, measure, pixel, ref, rscale, scale, size, world;
           if ((size = typeof root !== "undefined" && root !== null ? root.getSize() : void 0) == null) {
             return;
           }
           π = Math.PI;
           scale = _this.props.scale;
           fov = _this.props.fov;
-          focus = (_ref = _this.props.focus) != null ? _ref : _this.inherit('unit').props.focus;
+          focus = (ref = _this.props.focus) != null ? ref : _this.inherit('unit').props.focus;
           isAbsolute = scale === null;
           measure = 1;
           if ((camera = typeof root !== "undefined" && root !== null ? root.getCamera() : void 0)) {
@@ -59255,11 +59395,11 @@ helpers = {
       return delete this.unitUniforms;
     },
     get: function() {
-      var k, u, v, _ref;
+      var k, ref, u, v;
       u = {};
-      _ref = this.unitUniforms;
-      for (k in _ref) {
-        v = _ref[k];
+      ref = this.unitUniforms;
+      for (k in ref) {
+        v = ref[k];
         u[k] = v.value;
       }
       return u;
@@ -59271,10 +59411,10 @@ helpers = {
 };
 
 module.exports = function(object, traits) {
-  var h, key, method, methods, trait, _i, _len;
+  var h, i, key, len, method, methods, trait;
   h = {};
-  for (_i = 0, _len = traits.length; _i < _len; _i++) {
-    trait = traits[_i];
+  for (i = 0, len = traits.length; i < len; i++) {
+    trait = traits[i];
     if (!(methods = helpers[trait])) {
       continue;
     }
@@ -59288,7 +59428,8 @@ module.exports = function(object, traits) {
 };
 
 
-},{"../../util":172,"./view/view":119}],72:[function(require,module,exports){
+
+},{"../../util":173,"./view/view":120}],72:[function(require,module,exports){
 var Model;
 
 Model = require('../../model');
@@ -59302,15 +59443,16 @@ exports.Traits = require('./traits');
 exports.Helpers = require('./helpers');
 
 
-},{"../../model":34,"./classes":52,"./helpers":71,"./traits":104,"./types":112}],73:[function(require,module,exports){
+
+},{"../../model":34,"./classes":52,"./helpers":71,"./traits":105,"./types":113}],73:[function(require,module,exports){
 var Grow, Operator,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
-Grow = (function(_super) {
-  __extends(Grow, _super);
+Grow = (function(superClass) {
+  extend(Grow, superClass);
 
   function Grow() {
     return Grow.__super__.constructor.apply(this, arguments);
@@ -59351,20 +59493,20 @@ Grow = (function(_super) {
   };
 
   Grow.prototype.update = function() {
-    var anchor, dims, i, key, m, order, _i, _len, _results;
+    var anchor, dims, i, j, key, len, m, order, results;
     dims = this.bind.source.getFutureDimensions();
     order = ['width', 'height', 'depth', 'items'];
     m = function(d, anchor) {
       return -((d || 1) - 1) * (.5 - anchor * .5);
     };
-    _results = [];
-    for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+    results = [];
+    for (i = j = 0, len = order.length; j < len; i = ++j) {
       key = order[i];
       anchor = this.props[key];
       this.growMask.setComponent(i, +(!anchor));
-      _results.push(this.growAnchor.setComponent(i, m(dims[key], anchor)));
+      results.push(this.growAnchor.setComponent(i, m(dims[key], anchor)));
     }
-    return _results;
+    return results;
   };
 
   Grow.prototype.change = function(changed, touched, init) {
@@ -59383,10 +59525,11 @@ Grow = (function(_super) {
 module.exports = Grow;
 
 
+
 },{"./operator":77}],74:[function(require,module,exports){
 var Join, Operator, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
@@ -59400,8 +59543,8 @@ split:
   overlap:     Types.int(0)
  */
 
-Join = (function(_super) {
-  __extends(Join, _super);
+Join = (function(superClass) {
+  extend(Join, superClass);
 
   function Join() {
     return Join.__super__.constructor.apply(this, arguments);
@@ -59436,7 +59579,7 @@ Join = (function(_super) {
   };
 
   Join.prototype._resample = function(dims) {
-    var axis, dim, i, index, labels, length, mapped, order, out, overlap, product, set, stride, _i, _len, _ref;
+    var axis, dim, i, index, j, labels, len, length, mapped, order, out, overlap, product, ref, set, stride;
     order = this.order;
     axis = this.axis;
     overlap = this.overlap;
@@ -59448,20 +59591,20 @@ Join = (function(_super) {
     });
     index = order.indexOf(axis);
     set = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = mapped.length; _i < _len; _i++) {
-        dim = mapped[_i];
-        _results.push(dims[dim]);
+      var j, len, results;
+      results = [];
+      for (j = 0, len = mapped.length; j < len; j++) {
+        dim = mapped[j];
+        results.push(dims[dim]);
       }
-      return _results;
+      return results;
     })();
-    product = ((_ref = set[index + 1]) != null ? _ref : 1) * stride;
+    product = ((ref = set[index + 1]) != null ? ref : 1) * stride;
     set.splice(index, 2, product);
     set = set.slice(0, 3);
     set.push(1);
     out = {};
-    for (i = _i = 0, _len = mapped.length; _i < _len; i = ++_i) {
+    for (i = j = 0, len = mapped.length; j < len; i = ++j) {
       dim = mapped[i];
       out[dim] = set[i];
     }
@@ -59548,15 +59691,16 @@ Join = (function(_super) {
 module.exports = Join;
 
 
-},{"../../../util":172,"./operator":77}],75:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],75:[function(require,module,exports){
 var Lerp, Operator,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
-Lerp = (function(_super) {
-  __extends(Lerp, _super);
+Lerp = (function(superClass) {
+  extend(Lerp, superClass);
 
   function Lerp() {
     return Lerp.__super__.constructor.apply(this, arguments);
@@ -59600,7 +59744,7 @@ Lerp = (function(_super) {
   };
 
   Lerp.prototype.make = function() {
-    var centered, dims, id, indexer, key, padding, ratio, size, transform, uniforms, _ref;
+    var centered, dims, id, indexer, key, padding, ratio, ref, size, transform, uniforms;
     Lerp.__super__.make.apply(this, arguments);
     if (this.bind.source == null) {
       return;
@@ -59611,10 +59755,10 @@ Lerp = (function(_super) {
     dims = this.bind.source.getDimensions();
     for (key in dims) {
       id = "lerp." + key;
-      size = (_ref = this.props[key]) != null ? _ref : dims[key];
+      size = (ref = this.props[key]) != null ? ref : dims[key];
       this.resample[key] = size / dims[key];
-      centered = this._get("" + key + ".sampler.centered");
-      padding = this._get("" + key + ".sampler.padding");
+      centered = this._get(key + ".sampler.centered");
+      padding = this._get(key + ".sampler.padding");
       size += padding * 2;
       if (size !== dims[key]) {
         ratio = centered ? dims[key] / Math.max(1, size) : Math.max(1, dims[key] - 1) / Math.max(1, size - 1);
@@ -59647,17 +59791,18 @@ Lerp = (function(_super) {
 module.exports = Lerp;
 
 
+
 },{"./operator":77}],76:[function(require,module,exports){
 var Memo, Operator, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
 Util = require('../../../util');
 
-Memo = (function(_super) {
-  __extends(Memo, _super);
+Memo = (function(superClass) {
+  extend(Memo, superClass);
 
   function Memo() {
     return Memo.__super__.constructor.apply(this, arguments);
@@ -59670,7 +59815,7 @@ Memo = (function(_super) {
   };
 
   Memo.prototype.make = function() {
-    var depth, dims, height, items, magFilter, minFilter, operator, type, width, _ref;
+    var depth, dims, height, items, magFilter, minFilter, operator, ref, type, width;
     Memo.__super__.make.apply(this, arguments);
     if (this.bind.source == null) {
       return;
@@ -59683,7 +59828,7 @@ Memo = (function(_super) {
         }
       };
     })(this));
-    _ref = this.props, minFilter = _ref.minFilter, magFilter = _ref.magFilter, type = _ref.type;
+    ref = this.props, minFilter = ref.minFilter, magFilter = ref.magFilter, type = ref.type;
     dims = this.bind.source.getDimensions();
     items = dims.items, width = dims.width, height = dims.height, depth = dims.depth;
     this.memo = this._renderables.make('memo', {
@@ -59720,8 +59865,8 @@ Memo = (function(_super) {
   };
 
   Memo.prototype.update = function() {
-    var _ref;
-    return (_ref = this.memo) != null ? _ref.render() : void 0;
+    var ref;
+    return (ref = this.memo) != null ? ref.render() : void 0;
   };
 
   Memo.prototype.resize = function() {
@@ -59748,15 +59893,16 @@ Memo = (function(_super) {
 module.exports = Memo;
 
 
-},{"../../../util":172,"./operator":77}],77:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],77:[function(require,module,exports){
 var Operator, Source,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Source = require('../base/source');
 
-Operator = (function(_super) {
-  __extends(Operator, _super);
+Operator = (function(superClass) {
+  extend(Operator, superClass);
 
   function Operator() {
     return Operator.__super__.constructor.apply(this, arguments);
@@ -59765,13 +59911,13 @@ Operator = (function(_super) {
   Operator.traits = ['node', 'bind', 'operator', 'source', 'index'];
 
   Operator.prototype.indexShader = function(shader) {
-    var _ref;
-    return (_ref = this.bind.source) != null ? typeof _ref.indexShader === "function" ? _ref.indexShader(shader) : void 0 : void 0;
+    var ref;
+    return (ref = this.bind.source) != null ? typeof ref.indexShader === "function" ? ref.indexShader(shader) : void 0 : void 0;
   };
 
   Operator.prototype.sourceShader = function(shader) {
-    var _ref;
-    return (_ref = this.bind.source) != null ? typeof _ref.sourceShader === "function" ? _ref.sourceShader(shader) : void 0 : void 0;
+    var ref;
+    return (ref = this.bind.source) != null ? typeof ref.sourceShader === "function" ? ref.sourceShader(shader) : void 0 : void 0;
   };
 
   Operator.prototype.getDimensions = function() {
@@ -59826,15 +59972,160 @@ Operator = (function(_super) {
 module.exports = Operator;
 
 
+
 },{"../base/source":49}],78:[function(require,module,exports){
+var Primitive, Readback, Util,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Primitive = require('../../primitive');
+
+Util = require('../../../util');
+
+Readback = (function(superClass) {
+  extend(Readback, superClass);
+
+  function Readback() {
+    return Readback.__super__.constructor.apply(this, arguments);
+  }
+
+  Readback.traits = ['node', 'bind', 'operator', 'readback', 'entity', 'active'];
+
+  Readback.finals = {
+    channels: 4
+  };
+
+  Readback.prototype.init = function() {
+    this.emitter = this.root = null;
+    return this.active = {};
+  };
+
+  Readback.prototype.make = function() {
+    var channels, depth, expr, height, items, ref, ref1, sampler, type, width;
+    Readback.__super__.make.apply(this, arguments);
+    this._compute('readback.data', (function(_this) {
+      return function() {
+        var ref;
+        return (ref = _this.readback) != null ? ref.data : void 0;
+      };
+    })(this));
+    this._compute('readback.items', (function(_this) {
+      return function() {
+        var ref;
+        return (ref = _this.readback) != null ? ref.items : void 0;
+      };
+    })(this));
+    this._compute('readback.width', (function(_this) {
+      return function() {
+        var ref;
+        return (ref = _this.readback) != null ? ref.width : void 0;
+      };
+    })(this));
+    this._compute('readback.height', (function(_this) {
+      return function() {
+        var ref;
+        return (ref = _this.readback) != null ? ref.height : void 0;
+      };
+    })(this));
+    this._compute('readback.depth', (function(_this) {
+      return function() {
+        var ref;
+        return (ref = _this.readback) != null ? ref.depth : void 0;
+      };
+    })(this));
+    this._helpers.bind.make([
+      {
+        to: 'operator.source',
+        trait: 'source'
+      }
+    ]);
+    if (this.bind.source == null) {
+      return;
+    }
+    ref = this.props, type = ref.type, channels = ref.channels, expr = ref.expr;
+    this.root = this._inherit('root');
+    this._listen('root', 'root.update', this.update);
+    ref1 = this.bind.source.getDimensions(), items = ref1.items, width = ref1.width, height = ref1.height, depth = ref1.depth;
+    sampler = this.bind.source.sourceShader(this._shaders.shader());
+    this.readback = this._renderables.make('readback', {
+      map: sampler,
+      items: items,
+      width: width,
+      height: height,
+      depth: depth,
+      channels: channels,
+      type: type
+    });
+    if (expr != null) {
+      this.readback.setCallback(expr);
+    }
+    return this._helpers.active.make();
+  };
+
+  Readback.prototype.unmake = function() {
+    if (this.readback != null) {
+      this.readback.dispose();
+      this.readback = null;
+      this.root = null;
+      this.emitter = null;
+      this.active = {};
+    }
+    this._helpers.active.unmake();
+    return this._helpers.bind.unmake();
+  };
+
+  Readback.prototype.update = function() {
+    var ref;
+    if (this.readback == null) {
+      return;
+    }
+    if (this.isActive) {
+      this.readback.update((ref = this.root) != null ? ref.getCamera() : void 0);
+      this.readback.post();
+      if (this.props.expr != null) {
+        return this.readback.iterate();
+      }
+    }
+  };
+
+  Readback.prototype.resize = function() {
+    var depth, height, items, ref, sI, sJ, sK, width;
+    if (this.readback == null) {
+      return;
+    }
+    ref = this.bind.source.getActiveDimensions(), items = ref.items, width = ref.width, height = ref.height, depth = ref.depth;
+    this.readback.setActive(items, width, height, depth);
+    this.strideI = sI = items;
+    this.strideJ = sJ = sI * width;
+    return this.strideK = sK = sJ * height;
+  };
+
+  Readback.prototype.change = function(changed, touched, init) {
+    if (changed['readback.type']) {
+      return this.rebuild();
+    }
+    if (changed['readback.expr'] && this.readback) {
+      return this.readback.setCallback(this.props.expr);
+    }
+  };
+
+  return Readback;
+
+})(Primitive);
+
+module.exports = Readback;
+
+
+
+},{"../../../util":173,"../../primitive":44}],79:[function(require,module,exports){
 var Operator, Repeat,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
-Repeat = (function(_super) {
-  __extends(Repeat, _super);
+Repeat = (function(superClass) {
+  extend(Repeat, superClass);
 
   function Repeat() {
     return Repeat.__super__.constructor.apply(this, arguments);
@@ -59909,18 +60200,18 @@ Repeat = (function(_super) {
   };
 
   Repeat.prototype.change = function(changed, touched, init) {
-    var key, _i, _len, _ref, _results;
+    var i, key, len, ref, results;
     if (touched['operator'] || touched['repeat']) {
       return this.rebuild();
     }
     if (init) {
-      _ref = ['items', 'width', 'height', 'depth'];
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        key = _ref[_i];
-        _results.push(this.resample[key] = this.props[key]);
+      ref = ['items', 'width', 'height', 'depth'];
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        key = ref[i];
+        results.push(this.resample[key] = this.props[key]);
       }
-      return _results;
+      return results;
     }
   };
 
@@ -59931,17 +60222,18 @@ Repeat = (function(_super) {
 module.exports = Repeat;
 
 
-},{"./operator":77}],79:[function(require,module,exports){
+
+},{"./operator":77}],80:[function(require,module,exports){
 var Operator, Resample, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
 Util = require('../../../util');
 
-Resample = (function(_super) {
-  __extends(Resample, _super);
+Resample = (function(superClass) {
+  extend(Resample, superClass);
 
   function Resample() {
     return Resample.__super__.constructor.apply(this, arguments);
@@ -60008,7 +60300,7 @@ Resample = (function(_super) {
   };
 
   Resample.prototype.make = function() {
-    var any, centered, depth, dimensions, height, i, indexer, indices, items, key, operator, relativeSample, relativeSize, sample, shader, shifted, size, type, uniforms, vec, width, _i, _len, _ref;
+    var any, centered, depth, dimensions, height, i, indexer, indices, items, j, key, len, operator, ref, relativeSample, relativeSize, sample, shader, shifted, size, type, uniforms, vec, width;
     Resample.__super__.make.apply(this, arguments);
     if (this.bind.source == null) {
       return;
@@ -60067,10 +60359,10 @@ Resample = (function(_super) {
     operator.pipe('resample.padding', uniforms);
     vec = [];
     any = false;
-    _ref = ['width', 'height', 'depth', 'items'];
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      key = _ref[i];
-      centered = this._get("" + key + ".sampler.centered");
+    ref = ['width', 'height', 'depth', 'items'];
+    for (i = j = 0, len = ref.length; j < len; i = ++j) {
+      key = ref[i];
+      centered = this._get(key + ".sampler.centered");
       any || (any = centered);
       vec[i] = centered ? "0.5" : "0.0";
     }
@@ -60128,7 +60420,7 @@ Resample = (function(_super) {
   };
 
   Resample.prototype.resize = function() {
-    var axis, bd, bh, bi, bw, dims, rd, rh, ri, rw, target, _ref, _ref1, _ref2, _ref3;
+    var axis, bd, bh, bi, bw, dims, rd, ref, ref1, ref2, ref3, rh, ri, rw, target;
     if (this.bind.source == null) {
       return;
     }
@@ -60137,17 +60429,17 @@ Resample = (function(_super) {
     axis = (function(_this) {
       return function(key) {
         var centered, pad, res;
-        centered = _this._get("" + key + ".sampler.centered");
-        pad = _this._get("" + key + ".sampler.padding");
+        centered = _this._get(key + ".sampler.centered");
+        pad = _this._get(key + ".sampler.padding");
         target[key] += pad * 2;
         res = centered ? dims[key] / Math.max(1, target[key]) : Math.max(1, dims[key] - 1) / Math.max(1, target[key] - 1);
         return [res, pad];
       };
     })(this);
-    _ref = axis('width'), rw = _ref[0], bw = _ref[1];
-    _ref1 = axis('height'), rh = _ref1[0], bh = _ref1[1];
-    _ref2 = axis('depth'), rd = _ref2[0], bd = _ref2[1];
-    _ref3 = axis('items'), ri = _ref3[0], bi = _ref3[1];
+    ref = axis('width'), rw = ref[0], bw = ref[1];
+    ref1 = axis('height'), rh = ref1[0], bh = ref1[1];
+    ref2 = axis('depth'), rd = ref2[0], bd = ref2[1];
+    ref3 = axis('items'), ri = ref3[0], bi = ref3[1];
     if (this.indices === 1) {
       this.dataResolution.value = 1 / dims.width;
       this.targetResolution.value = 1 / target.width;
@@ -60179,17 +60471,18 @@ Resample = (function(_super) {
 module.exports = Resample;
 
 
-},{"../../../util":172,"./operator":77}],80:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],81:[function(require,module,exports){
 var Operator, Slice, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
 Util = require('../../../util');
 
-Slice = (function(_super) {
-  __extends(Slice, _super);
+Slice = (function(superClass) {
+  extend(Slice, superClass);
 
   function Slice() {
     return Slice.__super__.constructor.apply(this, arguments);
@@ -60286,10 +60579,11 @@ Slice = (function(_super) {
 module.exports = Slice;
 
 
-},{"../../../util":172,"./operator":77}],81:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],82:[function(require,module,exports){
 var Operator, Split, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
@@ -60304,8 +60598,8 @@ split:
   overlap:     Types.int(0)
  */
 
-Split = (function(_super) {
-  __extends(Split, _super);
+Split = (function(superClass) {
+  extend(Split, superClass);
 
   function Split() {
     return Split.__super__.constructor.apply(this, arguments);
@@ -60340,7 +60634,7 @@ Split = (function(_super) {
   };
 
   Split.prototype._resample = function(dims) {
-    var axis, dim, i, index, labels, length, mapped, order, out, overlap, remain, set, stride, _i, _len;
+    var axis, dim, i, index, j, labels, len, length, mapped, order, out, overlap, remain, set, stride;
     order = this.order;
     axis = this.axis;
     overlap = this.overlap;
@@ -60352,19 +60646,19 @@ Split = (function(_super) {
     });
     index = order.indexOf(axis);
     set = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = mapped.length; _i < _len; _i++) {
-        dim = mapped[_i];
-        _results.push(dims[dim]);
+      var j, len, results;
+      results = [];
+      for (j = 0, len = mapped.length; j < len; j++) {
+        dim = mapped[j];
+        results.push(dims[dim]);
       }
-      return _results;
+      return results;
     })();
     remain = Math.floor((set[index] - overlap) / stride);
     set.splice(index, 1, length, remain);
     set = set.slice(0, 4);
     out = {};
-    for (i = _i = 0, _len = mapped.length; _i < _len; i = ++_i) {
+    for (i = j = 0, len = mapped.length; j < len; i = ++j) {
       dim = mapped[i];
       out[dim] = set[i];
     }
@@ -60372,7 +60666,7 @@ Split = (function(_super) {
   };
 
   Split.prototype.make = function() {
-    var axis, index, length, order, overlap, permute, rest, split, stride, transform, uniforms, _ref;
+    var axis, index, length, order, overlap, permute, ref, rest, split, stride, transform, uniforms;
     Split.__super__.make.apply(this, arguments);
     if (this.bind.source == null) {
       return;
@@ -60418,7 +60712,7 @@ Split = (function(_super) {
       axis = order[0];
     }
     index = permute.indexOf(axis);
-    split = permute[index] + ((_ref = permute[index + 1]) != null ? _ref : 0);
+    split = permute[index] + ((ref = permute[index + 1]) != null ? ref : 0);
     rest = permute.replace(split[1], '').replace(split[0], '0') + '0';
     overlap = Math.min(length - 1, overlap);
     stride = length - overlap;
@@ -60456,15 +60750,16 @@ Split = (function(_super) {
 module.exports = Split;
 
 
-},{"../../../util":172,"./operator":77}],82:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],83:[function(require,module,exports){
 var Operator, Spread,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
-Spread = (function(_super) {
-  __extends(Spread, _super);
+Spread = (function(superClass) {
+  extend(Spread, superClass);
 
   function Spread() {
     return Spread.__super__.constructor.apply(this, arguments);
@@ -60504,7 +60799,7 @@ Spread = (function(_super) {
   };
 
   Spread.prototype.update = function() {
-    var align, anchor, d, dims, els, i, k, key, map, matrix, offset, order, spread, unit, unitEnum, v, _i, _len, _ref, _results;
+    var align, anchor, d, dims, els, i, j, k, key, len, map, matrix, offset, order, ref, results, spread, unit, unitEnum, v;
     dims = this.bind.source.getFutureDimensions();
     matrix = this.spreadMatrix.value;
     els = matrix.elements;
@@ -60524,29 +60819,29 @@ Spread = (function(_super) {
           };
       }
     })();
-    _results = [];
-    for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+    results = [];
+    for (i = j = 0, len = order.length; j < len; i = ++j) {
       key = order[i];
       spread = this.props[key];
       anchor = this.props[align[i]];
       if (spread != null) {
-        d = (_ref = dims[key]) != null ? _ref : 1;
+        d = (ref = dims[key]) != null ? ref : 1;
         offset = -(d - 1) * (.5 - anchor * .5);
       } else {
         offset = 0;
       }
       this.spreadOffset.value.setComponent(i, offset);
-      _results.push((function() {
-        var _j, _ref1, _results1;
-        _results1 = [];
-        for (k = _j = 0; _j <= 3; k = ++_j) {
-          v = (_ref1 = spread != null ? spread.getComponent(k) : void 0) != null ? _ref1 : 0;
-          _results1.push(els[i * 4 + k] = map(key, i, k, v));
+      results.push((function() {
+        var l, ref1, results1;
+        results1 = [];
+        for (k = l = 0; l <= 3; k = ++l) {
+          v = (ref1 = spread != null ? spread.getComponent(k) : void 0) != null ? ref1 : 0;
+          results1.push(els[i * 4 + k] = map(key, i, k, v));
         }
-        return _results1;
+        return results1;
       })());
     }
-    return _results;
+    return results;
   };
 
   Spread.prototype.change = function(changed, touched, init) {
@@ -60565,17 +60860,18 @@ Spread = (function(_super) {
 module.exports = Spread;
 
 
-},{"./operator":77}],83:[function(require,module,exports){
+
+},{"./operator":77}],84:[function(require,module,exports){
 var Operator, Swizzle, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
 Util = require('../../../util');
 
-Swizzle = (function(_super) {
-  __extends(Swizzle, _super);
+Swizzle = (function(superClass) {
+  extend(Swizzle, superClass);
 
   function Swizzle() {
     return Swizzle.__super__.constructor.apply(this, arguments);
@@ -60621,10 +60917,11 @@ Swizzle = (function(_super) {
 module.exports = Swizzle;
 
 
-},{"../../../util":172,"./operator":77}],84:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],85:[function(require,module,exports){
 var Operator, Transpose, Util, labels,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('./operator');
 
@@ -60637,8 +60934,8 @@ labels = {
   4: 'items'
 };
 
-Transpose = (function(_super) {
-  __extends(Transpose, _super);
+Transpose = (function(superClass) {
+  extend(Transpose, superClass);
 
   function Transpose() {
     return Transpose.__super__.constructor.apply(this, arguments);
@@ -60677,12 +60974,12 @@ Transpose = (function(_super) {
   };
 
   Transpose.prototype._remap = function(transpose, dims) {
-    var dst, i, out, src, _i, _ref;
+    var dst, i, j, out, ref, src;
     out = {};
-    for (i = _i = 0; _i <= 3; i = ++_i) {
+    for (i = j = 0; j <= 3; i = ++j) {
       dst = labels[i + 1];
       src = labels[transpose[i]];
-      out[dst] = (_ref = dims[src]) != null ? _ref : 1;
+      out[dst] = (ref = dims[src]) != null ? ref : 1;
     }
     return out;
   };
@@ -60721,17 +61018,18 @@ Transpose = (function(_super) {
 module.exports = Transpose;
 
 
-},{"../../../util":172,"./operator":77}],85:[function(require,module,exports){
+
+},{"../../../util":173,"./operator":77}],86:[function(require,module,exports){
 var DOM, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-DOM = (function(_super) {
-  __extends(DOM, _super);
+DOM = (function(superClass) {
+  extend(DOM, superClass);
 
   function DOM() {
     return DOM.__super__.constructor.apply(this, arguments);
@@ -60806,12 +61104,12 @@ DOM = (function(_super) {
   };
 
   DOM.prototype.update = function() {
-    var _ref;
+    var ref;
     if (this.readback == null) {
       return;
     }
     if (this.props.visible) {
-      this.readback.update((_ref = this.root) != null ? _ref.getCamera() : void 0);
+      this.readback.update((ref = this.root) != null ? ref.getCamera() : void 0);
       this.readback.post();
       return this.readback.iterate();
     }
@@ -60847,7 +61145,7 @@ DOM = (function(_super) {
     strideI = strideJ = strideK = 0;
     colorString = '';
     f = function(x, y, z, w, i, j, k, l) {
-      var a, alpha, children, clip, flatZ, index, iw, ox, oy, props, s, scale, v, xx, yy, _ref;
+      var a, alpha, children, clip, flatZ, index, iw, ox, oy, props, ref, s, scale, v, xx, yy;
       index = l + strideI * i + strideJ * j + strideK * k;
       children = data[index];
       clip = w < 0;
@@ -60892,14 +61190,14 @@ DOM = (function(_super) {
           }
         }
       }
-      props.className += ' ' + ((_ref = a != null ? a.className : void 0) != null ? _ref : 'mathbox-label');
+      props.className += ' ' + ((ref = a != null ? a.className : void 0) != null ? ref : 'mathbox-label');
       return nodes.push(el('div', props, children));
     };
     f.reset = (function(_this) {
       return function() {
-        var c, m, _ref;
+        var c, m, ref;
         nodes = [];
-        _ref = [_this.strideI, _this.strideJ, _this.strideK], strideI = _ref[0], strideJ = _ref[1], strideK = _ref[2];
+        ref = [_this.strideI, _this.strideJ, _this.strideK], strideI = ref[0], strideJ = ref[1], strideK = ref[2];
         c = color.value;
         m = function(x) {
           return Math.floor(x * 255);
@@ -60910,7 +61208,7 @@ DOM = (function(_super) {
         if (c) {
           styles.color = colorString;
         }
-        styles.fontSize = "" + size.value + "px";
+        styles.fontSize = size.value + "px";
         if (zoom.value !== 1) {
           styles.zoom = zoom.value;
         }
@@ -60958,17 +61256,18 @@ DOM = (function(_super) {
 module.exports = DOM;
 
 
-},{"../../../util":172,"../../primitive":44}],86:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],87:[function(require,module,exports){
 var HTML, Util, Voxel,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Voxel = require('../data/voxel');
 
 Util = require('../../../util');
 
-HTML = (function(_super) {
-  __extends(HTML, _super);
+HTML = (function(superClass) {
+  extend(HTML, superClass);
 
   function HTML() {
     return HTML.__super__.constructor.apply(this, arguments);
@@ -60976,7 +61275,7 @@ HTML = (function(_super) {
 
   HTML.traits = ['node', 'buffer', 'active', 'data', 'voxel', 'html'];
 
-  HTML.defaults = {
+  HTML.finals = {
     channels: 1
   };
 
@@ -60986,9 +61285,9 @@ HTML = (function(_super) {
   };
 
   HTML.prototype.make = function() {
-    var depth, height, items, width, _ref;
+    var depth, height, items, ref, width;
     HTML.__super__.make.apply(this, arguments);
-    _ref = this.getDimensions(), items = _ref.items, width = _ref.width, height = _ref.height, depth = _ref.depth;
+    ref = this.getDimensions(), items = ref.items, width = ref.width, height = ref.height, depth = ref.depth;
     this.dom = this._overlays.make('dom');
     return this.dom.hint(items * width * height * depth);
   };
@@ -61039,15 +61338,16 @@ HTML = (function(_super) {
 module.exports = HTML;
 
 
-},{"../../../util":172,"../data/voxel":61}],87:[function(require,module,exports){
+
+},{"../../../util":173,"../data/voxel":61}],88:[function(require,module,exports){
 var Move, Transition,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transition = require('./transition');
 
-Move = (function(_super) {
-  __extends(Move, _super);
+Move = (function(superClass) {
+  extend(Move, superClass);
 
   function Move() {
     return Move.__super__.constructor.apply(this, arguments);
@@ -61056,24 +61356,24 @@ Move = (function(_super) {
   Move.traits = ['node', 'transition', 'vertex', 'move', 'visible', 'active'];
 
   Move.prototype.make = function() {
-    var k, v, _ref;
+    var k, ref, v;
     Move.__super__.make.apply(this, arguments);
-    _ref = {
+    ref = {
       moveFrom: this.node.attributes['move.from'],
       moveTo: this.node.attributes['move.to']
     };
-    for (k in _ref) {
-      v = _ref[k];
+    for (k in ref) {
+      v = ref[k];
       this.uniforms[k] = v;
     }
   };
 
   Move.prototype.vertex = function(shader, pass) {
-    var _ref, _ref1;
+    var ref, ref1;
     if (pass === this.props.pass) {
       shader.pipe('move.position', this.uniforms);
     }
-    return (_ref = (_ref1 = this._inherit('vertex')) != null ? _ref1.vertex(shader, pass) : void 0) != null ? _ref : shader;
+    return (ref = (ref1 = this._inherit('vertex')) != null ? ref1.vertex(shader, pass) : void 0) != null ? ref : shader;
   };
 
   return Move;
@@ -61083,15 +61383,16 @@ Move = (function(_super) {
 module.exports = Move;
 
 
-},{"./transition":94}],88:[function(require,module,exports){
+
+},{"./transition":95}],89:[function(require,module,exports){
 var Play, Track,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Track = require('./track');
 
-Play = (function(_super) {
-  __extends(Play, _super);
+Play = (function(superClass) {
+  extend(Play, superClass);
 
   function Play() {
     return Play.__super__.constructor.apply(this, arguments);
@@ -61132,8 +61433,8 @@ Play = (function(_super) {
     parentClock = this._inherit('clock');
     return this._listen(parentClock, 'clock.tick', (function(_this) {
       return function() {
-        var delay, delta, from, now, offset, pace, ratio, realtime, speed, time, to, _ref;
-        _ref = _this.props, from = _ref.from, to = _ref.to, speed = _ref.speed, pace = _ref.pace, delay = _ref.delay, realtime = _ref.realtime;
+        var delay, delta, from, now, offset, pace, ratio, realtime, ref, speed, time, to;
+        ref = _this.props, from = ref.from, to = ref.to, speed = ref.speed, pace = ref.pace, delay = ref.delay, realtime = ref.realtime;
         time = parentClock.getTime();
         _this.playhead = _this.skew != null ? (now = realtime ? time.time : time.clock, delta = realtime ? time.delta : time.step, ratio = speed / pace, _this.skew += delta * (ratio - 1), offset = Math.max(0, now + _this.skew - delay * ratio), _this.props.loop ? offset = offset % (to - from) : void 0, _this.playhead = Math.min(to, from + offset)) : 0;
         return _this.update();
@@ -61159,17 +61460,18 @@ Play = (function(_super) {
 module.exports = Play;
 
 
-},{"./track":93}],89:[function(require,module,exports){
+
+},{"./track":94}],90:[function(require,module,exports){
 var Parent, Present, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
 Util = require('../../../util');
 
-Present = (function(_super) {
-  __extends(Present, _super);
+Present = (function(superClass) {
+  extend(Present, superClass);
 
   function Present() {
     return Present.__super__.constructor.apply(this, arguments);
@@ -61213,16 +61515,16 @@ Present = (function(_super) {
   };
 
   Present.prototype.update = function() {
-    var controller, _i, _len, _ref, _ref1;
+    var controller, j, len, ref1, ref2;
     if (!this.dirty.length) {
       return;
     }
-    _ref = this.dirty;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      controller = _ref[_i];
+    ref1 = this.dirty;
+    for (j = 0, len = ref1.length; j < len; j++) {
+      controller = ref1[j];
       this.slideReset(controller);
     }
-    _ref1 = this.process(this.nodes), this.steps = _ref1[0], this.indices = _ref1[1];
+    ref2 = this.process(this.nodes), this.steps = ref2[0], this.indices = ref2[1];
     this.length = this.steps.length;
     this.index = null;
     this.go(this.props.index);
@@ -61252,22 +61554,22 @@ Present = (function(_super) {
   Present.prototype.process = function(nodes) {
     var dedupe, expand, finalize, isSibling, isSlide, order, parents, paths, slides, split, steps, traverse;
     slides = function(nodes) {
-      var el, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-        el = nodes[_i];
-        _results.push(parents(el).filter(isSlide));
+      var el, j, len, results;
+      results = [];
+      for (j = 0, len = nodes.length; j < len; j++) {
+        el = nodes[j];
+        results.push(parents(el).filter(isSlide));
       }
-      return _results;
+      return results;
     };
     traverse = function(map) {
       return function(el) {
-        var ref, _ref, _results;
-        _results = [];
-        while (el && (_ref = [map(el), el], el = _ref[0], ref = _ref[1], _ref)) {
-          _results.push(ref);
+        var ref, ref1, results;
+        results = [];
+        while (el && (ref1 = [map(el), el], el = ref1[0], ref = ref1[1], ref1)) {
+          results.push(ref);
         }
-        return _results;
+        return results;
       };
     };
     parents = traverse(function(el) {
@@ -61281,7 +61583,7 @@ Present = (function(_super) {
       return nodes.indexOf(el) >= 0;
     };
     isSibling = function(a, b) {
-      var c, d, e, i, _i, _ref;
+      var c, d, e, i, j, ref1;
       c = a.length;
       d = b.length;
       e = c - d;
@@ -61289,7 +61591,7 @@ Present = (function(_super) {
         return false;
       }
       e = Math.min(c, d);
-      for (i = _i = _ref = e - 1; _ref <= 0 ? _i < 0 : _i > 0; i = _ref <= 0 ? ++_i : --_i) {
+      for (i = j = ref1 = e - 1; ref1 <= 0 ? j < 0 : j > 0; i = ref1 <= 0 ? ++j : --j) {
         if (a[i] !== b[i]) {
           return false;
         }
@@ -61298,11 +61600,11 @@ Present = (function(_super) {
     };
     order = function(paths) {
       return paths.sort(function(a, b) {
-        var c, d, e, f, g, i, nodeA, nodeB, _i;
+        var c, d, e, f, g, i, j, nodeA, nodeB, ref1;
         c = a.length;
         d = b.length;
         e = Math.min(c, d);
-        for (i = _i = 1; 1 <= e ? _i <= e : _i >= e; i = 1 <= e ? ++_i : --_i) {
+        for (i = j = 1, ref1 = e; 1 <= ref1 ? j <= ref1 : j >= ref1; i = 1 <= ref1 ? ++j : --j) {
           nodeA = a[c - i];
           nodeB = b[d - i];
           f = nodeA.props.order;
@@ -61330,23 +61632,23 @@ Present = (function(_super) {
       });
     };
     split = function(steps) {
-      var absolute, node, relative, step, _i, _len;
+      var absolute, j, len, node, relative, step;
       relative = [];
       absolute = [];
-      for (_i = 0, _len = steps.length; _i < _len; _i++) {
-        step = steps[_i];
+      for (j = 0, len = steps.length; j < len; j++) {
+        step = steps[j];
         ((node = step[0]).props.steps != null ? relative : absolute).push(step);
       }
       return [relative, absolute];
     };
     expand = function(lists) {
-      var absolute, i, indices, limit, relative, slide, step, steps, _i, _j, _len, _len1;
+      var absolute, i, indices, j, k, len, len1, limit, relative, slide, step, steps;
       relative = lists[0], absolute = lists[1];
       limit = 100;
       indices = {};
       steps = [];
       slide = function(step, index) {
-        var childIndex, from, i, node, parent, parentIndex, props, to, _i, _name;
+        var childIndex, from, i, j, name, node, parent, parentIndex, props, ref1, ref2, to;
         props = (node = step[0]).props;
         parent = step[1];
         parentIndex = parent != null ? indices[parent._id] : 0;
@@ -61355,45 +61657,45 @@ Present = (function(_super) {
         to = props.to != null ? parentIndex + props.to : childIndex + props.steps + props.late;
         from = Math.max(0, from);
         to = Math.min(limit, to);
-        if (indices[_name = node._id] == null) {
-          indices[_name] = from;
+        if (indices[name = node._id] == null) {
+          indices[name] = from;
         }
-        for (i = _i = from; from <= to ? _i < to : _i > to; i = from <= to ? ++_i : --_i) {
+        for (i = j = ref1 = from, ref2 = to; ref1 <= ref2 ? j < ref2 : j > ref2; i = ref1 <= ref2 ? ++j : --j) {
           steps[i] = (steps[i] != null ? steps[i] : steps[i] = []).concat(step);
         }
         return props.steps;
       };
       i = 0;
-      for (_i = 0, _len = relative.length; _i < _len; _i++) {
-        step = relative[_i];
+      for (j = 0, len = relative.length; j < len; j++) {
+        step = relative[j];
         i += slide(step, i);
       }
-      for (_j = 0, _len1 = absolute.length; _j < _len1; _j++) {
-        step = absolute[_j];
+      for (k = 0, len1 = absolute.length; k < len1; k++) {
+        step = absolute[k];
         slide(step, 0);
       }
       steps = (function() {
-        var _k, _len2, _results;
-        _results = [];
-        for (_k = 0, _len2 = steps.length; _k < _len2; _k++) {
-          step = steps[_k];
-          _results.push(finalize(dedupe(step)));
+        var l, len2, results;
+        results = [];
+        for (l = 0, len2 = steps.length; l < len2; l++) {
+          step = steps[l];
+          results.push(finalize(dedupe(step)));
         }
-        return _results;
+        return results;
       })();
       return [steps, indices];
     };
     dedupe = function(step) {
-      var i, node, _i, _len, _results;
+      var i, j, len, node, results;
       if (step) {
-        _results = [];
-        for (i = _i = 0, _len = step.length; _i < _len; i = ++_i) {
+        results = [];
+        for (i = j = 0, len = step.length; j < len; i = ++j) {
           node = step[i];
           if (step.indexOf(node) === i) {
-            _results.push(node);
+            results.push(node);
           }
         }
-        return _results;
+        return results;
       } else {
         return [];
       }
@@ -61409,45 +61711,45 @@ Present = (function(_super) {
   };
 
   Present.prototype.go = function(index) {
-    var active, ascend, descend, enter, exit, last, node, stay, step, toStr, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+    var active, ascend, descend, enter, exit, j, k, l, last, len, len1, len2, len3, len4, len5, len6, len7, len8, m, n, node, o, p, q, r, ref1, ref2, ref3, ref4, ref5, ref6, ref7, stay, step, toStr;
     index = Math.max(0, Math.min(this.length + 1, +index || 0));
     last = this.last;
-    active = (_ref = this.steps[index - 1]) != null ? _ref : [];
+    active = (ref1 = this.steps[index - 1]) != null ? ref1 : [];
     step = this.props.directed ? index - this.index : 1;
     this.index = index;
     enter = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = active.length; _i < _len; _i++) {
-        node = active[_i];
+      var j, len, results;
+      results = [];
+      for (j = 0, len = active.length; j < len; j++) {
+        node = active[j];
         if (this.last.indexOf(node) < 0) {
-          _results.push(node);
+          results.push(node);
         }
       }
-      return _results;
+      return results;
     }).call(this);
     exit = (function() {
-      var _i, _len, _ref1, _results;
-      _ref1 = this.last;
-      _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        node = _ref1[_i];
+      var j, len, ref2, results;
+      ref2 = this.last;
+      results = [];
+      for (j = 0, len = ref2.length; j < len; j++) {
+        node = ref2[j];
         if (active.indexOf(node) < 0) {
-          _results.push(node);
+          results.push(node);
         }
       }
-      return _results;
+      return results;
     }).call(this);
     stay = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = active.length; _i < _len; _i++) {
-        node = active[_i];
+      var j, len, results;
+      results = [];
+      for (j = 0, len = active.length; j < len; j++) {
+        node = active[j];
         if (enter.indexOf(node) < 0 && exit.indexOf(node) < 0) {
-          _results.push(node);
+          results.push(node);
         }
       }
-      return _results;
+      return results;
     })();
     ascend = function(nodes) {
       return nodes.sort(function(a, b) {
@@ -61462,46 +61764,46 @@ Present = (function(_super) {
     toStr = function(x) {
       return x.toString();
     };
-    _ref1 = ascend(enter);
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      node = _ref1[_i];
+    ref2 = ascend(enter);
+    for (j = 0, len = ref2.length; j < len; j++) {
+      node = ref2[j];
       this.slideLatch(node.controller, true, step);
     }
-    _ref2 = ascend(stay);
-    for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-      node = _ref2[_j];
+    ref3 = ascend(stay);
+    for (k = 0, len1 = ref3.length; k < len1; k++) {
+      node = ref3[k];
       this.slideLatch(node.controller, null, step);
     }
-    _ref3 = ascend(exit);
-    for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
-      node = _ref3[_k];
+    ref4 = ascend(exit);
+    for (l = 0, len2 = ref4.length; l < len2; l++) {
+      node = ref4[l];
       this.slideLatch(node.controller, false, step);
     }
-    for (_l = 0, _len3 = enter.length; _l < _len3; _l++) {
-      node = enter[_l];
+    for (m = 0, len3 = enter.length; m < len3; m++) {
+      node = enter[m];
       this.slideStep(node.controller, index, step);
     }
-    for (_m = 0, _len4 = stay.length; _m < _len4; _m++) {
-      node = stay[_m];
+    for (n = 0, len4 = stay.length; n < len4; n++) {
+      node = stay[n];
       this.slideStep(node.controller, index, step);
     }
-    for (_n = 0, _len5 = exit.length; _n < _len5; _n++) {
-      node = exit[_n];
+    for (o = 0, len5 = exit.length; o < len5; o++) {
+      node = exit[o];
       this.slideStep(node.controller, index, step);
     }
-    _ref4 = descend(enter);
-    for (_o = 0, _len6 = _ref4.length; _o < _len6; _o++) {
-      node = _ref4[_o];
+    ref5 = descend(enter);
+    for (p = 0, len6 = ref5.length; p < len6; p++) {
+      node = ref5[p];
       this.slideRelease(node.controller);
     }
-    _ref5 = descend(stay);
-    for (_p = 0, _len7 = _ref5.length; _p < _len7; _p++) {
-      node = _ref5[_p];
+    ref6 = descend(stay);
+    for (q = 0, len7 = ref6.length; q < len7; q++) {
+      node = ref6[q];
       this.slideRelease(node.controller);
     }
-    _ref6 = descend(exit);
-    for (_q = 0, _len8 = _ref6.length; _q < _len8; _q++) {
-      node = _ref6[_q];
+    ref7 = descend(exit);
+    for (r = 0, len8 = ref7.length; r < len8; r++) {
+      node = ref7[r];
       this.slideRelease(node.controller);
     }
     this.last = active;
@@ -61520,17 +61822,18 @@ Present = (function(_super) {
 module.exports = Present;
 
 
-},{"../../../util":172,"../base/parent":47}],90:[function(require,module,exports){
+
+},{"../../../util":173,"../base/parent":47}],91:[function(require,module,exports){
 var Reveal, Transition, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transition = require('./transition');
 
 Util = require('../../../util');
 
-Reveal = (function(_super) {
-  __extends(Reveal, _super);
+Reveal = (function(superClass) {
+  extend(Reveal, superClass);
 
   function Reveal() {
     return Reveal.__super__.constructor.apply(this, arguments);
@@ -61539,7 +61842,7 @@ Reveal = (function(_super) {
   Reveal.traits = ['node', 'transition', 'mask', 'visible', 'active'];
 
   Reveal.prototype.mask = function(shader) {
-    var s, _ref, _ref1;
+    var ref, ref1, s;
     if (shader) {
       s = this._shaders.shader();
       s.pipe(Util.GLSL.identity('vec4'));
@@ -61553,7 +61856,7 @@ Reveal = (function(_super) {
       s = this._shaders.shader();
       s.pipe('reveal.mask', this.uniforms);
     }
-    return (_ref = (_ref1 = this._inherit('mask')) != null ? _ref1.mask(s) : void 0) != null ? _ref : s;
+    return (ref = (ref1 = this._inherit('mask')) != null ? ref1.mask(s) : void 0) != null ? ref : s;
   };
 
   return Reveal;
@@ -61563,15 +61866,16 @@ Reveal = (function(_super) {
 module.exports = Reveal;
 
 
-},{"../../../util":172,"./transition":94}],91:[function(require,module,exports){
+
+},{"../../../util":173,"./transition":95}],92:[function(require,module,exports){
 var Parent, Slide,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
-Slide = (function(_super) {
-  __extends(Slide, _super);
+Slide = (function(superClass) {
+  extend(Slide, superClass);
 
   function Slide() {
     return Slide.__super__.constructor.apply(this, arguments);
@@ -61583,7 +61887,7 @@ Slide = (function(_super) {
     this._helpers.visible.make();
     this._helpers.active.make();
     if (!this._inherit('present')) {
-      throw new Error("" + (this.node.toString()) + " must be placed inside <present></present>");
+      throw new Error((this.node.toString()) + " must be placed inside <present></present>");
     }
     return this._inherit('present').adopt(this);
   };
@@ -61643,15 +61947,16 @@ Slide = (function(_super) {
 module.exports = Slide;
 
 
-},{"../base/parent":47}],92:[function(require,module,exports){
+
+},{"../base/parent":47}],93:[function(require,module,exports){
 var Step, Track,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Track = require('./track');
 
-Step = (function(_super) {
-  __extends(Step, _super);
+Step = (function(superClass) {
+  extend(Step, superClass);
 
   function Step() {
     return Step.__super__.constructor.apply(this, arguments);
@@ -61660,7 +61965,7 @@ Step = (function(_super) {
   Step.traits = ['node', 'track', 'step', 'trigger', 'bind'];
 
   Step.prototype.make = function() {
-    var clock, _i, _ref, _ref1, _results;
+    var clock, j, ref, ref1, results;
     Step.__super__.make.apply(this, arguments);
     clock = this._inherit('clock');
     if (this.actualIndex == null) {
@@ -61688,10 +61993,10 @@ Step = (function(_super) {
         };
       })(this)
     });
-    this.stops = (_ref = this.props.stops) != null ? _ref : (function() {
-      _results = [];
-      for (var _i = 0, _ref1 = this.script.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; 0 <= _ref1 ? _i++ : _i--){ _results.push(_i); }
-      return _results;
+    this.stops = (ref = this.props.stops) != null ? ref : (function() {
+      results = [];
+      for (var j = 0, ref1 = this.script.length; 0 <= ref1 ? j < ref1 : j > ref1; 0 <= ref1 ? j++ : j--){ results.push(j); }
+      return results;
     }).apply(this);
     this._listen('slide', 'slide.reset', (function(_this) {
       return function(e) {
@@ -61700,8 +62005,8 @@ Step = (function(_super) {
     })(this));
     return this._listen('slide', 'slide.step', (function(_this) {
       return function(e) {
-        var delay, duration, factor, free, from, i, last, pace, playback, rewind, skip, skips, speed, step, stop, to, trigger, _j, _len, _ref2, _ref3, _ref4;
-        _ref2 = _this.props, delay = _ref2.delay, duration = _ref2.duration, pace = _ref2.pace, speed = _ref2.speed, playback = _ref2.playback, rewind = _ref2.rewind, skip = _ref2.skip, trigger = _ref2.trigger;
+        var delay, duration, factor, free, from, i, k, last, len, pace, playback, ref2, ref3, ref4, rewind, skip, skips, speed, step, stop, to, trigger;
+        ref2 = _this.props, delay = ref2.delay, duration = ref2.duration, pace = ref2.pace, speed = ref2.speed, playback = ref2.playback, rewind = ref2.rewind, skip = ref2.skip, trigger = ref2.trigger;
         i = Math.max(0, Math.min(_this.stops.length - 1, e.index - trigger));
         from = _this.playhead;
         to = _this.stops[i];
@@ -61711,13 +62016,13 @@ Step = (function(_super) {
           _this.animateIndex.set(i);
           return;
         }
-        last = (_ref3 = (_ref4 = _this.actualIndex) != null ? _ref4 : _this.lastIndex) != null ? _ref3 : 0;
+        last = (ref3 = (ref4 = _this.actualIndex) != null ? ref4 : _this.lastIndex) != null ? ref3 : 0;
         step = i - last;
         skips = _this.stops.slice(Math.min(last, i), Math.max(last, i));
         free = 0;
         last = skips.shift();
-        for (_j = 0, _len = skips.length; _j < _len; _j++) {
-          stop = skips[_j];
+        for (k = 0, len = skips.length; k < len; k++) {
+          stop = skips[k];
           if (last === stop) {
             free++;
           }
@@ -61768,10 +62073,11 @@ Step = (function(_super) {
 module.exports = Step;
 
 
-},{"./track":93}],93:[function(require,module,exports){
+
+},{"./track":94}],94:[function(require,module,exports){
 var Ease, Primitive, Track, deepCopy,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
@@ -61793,8 +62099,8 @@ deepCopy = function(x) {
   return out;
 };
 
-Track = (function(_super) {
-  __extends(Track, _super);
+Track = (function(superClass) {
+  extend(Track, superClass);
 
   function Track() {
     return Track.__super__.constructor.apply(this, arguments);
@@ -61813,7 +62119,7 @@ Track = (function(_super) {
   };
 
   Track.prototype.make = function() {
-    var node, script, _ref;
+    var node, ref, script;
     this._helpers.bind.make([
       {
         to: 'track.target',
@@ -61824,7 +62130,7 @@ Track = (function(_super) {
     script = this.props.script;
     node = this.bind.target.node;
     this.targetNode = node;
-    return _ref = this._process(node, script), this.script = _ref[0], this.values = _ref[1], this.start = _ref[2], this.end = _ref[3], _ref;
+    return ref = this._process(node, script), this.script = ref[0], this.values = ref[1], this.start = ref[2], this.end = ref[3], ref;
   };
 
   Track.prototype.unmake = function() {
@@ -61867,10 +62173,10 @@ Track = (function(_super) {
   };
 
   Track.prototype._process = function(object, script) {
-    var end, i, k, key, last, message, props, result, s, start, step, v, values, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+    var end, error, i, j, k, key, l, last, len, len1, message, props, ref, ref1, ref2, result, s, start, step, v, values;
     if (script instanceof Array) {
       s = {};
-      for (i = _i = 0, _len = script.length; _i < _len; i = ++_i) {
+      for (i = j = 0, len = script.length; j < len; i = ++j) {
         step = script[i];
         s[i] = step;
       }
@@ -61928,17 +62234,17 @@ Track = (function(_super) {
     values = {};
     for (key in script) {
       step = script[key];
-      _ref = step.props;
-      for (k in _ref) {
-        v = _ref[k];
+      ref = step.props;
+      for (k in ref) {
+        v = ref[k];
         props[k] = true;
       }
     }
     for (key in script) {
       step = script[key];
-      _ref1 = step.expr;
-      for (k in _ref1) {
-        v = _ref1[k];
+      ref1 = step.expr;
+      for (k in ref1) {
+        v = ref1[k];
         props[k] = true;
       }
     }
@@ -61949,21 +62255,21 @@ Track = (function(_super) {
       for (k in props) {
         values[k] = [object.attribute(k).T.make(), object.attribute(k).T.make(), object.attribute(k).T.make()];
       }
-    } catch (_error) {
+    } catch (error) {
       console.warn(this.node.toMarkup());
-      message = "" + (this.node.toString()) + " - Target " + object + " has no `" + k + "` property";
+      message = (this.node.toString()) + " - Target " + object + " has no `" + k + "` property";
       throw new Error(message);
     }
     result = [];
-    for (_j = 0, _len1 = script.length; _j < _len1; _j++) {
-      step = script[_j];
+    for (l = 0, len1 = script.length; l < len1; l++) {
+      step = script[l];
       for (k in props) {
         v = props[k];
-        v = object.validate(k, (_ref2 = step.props[k]) != null ? _ref2 : v);
+        v = object.validate(k, (ref2 = step.props[k]) != null ? ref2 : v);
         props[k] = step.props[k] = v;
         if ((step.expr[k] != null) && typeof step.expr[k] !== 'function') {
           console.warn(this.node.toMarkup());
-          message = "" + (this.node.toString()) + " - Expression `" + step.expr[k] + "` on property `" + k + "` is not a function";
+          message = (this.node.toString()) + " - Expression `" + step.expr[k] + "` on property `" + k + "` is not a function";
           throw new Error(message);
         }
       }
@@ -61973,18 +62279,18 @@ Track = (function(_super) {
   };
 
   Track.prototype.update = function() {
-    var clock, ease, easeMethod, end, expr, find, from, getLerpFactor, getPlayhead, k, live, node, playhead, script, section, seek, start, to, _ref;
+    var clock, ease, easeMethod, end, expr, find, from, getLerpFactor, getPlayhead, k, live, node, playhead, ref, script, section, seek, start, to;
     playhead = this.playhead, script = this.script;
-    _ref = this.props, ease = _ref.ease, seek = _ref.seek;
+    ref = this.props, ease = ref.ease, seek = ref.seek;
     node = this.targetNode;
     if (seek != null) {
       playhead = seek;
     }
     if (script.length) {
       find = function() {
-        var i, last, step, _i, _len;
+        var i, j, last, len, step;
         last = script[0];
-        for (i = _i = 0, _len = script.length; _i < _len; i = ++_i) {
+        for (i = j = 0, len = script.length; j < len; i = ++j) {
           step = script[i];
           if (step.key > playhead) {
             break;
@@ -62044,7 +62350,7 @@ Track = (function(_super) {
           toP = to.props[key];
           invalid = function() {
             console.warn(node.toMarkup());
-            throw new Error("" + (this.node.toString()) + " - Invalid expression result on track `" + key + "`");
+            throw new Error((this.node.toString()) + " - Invalid expression result on track `" + key + "`");
           };
           attr = node.attribute(key);
           values = _this.values[key];
@@ -62124,17 +62430,18 @@ Track = (function(_super) {
 module.exports = Track;
 
 
-},{"../../../util":172,"../../primitive":44}],94:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],95:[function(require,module,exports){
 var Parent, Transition, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
 Util = require('../../../util');
 
-Transition = (function(_super) {
-  __extends(Transition, _super);
+Transition = (function(superClass) {
+  extend(Transition, superClass);
 
   function Transition() {
     return Transition.__super__.constructor.apply(this, arguments);
@@ -62212,7 +62519,7 @@ Transition = (function(_super) {
   };
 
   Transition.prototype.latch = function(step) {
-    var enter, exit, forward, latched, visible, _ref;
+    var enter, exit, forward, latched, ref, visible;
     this.locked = null;
     this.latched = latched = {
       isVisible: this.state.isVisible,
@@ -62222,21 +62529,21 @@ Transition = (function(_super) {
     visible = this.isVisible;
     if (!visible) {
       forward = latched.step >= 0;
-      _ref = forward ? [0, 1] : [1, 0], enter = _ref[0], exit = _ref[1];
+      ref = forward ? [0, 1] : [1, 0], enter = ref[0], exit = ref[1];
       return this.animate.set(enter, exit);
     }
   };
 
   Transition.prototype.release = function() {
-    var delay, delayEnter, delayExit, duration, durationEnter, durationExit, enter, exit, forward, latched, state, visible, _ref, _ref1, _ref2;
+    var delay, delayEnter, delayExit, duration, durationEnter, durationExit, enter, exit, forward, latched, ref, ref1, ref2, state, visible;
     latched = this.latched;
     state = this.state;
     this.latched = null;
     if (latched.isVisible !== state.isVisible) {
       forward = latched.step >= 0;
       visible = state.isVisible;
-      _ref = visible ? [1, 1] : forward ? [1, 0] : [0, 1], enter = _ref[0], exit = _ref[1];
-      _ref1 = this.props, duration = _ref1.duration, durationEnter = _ref1.durationEnter, durationExit = _ref1.durationExit;
+      ref = visible ? [1, 1] : forward ? [1, 0] : [0, 1], enter = ref[0], exit = ref[1];
+      ref1 = this.props, duration = ref1.duration, durationEnter = ref1.durationEnter, durationExit = ref1.durationExit;
       if (durationEnter == null) {
         durationEnter = duration;
       }
@@ -62244,7 +62551,7 @@ Transition = (function(_super) {
         durationExit = duration;
       }
       duration = visible * durationEnter + !visible * durationExit;
-      _ref2 = this.props, delay = _ref2.delay, delayEnter = _ref2.delayEnter, delayExit = _ref2.delayExit;
+      ref2 = this.props, delay = ref2.delay, delayEnter = ref2.delayEnter, delayExit = ref2.delayExit;
       if (delayEnter == null) {
         delayEnter = delay;
       }
@@ -62277,11 +62584,11 @@ Transition = (function(_super) {
   };
 
   Transition.prototype.update = function() {
-    var active, enter, exit, level, partial, visible, _ref, _ref1;
+    var active, enter, exit, level, partial, ref, ref1, visible;
     if (this.latched != null) {
       return;
     }
-    _ref = this.props, enter = _ref.enter, exit = _ref.exit;
+    ref = this.props, enter = ref.enter, exit = ref.exit;
     if (enter == null) {
       enter = this.state.enter;
     }
@@ -62306,7 +62613,7 @@ Transition = (function(_super) {
         type: 'visible.change'
       });
     }
-    active = !!(this.state.isActive || ((_ref1 = this.locked) != null ? _ref1.isActive : void 0));
+    active = !!(this.state.isActive || ((ref1 = this.locked) != null ? ref1.isActive : void 0));
     if (this.isActive !== active) {
       this.isActive = active;
       return this.trigger({
@@ -62343,17 +62650,18 @@ Transition = (function(_super) {
 module.exports = Transition;
 
 
-},{"../../../util":172,"../base/parent":47}],95:[function(require,module,exports){
+
+},{"../../../util":173,"../base/parent":47}],96:[function(require,module,exports){
 var Compose, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Compose = (function(_super) {
-  __extends(Compose, _super);
+Compose = (function(superClass) {
+  extend(Compose, superClass);
 
   function Compose() {
     return Compose.__super__.constructor.apply(this, arguments);
@@ -62444,17 +62752,18 @@ Compose = (function(_super) {
 module.exports = Compose;
 
 
-},{"../../../util":172,"../../primitive":44}],96:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],97:[function(require,module,exports){
 var Parent, RTT, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
 Util = require('../../../util');
 
-RTT = (function(_super) {
-  __extends(RTT, _super);
+RTT = (function(superClass) {
+  extend(RTT, superClass);
 
   function RTT() {
     return RTT.__super__.constructor.apply(this, arguments);
@@ -62498,7 +62807,7 @@ RTT = (function(_super) {
   };
 
   RTT.prototype.make = function() {
-    var aspect, height, history, magFilter, minFilter, type, viewHeight, viewWidth, width;
+    var aspect, height, heightFactor, history, magFilter, minFilter, ref, ref1, relativeSize, size, type, viewHeight, viewWidth, width, widthFactor;
     this.parentRoot = this._inherit('root');
     this.rootSize = this.parentRoot.getSize();
     this._listen(this.parentRoot, 'root.pre', this.pre);
@@ -62512,14 +62821,13 @@ RTT = (function(_super) {
     if (this.rootSize == null) {
       return;
     }
-    minFilter = this.props.minFilter;
-    magFilter = this.props.magFilter;
-    type = this.props.type;
-    width = this.props.width;
-    height = this.props.height;
-    history = this.props.history;
-    this.width = width != null ? width : this.rootSize.renderWidth;
-    this.height = height != null ? height : this.rootSize.renderHeight;
+    ref = this.props, minFilter = ref.minFilter, magFilter = ref.magFilter, type = ref.type;
+    ref1 = this.props, width = ref1.width, height = ref1.height, history = ref1.history, size = ref1.size;
+    relativeSize = size === this.node.attributes['rtt.size']["enum"].relative;
+    widthFactor = relativeSize ? this.rootSize.renderWidth : 1;
+    heightFactor = relativeSize ? this.rootSize.renderHeight : 1;
+    this.width = Math.round(width != null ? width * widthFactor : this.rootSize.renderWidth);
+    this.height = Math.round(height != null ? height * heightFactor : this.rootSize.renderHeight);
     this.history = history;
     this.aspect = aspect = this.width / this.height;
     if (this.scene == null) {
@@ -62583,33 +62891,33 @@ RTT = (function(_super) {
   };
 
   RTT.prototype.adopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this.scene.add(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this.scene.add(object));
     }
-    return _results;
+    return results;
   };
 
   RTT.prototype.unadopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this.scene.remove(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this.scene.remove(object));
     }
-    return _results;
+    return results;
   };
 
   RTT.prototype.resize = function(size) {
-    var height, width;
+    var height, ref, relativeSize, width;
     this.rootSize = size;
-    width = this.props.width;
-    height = this.props.height;
-    if (!this.rtt || (width == null) || (height == null)) {
+    ref = this.props, width = ref.width, height = ref.height, size = ref.size;
+    relativeSize = size === this.node.attributes['rtt.size']["enum"].relative;
+    if (!this.rtt || (width == null) || (height == null) || relativeSize) {
       return this.rebuild();
     }
   };
@@ -62640,9 +62948,9 @@ RTT = (function(_super) {
   };
 
   RTT.prototype.render = function(e) {
-    var _ref;
+    var ref;
     this.trigger(e);
-    return (_ref = this.rtt) != null ? _ref.render(this.getCamera()) : void 0;
+    return (ref = this.rtt) != null ? ref.render(this.getCamera()) : void 0;
   };
 
   RTT.prototype.post = function(e) {
@@ -62650,8 +62958,8 @@ RTT = (function(_super) {
   };
 
   RTT.prototype.setCamera = function() {
-    var camera, _ref;
-    camera = (_ref = this.select(this.props.camera)[0]) != null ? _ref.controller : void 0;
+    var camera, ref;
+    camera = (ref = this.select(this.props.camera)[0]) != null ? ref.controller : void 0;
     if (this.camera !== camera) {
       this.camera = camera;
       this.rtt.camera = this.getCamera();
@@ -62666,13 +62974,13 @@ RTT = (function(_super) {
   };
 
   RTT.prototype.getOwnCamera = function() {
-    var _ref;
-    return (_ref = this.camera) != null ? _ref.getCamera() : void 0;
+    var ref;
+    return (ref = this.camera) != null ? ref.getCamera() : void 0;
   };
 
   RTT.prototype.getCamera = function() {
-    var _ref;
-    return (_ref = this.getOwnCamera()) != null ? _ref : this._inherit('root').getCamera();
+    var ref;
+    return (ref = this.getOwnCamera()) != null ? ref : this._inherit('root').getCamera();
   };
 
   RTT.prototype.vertex = function(shader, pass) {
@@ -62692,17 +63000,18 @@ RTT = (function(_super) {
 module.exports = RTT;
 
 
-},{"../../../util":172,"../base/parent":47}],97:[function(require,module,exports){
+
+},{"../../../util":173,"../base/parent":47}],98:[function(require,module,exports){
 var Primitive, Shader, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Shader = (function(_super) {
-  __extends(Shader, _super);
+Shader = (function(superClass) {
+  extend(Shader, superClass);
 
   function Shader() {
     return Shader.__super__.constructor.apply(this, arguments);
@@ -62717,8 +63026,8 @@ Shader = (function(_super) {
   };
 
   Shader.prototype.make = function() {
-    var code, def, language, make, snippet, type, types, uniforms, _i, _len, _ref, _ref1;
-    _ref = this.props, language = _ref.language, code = _ref.code;
+    var code, def, i, language, len, make, ref, ref1, snippet, type, types, uniforms;
+    ref = this.props, language = ref.language, code = ref.code;
     if (language !== 'glsl') {
       throw new Error("GLSL required");
     }
@@ -62762,9 +63071,9 @@ Shader = (function(_super) {
         }
       };
     })(this);
-    _ref1 = snippet._signatures.uniform;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      def = _ref1[_i];
+    ref1 = snippet._signatures.uniform;
+    for (i = 0, len = ref1.length; i < len; i++) {
+      def = ref1[i];
       if (type = make(def.type)) {
         uniforms[def.name] = type;
       }
@@ -62793,17 +63102,17 @@ Shader = (function(_super) {
   };
 
   Shader.prototype.shaderBind = function(uniforms) {
-    var code, k, language, s, source, u, v, _i, _len, _name, _ref, _ref1, _ref2;
+    var code, i, k, language, len, name, ref, ref1, ref2, s, source, u, v;
     if (uniforms == null) {
       uniforms = {};
     }
-    _ref = this.props, language = _ref.language, code = _ref.code;
-    _ref1 = this.node.attributes;
-    for (k in _ref1) {
-      v = _ref1[k];
+    ref = this.props, language = ref.language, code = ref.code;
+    ref1 = this.node.attributes;
+    for (k in ref1) {
+      v = ref1[k];
       if ((v.type != null) && (v.short != null) && v.ns === 'uniform') {
-        if (uniforms[_name = v.short] == null) {
-          uniforms[_name] = v;
+        if (uniforms[name = v.short] == null) {
+          uniforms[name] = v;
         }
       }
     }
@@ -62815,9 +63124,9 @@ Shader = (function(_super) {
     }
     s = this._shaders.shader();
     if (this.bind.sources != null) {
-      _ref2 = this.bind.sources;
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        source = _ref2[_i];
+      ref2 = this.bind.sources;
+      for (i = 0, len = ref2.length; i < len; i++) {
+        source = ref2[i];
         s.require(source.sourceShader(this._shaders.shader()));
       }
     }
@@ -62831,23 +63140,24 @@ Shader = (function(_super) {
 module.exports = Shader;
 
 
-},{"../../../util":172,"../../primitive":44}],98:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],99:[function(require,module,exports){
 var Format, Operator, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Operator = require('../operator/operator');
 
 Util = require('../../../util');
 
-Format = (function(_super) {
-  __extends(Format, _super);
+Format = (function(superClass) {
+  extend(Format, superClass);
 
   function Format() {
     return Format.__super__.constructor.apply(this, arguments);
   }
 
-  Format.traits = ['node', 'bind', 'operator', 'texture', 'text', 'format'];
+  Format.traits = ['node', 'bind', 'operator', 'texture', 'text', 'format', 'font'];
 
   Format.defaults = {
     minFilter: 'linear',
@@ -62869,7 +63179,7 @@ Format = (function(_super) {
   };
 
   Format.prototype.textIsSDF = function() {
-    return this.props.expand > 0;
+    return this.props.sdf > 0;
   };
 
   Format.prototype.textHeight = function() {
@@ -62877,22 +63187,22 @@ Format = (function(_super) {
   };
 
   Format.prototype.make = function() {
-    var atlas, depth, detail, dims, emit, expand, font, height, items, magFilter, minFilter, style, type, variant, weight, width, _ref, _ref1;
+    var atlas, depth, detail, dims, emit, font, height, items, magFilter, minFilter, ref, ref1, sdf, style, type, variant, weight, width;
     this._helpers.bind.make([
       {
         to: 'operator.source',
         trait: 'raw'
       }
     ]);
-    _ref = this.props, minFilter = _ref.minFilter, magFilter = _ref.magFilter, type = _ref.type;
-    _ref1 = this.props, font = _ref1.font, style = _ref1.style, variant = _ref1.variant, weight = _ref1.weight, detail = _ref1.detail, expand = _ref1.expand;
+    ref = this.props, minFilter = ref.minFilter, magFilter = ref.magFilter, type = ref.type;
+    ref1 = this.props, font = ref1.font, style = ref1.style, variant = ref1.variant, weight = ref1.weight, detail = ref1.detail, sdf = ref1.sdf;
     this.atlas = this._renderables.make('textAtlas', {
       font: font,
       size: detail,
       style: style,
       variant: variant,
       weight: weight,
-      outline: expand,
+      outline: sdf,
       minFilter: minFilter,
       magFilter: magFilter,
       type: type
@@ -62960,12 +63270,12 @@ Format = (function(_super) {
   };
 
   Format.prototype.change = function(changed, touched, init) {
-    var data, digits, expr, length, map, _ref;
-    if (touched['text']) {
+    var data, digits, expr, length, map, ref;
+    if (touched['font']) {
       return this.rebuild();
     }
     if (changed['format.expr'] || changed['format.digits'] || changed['format.data'] || init) {
-      _ref = this.props, digits = _ref.digits, expr = _ref.expr, data = _ref.data;
+      ref = this.props, digits = ref.digits, expr = ref.expr, data = ref.data;
       if (expr == null) {
         if (data != null) {
           expr = function(x, y, z, w, i) {
@@ -63009,27 +63319,24 @@ Format = (function(_super) {
 module.exports = Format;
 
 
-},{"../../../util":172,"../operator/operator":77}],99:[function(require,module,exports){
+
+},{"../../../util":173,"../operator/operator":77}],100:[function(require,module,exports){
 var Label, Primitive, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Primitive = require('../../primitive');
 
 Util = require('../../../util');
 
-Label = (function(_super) {
-  __extends(Label, _super);
+Label = (function(superClass) {
+  extend(Label, superClass);
 
   function Label() {
     return Label.__super__.constructor.apply(this, arguments);
   }
 
   Label.traits = ['node', 'bind', 'object', 'visible', 'style', 'label', 'attach', 'geometry', 'position'];
-
-  Label.defaults = {
-    color: '#000000'
-  };
 
   Label.prototype.make = function() {
     var color, combine, depth, height, items, labelUniforms, map, mask, pointDims, position, snippet, sprite, styleUniforms, textDims, textIsSDF, uniforms, unitUniforms, width;
@@ -63147,17 +63454,18 @@ Label = (function(_super) {
 module.exports = Label;
 
 
-},{"../../../util":172,"../../primitive":44}],100:[function(require,module,exports){
+
+},{"../../../util":173,"../../primitive":44}],101:[function(require,module,exports){
 var Resample, Retext, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Resample = require('../operator/resample');
 
 Util = require('../../../util');
 
-Retext = (function(_super) {
-  __extends(Retext, _super);
+Retext = (function(superClass) {
+  extend(Retext, superClass);
 
   function Retext() {
     return Retext.__super__.constructor.apply(this, arguments);
@@ -63179,13 +63487,13 @@ Retext = (function(_super) {
   };
 
   Retext.prototype.textIsSDF = function() {
-    var _ref;
-    return ((_ref = this.bind.source) != null ? _ref.props.expand : void 0) > 0;
+    var ref;
+    return ((ref = this.bind.source) != null ? ref.props.sdf : void 0) > 0;
   };
 
   Retext.prototype.textHeight = function() {
-    var _ref;
-    return (_ref = this.bind.source) != null ? _ref.props.detail : void 0;
+    var ref;
+    return (ref = this.bind.source) != null ? ref.props.detail : void 0;
   };
 
   return Retext;
@@ -63195,23 +63503,26 @@ Retext = (function(_super) {
 module.exports = Retext;
 
 
-},{"../../../util":172,"../operator/resample":79}],101:[function(require,module,exports){
-var Text, Util, Voxel,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+},{"../../../util":173,"../operator/resample":80}],102:[function(require,module,exports){
+var Buffer, Text, Util, Voxel,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Buffer = require('../data/buffer');
 
 Voxel = require('../data/voxel');
 
 Util = require('../../../util');
 
-Text = (function(_super) {
-  __extends(Text, _super);
+Text = (function(superClass) {
+  extend(Text, superClass);
 
   function Text() {
     return Text.__super__.constructor.apply(this, arguments);
   }
 
-  Text.traits = ['node', 'buffer', 'active', 'data', 'texture', 'voxel', 'text'];
+  Text.traits = ['node', 'buffer', 'active', 'data', 'texture', 'voxel', 'text', 'font'];
 
   Text.defaults = {
     minFilter: 'linear',
@@ -63219,7 +63530,7 @@ Text = (function(_super) {
   };
 
   Text.finals = {
-    channels: 4
+    channels: 1
   };
 
   Text.prototype.init = function() {
@@ -63232,7 +63543,7 @@ Text = (function(_super) {
   };
 
   Text.prototype.textIsSDF = function() {
-    return this.props.expand > 0;
+    return this.props.sdf > 0;
   };
 
   Text.prototype.textHeight = function() {
@@ -63240,16 +63551,16 @@ Text = (function(_super) {
   };
 
   Text.prototype.make = function() {
-    var atlas, detail, emit, expand, font, magFilter, minFilter, style, type, variant, weight, _ref, _ref1;
-    _ref = this.props, minFilter = _ref.minFilter, magFilter = _ref.magFilter, type = _ref.type;
-    _ref1 = this.props, font = _ref1.font, style = _ref1.style, variant = _ref1.variant, weight = _ref1.weight, detail = _ref1.detail, expand = _ref1.expand;
+    var atlas, channels, data, depth, detail, dims, emit, font, height, items, magFilter, minFilter, ref, ref1, ref2, ref3, ref4, reserveX, reserveY, reserveZ, sdf, space, style, type, variant, weight, width;
+    ref = this.props, minFilter = ref.minFilter, magFilter = ref.magFilter, type = ref.type;
+    ref1 = this.props, font = ref1.font, style = ref1.style, variant = ref1.variant, weight = ref1.weight, detail = ref1.detail, sdf = ref1.sdf;
     this.atlas = this._renderables.make('textAtlas', {
       font: font,
       size: detail,
       style: style,
       variant: variant,
       weight: weight,
-      outline: expand,
+      outline: sdf,
       minFilter: minFilter,
       magFilter: magFilter,
       type: type
@@ -63257,7 +63568,43 @@ Text = (function(_super) {
     this.minFilter = THREE.NearestFilter;
     this.magFilter = THREE.NearestFilter;
     this.type = THREE.FloatType;
-    Text.__super__.make.apply(this, arguments);
+    Buffer.prototype.make.call(this);
+    minFilter = (ref2 = this.minFilter) != null ? ref2 : this.props.minFilter;
+    magFilter = (ref3 = this.magFilter) != null ? ref3 : this.props.magFilter;
+    type = (ref4 = this.type) != null ? ref4 : this.props.type;
+    width = this.props.width;
+    height = this.props.height;
+    depth = this.props.depth;
+    reserveX = this.props.bufferWidth;
+    reserveY = this.props.bufferHeight;
+    reserveZ = this.props.bufferDepth;
+    channels = this.props.channels;
+    items = this.props.items;
+    dims = this.spec = {
+      channels: channels,
+      items: items,
+      width: width,
+      height: height,
+      depth: depth
+    };
+    this.items = dims.items;
+    this.channels = dims.channels;
+    data = this.props.data;
+    dims = Util.Data.getDimensions(data, dims);
+    space = this.space;
+    space.width = Math.max(reserveX, dims.width || 1);
+    space.height = Math.max(reserveY, dims.height || 1);
+    space.depth = Math.max(reserveZ, dims.depth || 1);
+    this.buffer = this._renderables.make(this.storage, {
+      width: space.width,
+      height: space.height,
+      depth: space.depth,
+      channels: 4,
+      items: items,
+      minFilter: minFilter,
+      magFilter: magFilter,
+      type: type
+    });
     atlas = this.atlas;
     emit = this.buffer.streamer.emit;
     return this.buffer.streamer.emit = function(text) {
@@ -63280,7 +63627,7 @@ Text = (function(_super) {
   };
 
   Text.prototype.change = function(changed, touched, init) {
-    if (touched['text']) {
+    if (touched['font']) {
       return this.rebuild();
     }
     return Text.__super__.change.call(this, changed, touched, init);
@@ -63293,15 +63640,16 @@ Text = (function(_super) {
 module.exports = Text;
 
 
-},{"../../../util":172,"../data/voxel":61}],102:[function(require,module,exports){
+
+},{"../../../util":173,"../data/buffer":55,"../data/voxel":61}],103:[function(require,module,exports){
 var Clock, Parent,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
-Clock = (function(_super) {
-  __extends(Clock, _super);
+Clock = (function(superClass) {
+  extend(Clock, superClass);
 
   function Clock() {
     return Clock.__super__.constructor.apply(this, arguments);
@@ -63330,8 +63678,8 @@ Clock = (function(_super) {
   };
 
   Clock.prototype.tick = function(e) {
-    var clock, delay, delta, from, pace, parent, ratio, realtime, seek, speed, time, to, _ref;
-    _ref = this.props, from = _ref.from, to = _ref.to, speed = _ref.speed, seek = _ref.seek, pace = _ref.pace, delay = _ref.delay, realtime = _ref.realtime;
+    var clock, delay, delta, from, pace, parent, ratio, realtime, ref, seek, speed, time, to;
+    ref = this.props, from = ref.from, to = ref.to, speed = ref.speed, seek = ref.seek, pace = ref.pace, delay = ref.delay, realtime = ref.realtime;
     parent = this._inherit('clock').getTime();
     time = realtime ? parent.time : parent.clock;
     delta = realtime ? parent.delta : parent.step;
@@ -63361,15 +63709,16 @@ Clock = (function(_super) {
 module.exports = Clock;
 
 
-},{"../base/parent":47}],103:[function(require,module,exports){
+
+},{"../base/parent":47}],104:[function(require,module,exports){
 var Now, Parent,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
-Now = (function(_super) {
-  __extends(Now, _super);
+Now = (function(superClass) {
+  extend(Now, superClass);
 
   function Now() {
     return Now.__super__.constructor.apply(this, arguments);
@@ -63406,14 +63755,14 @@ Now = (function(_super) {
   };
 
   Now.prototype.tick = function(e) {
-    var now, pace, parent, seek, speed, _ref, _ref1;
-    _ref = this.props, now = _ref.now, seek = _ref.seek, pace = _ref.pace, speed = _ref.speed;
+    var now, pace, parent, ref, ref1, seek, speed;
+    ref = this.props, now = ref.now, seek = ref.seek, pace = ref.pace, speed = ref.speed;
     parent = this.clockParent.getTime();
     this.skew += parent.step * pace / speed;
     if (seek != null) {
       this.skew = seek;
     }
-    this.time.now = this.time.time = this.time.clock = ((_ref1 = this.props.now) != null ? _ref1 : this.now) + this.skew;
+    this.time.now = this.time.time = this.time.clock = ((ref1 = this.props.now) != null ? ref1 : this.now) + this.skew;
     this.time.delta = this.time.step = parent.delta;
     return this.trigger(e);
   };
@@ -63429,7 +63778,8 @@ Now = (function(_super) {
 module.exports = Now;
 
 
-},{"../base/parent":47}],104:[function(require,module,exports){
+
+},{"../base/parent":47}],105:[function(require,module,exports){
 var Traits, Types;
 
 Types = require('./types');
@@ -63475,7 +63825,8 @@ Traits = {
     pass: Types.vertexPass()
   },
   fragment: {
-    pass: Types.fragmentPass()
+    pass: Types.fragmentPass(),
+    gamma: Types.bool(false)
   },
   transform3: {
     position: Types.vec3(),
@@ -63545,7 +63896,7 @@ Traits = {
     crossed: Types.bool(false)
   },
   data: {
-    data: Types.nullable(Types.object()),
+    data: Types.nullable(Types.data()),
     expr: Types.nullable(Types.emitter()),
     bind: Types.nullable(Types.func()),
     live: Types.bool(true)
@@ -63619,7 +63970,8 @@ Traits = {
   mesh: {
     fill: Types.bool(true),
     shaded: Types.bool(false),
-    map: Types.nullable(Types.select())
+    map: Types.nullable(Types.select()),
+    lineBias: Types.number(5)
   },
   strip: {
     line: Types.bool(false)
@@ -63644,17 +63996,17 @@ Traits = {
   },
   format: {
     digits: Types.nullable(Types.positive(Types.number(3))),
-    data: Types.nullable(Types.object()),
+    data: Types.nullable(Types.data()),
     expr: Types.nullable(Types.func()),
     live: Types.bool(true)
   },
-  text: {
+  font: {
     font: Types.font('sans-serif'),
     style: Types.string(),
     variant: Types.string(),
     weight: Types.string(),
     detail: Types.number(24),
-    expand: Types.number(5)
+    sdf: Types.number(5)
   },
   label: {
     text: Types.select(),
@@ -63758,7 +64110,14 @@ Traits = {
     depth: Types.nullable(Types.int())
   },
   readback: {
-    indexed: Types.bool()
+    type: Types.type('float'),
+    expr: Types.nullable(Types.func()),
+    data: Types.data(),
+    channels: Types["enum"](4, [1, 2, 3, 4]),
+    items: Types.nullable(Types.int()),
+    width: Types.nullable(Types.int()),
+    height: Types.nullable(Types.int()),
+    depth: Types.nullable(Types.int())
   },
   root: {
     speed: Types.number(1),
@@ -63769,8 +64128,9 @@ Traits = {
     traits: Types.array(Types.string())
   },
   rtt: {
-    width: Types.nullable(Types.int()),
-    height: Types.nullable(Types.int()),
+    size: Types.mapping('absolute'),
+    width: Types.nullable(Types.number()),
+    height: Types.nullable(Types.number()),
     history: Types.int(1)
   },
   compose: {
@@ -63846,15 +64206,16 @@ Traits = {
 module.exports = Traits;
 
 
-},{"./types":112}],105:[function(require,module,exports){
+
+},{"./types":113}],106:[function(require,module,exports){
 var Fragment, Transform,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('./transform');
 
-Fragment = (function(_super) {
-  __extends(Fragment, _super);
+Fragment = (function(superClass) {
+  extend(Fragment, superClass);
 
   function Fragment() {
     return Fragment.__super__.constructor.apply(this, arguments);
@@ -63877,7 +64238,7 @@ Fragment = (function(_super) {
   };
 
   Fragment.prototype.change = function(changed, touched, init) {
-    if (touched['include']) {
+    if (touched['include'] || changed['fragment.gamma']) {
       return this.rebuild();
     }
   };
@@ -63885,7 +64246,15 @@ Fragment = (function(_super) {
   Fragment.prototype.fragment = function(shader, pass) {
     if (this.bind.shader != null) {
       if (pass === this.props.pass) {
+        if (this.props.gamma) {
+          shader.pipe('mesh.gamma.out');
+        }
         shader.pipe(this.bind.shader.shaderBind());
+        shader.split();
+        if (this.props.gamma) {
+          shader.pipe('mesh.gamma.in');
+        }
+        shader.pass();
       }
     }
     return Fragment.__super__.fragment.call(this, shader, pass);
@@ -63898,17 +64267,18 @@ Fragment = (function(_super) {
 module.exports = Fragment;
 
 
-},{"./transform":108}],106:[function(require,module,exports){
+
+},{"./transform":109}],107:[function(require,module,exports){
 var Layer, Transform, π,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('./transform');
 
 π = Math.PI;
 
-Layer = (function(_super) {
-  __extends(Layer, _super);
+Layer = (function(superClass) {
+  extend(Layer, superClass);
 
   function Layer() {
     return Layer.__super__.constructor.apply(this, arguments);
@@ -63925,14 +64295,14 @@ Layer = (function(_super) {
   };
 
   Layer.prototype.update = function() {
-    var aspect, camera, depth, fit, fov, pitch, scale, size, _enum, _ref, _ref1, _ref2;
+    var _enum, aspect, camera, depth, fit, fov, pitch, ref, ref1, ref2, scale, size;
     camera = this._inherit('root').getCamera();
     size = this._inherit('root').getSize();
-    aspect = (_ref = camera.aspect) != null ? _ref : 1;
-    fov = (_ref1 = camera.fov) != null ? _ref1 : 1;
+    aspect = (ref = camera.aspect) != null ? ref : 1;
+    fov = (ref1 = camera.fov) != null ? ref1 : 1;
     pitch = Math.tan(fov * π / 360);
     _enum = this.node.attributes['layer.fit']["enum"];
-    _ref2 = this.props, fit = _ref2.fit, depth = _ref2.depth, scale = _ref2.scale;
+    ref2 = this.props, fit = ref2.fit, depth = ref2.depth, scale = ref2.scale;
     switch (fit) {
       case _enum.contain:
         fit = aspect > 1 ? _enum.y : _enum.x;
@@ -63973,15 +64343,16 @@ Layer = (function(_super) {
 module.exports = Layer;
 
 
-},{"./transform":108}],107:[function(require,module,exports){
+
+},{"./transform":109}],108:[function(require,module,exports){
 var Mask, Parent,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
-Mask = (function(_super) {
-  __extends(Mask, _super);
+Mask = (function(superClass) {
+  extend(Mask, superClass);
 
   function Mask() {
     return Mask.__super__.constructor.apply(this, arguments);
@@ -64010,7 +64381,7 @@ Mask = (function(_super) {
   };
 
   Mask.prototype.mask = function(shader) {
-    var s, _ref, _ref1;
+    var ref, ref1, s;
     if (this.bind.shader != null) {
       if (shader) {
         s = this._shaders.shader();
@@ -64028,7 +64399,7 @@ Mask = (function(_super) {
     } else {
       s = shader;
     }
-    return (_ref = (_ref1 = this._inherit('mask')) != null ? _ref1.mask(s) : void 0) != null ? _ref : s;
+    return (ref = (ref1 = this._inherit('mask')) != null ? ref1.mask(s) : void 0) != null ? ref : s;
   };
 
   return Mask;
@@ -64038,15 +64409,16 @@ Mask = (function(_super) {
 module.exports = Mask;
 
 
-},{"../base/parent":47}],108:[function(require,module,exports){
+
+},{"../base/parent":47}],109:[function(require,module,exports){
 var Parent, Transform,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Parent = require('../base/parent');
 
-Transform = (function(_super) {
-  __extends(Transform, _super);
+Transform = (function(superClass) {
+  extend(Transform, superClass);
 
   function Transform() {
     return Transform.__super__.constructor.apply(this, arguments);
@@ -64055,13 +64427,13 @@ Transform = (function(_super) {
   Transform.traits = ['node', 'vertex', 'fragment'];
 
   Transform.prototype.vertex = function(shader, pass) {
-    var _ref, _ref1;
-    return (_ref = (_ref1 = this._inherit('vertex')) != null ? _ref1.vertex(shader, pass) : void 0) != null ? _ref : shader;
+    var ref, ref1;
+    return (ref = (ref1 = this._inherit('vertex')) != null ? ref1.vertex(shader, pass) : void 0) != null ? ref : shader;
   };
 
   Transform.prototype.fragment = function(shader, pass) {
-    var _ref, _ref1;
-    return (_ref = (_ref1 = this._inherit('fragment')) != null ? _ref1.fragment(shader, pass) : void 0) != null ? _ref : shader;
+    var ref, ref1;
+    return (ref = (ref1 = this._inherit('fragment')) != null ? ref1.fragment(shader, pass) : void 0) != null ? ref : shader;
   };
 
   return Transform;
@@ -64071,17 +64443,18 @@ Transform = (function(_super) {
 module.exports = Transform;
 
 
-},{"../base/parent":47}],109:[function(require,module,exports){
+
+},{"../base/parent":47}],110:[function(require,module,exports){
 var Transform, Transform3, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('./transform');
 
 Util = require('../../../util');
 
-Transform3 = (function(_super) {
-  __extends(Transform3, _super);
+Transform3 = (function(superClass) {
+  extend(Transform3, superClass);
 
   function Transform3() {
     return Transform3.__super__.constructor.apply(this, arguments);
@@ -64131,15 +64504,16 @@ Transform3 = (function(_super) {
 module.exports = Transform3;
 
 
-},{"../../../util":172,"./transform":108}],110:[function(require,module,exports){
+
+},{"../../../util":173,"./transform":109}],111:[function(require,module,exports){
 var Transform, Transform4,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('./transform');
 
-Transform4 = (function(_super) {
-  __extends(Transform4, _super);
+Transform4 = (function(superClass) {
+  extend(Transform4, superClass);
 
   function Transform4() {
     return Transform4.__super__.constructor.apply(this, arguments);
@@ -64188,15 +64562,16 @@ Transform4 = (function(_super) {
 module.exports = Transform4;
 
 
-},{"./transform":108}],111:[function(require,module,exports){
+
+},{"./transform":109}],112:[function(require,module,exports){
 var Transform, Vertex,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('./transform');
 
-Vertex = (function(_super) {
-  __extends(Vertex, _super);
+Vertex = (function(superClass) {
+  extend(Vertex, superClass);
 
   function Vertex() {
     return Vertex.__super__.constructor.apply(this, arguments);
@@ -64240,9 +64615,10 @@ Vertex = (function(_super) {
 module.exports = Vertex;
 
 
-},{"./transform":108}],112:[function(require,module,exports){
+
+},{"./transform":109}],113:[function(require,module,exports){
 var Types, Util, decorate,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Util = require('../../util');
 
@@ -64253,17 +64629,17 @@ Types = {
       value = null;
     }
     lerp = type.lerp ? function(a, b, target, f) {
-      var i, l, _i;
+      var i, j, l, ref;
       l = Math.min(a.length, b.length);
-      for (i = _i = 0; 0 <= l ? _i < l : _i > l; i = 0 <= l ? ++_i : --_i) {
+      for (i = j = 0, ref = l; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         target[i] = type.lerp(a[i], b[i], target[i], f);
       }
       return target;
     } : void 0;
     op = type.op ? function(a, b, target, op) {
-      var i, l, _i;
+      var i, j, l, ref;
       l = Math.min(a.length, b.length);
-      for (i = _i = 0; 0 <= l ? _i < l : _i > l; i = 0 <= l ? ++_i : --_i) {
+      for (i = j = 0, ref = l; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         target[i] = type.op(a[i], b[i], target[i], op);
       }
       return target;
@@ -64280,40 +64656,40 @@ Types = {
         }
       },
       make: function() {
-        var i, _i, _results;
+        var i, j, ref, results;
         if (value != null) {
           return value.slice();
         }
         if (!size) {
           return [];
         }
-        _results = [];
-        for (i = _i = 0; 0 <= size ? _i < size : _i > size; i = 0 <= size ? ++_i : --_i) {
-          _results.push(type.make());
+        results = [];
+        for (i = j = 0, ref = size; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+          results.push(type.make());
         }
-        return _results;
+        return results;
       },
       validate: function(value, target, invalid) {
-        var i, input, l, _i, _ref;
+        var i, input, j, l, ref, ref1;
         if (!(value instanceof Array)) {
           value = [value];
         }
         l = target.length = size ? size : value.length;
-        for (i = _i = 0; 0 <= l ? _i < l : _i > l; i = 0 <= l ? ++_i : --_i) {
-          input = (_ref = value[i]) != null ? _ref : type.make();
+        for (i = j = 0, ref = l; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+          input = (ref1 = value[i]) != null ? ref1 : type.make();
           target[i] = type.validate(input, target[i], invalid);
         }
         return target;
       },
       equals: function(a, b) {
-        var al, bl, i, l, _i;
+        var al, bl, i, j, l, ref;
         al = a.length;
         bl = b.length;
         if (al !== bl) {
           return false;
         }
         l = Math.min(al, bl);
-        for (i = _i = 0; 0 <= l ? _i < l : _i > l; i = 0 <= l ? ++_i : --_i) {
+        for (i = j = 0, ref = l; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
           if (!(typeof type.equals === "function" ? type.equals(a[i], b[i]) : void 0)) {
             return false;
           }
@@ -64323,18 +64699,18 @@ Types = {
       lerp: lerp,
       op: op,
       clone: function(v) {
-        var x, _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = v.length; _i < _len; _i++) {
-          x = v[_i];
-          _results.push(type.clone(x));
+        var j, len, results, x;
+        results = [];
+        for (j = 0, len = v.length; j < len; j++) {
+          x = v[j];
+          results.push(type.clone(x));
         }
-        return _results;
+        return results;
       }
     };
   },
   letters: function(type, size, value) {
-    var array, i, v, _i, _len;
+    var array, i, j, len, v;
     if (value == null) {
       value = null;
     }
@@ -64342,7 +64718,7 @@ Types = {
       if (value === "" + value) {
         value = value.split('');
       }
-      for (i = _i = 0, _len = value.length; _i < _len; i = ++_i) {
+      for (i = j = 0, len = value.length; j < len; i = ++j) {
         v = value[i];
         value[i] = type.validate(v, v);
       }
@@ -64423,7 +64799,7 @@ Types = {
         return typeof type.uniform === "function" ? type.uniform() : void 0;
       },
       equals: function(a, b) {
-        var an, bn, _ref;
+        var an, bn, ref;
         an = a === null;
         bn = b === null;
         if (an && bn) {
@@ -64432,7 +64808,7 @@ Types = {
         if (an ^ bn) {
           return false;
         }
-        return (_ref = typeof type.equals === "function" ? type.equals(a, b) : void 0) != null ? _ref : a === b;
+        return (ref = typeof type.equals === "function" ? type.equals(a, b) : void 0) != null ? ref : a === b;
       },
       lerp: lerp,
       op: op,
@@ -64440,7 +64816,7 @@ Types = {
     };
   },
   "enum": function(value, keys, map) {
-    var i, key, values, _i, _j, _len, _len1;
+    var i, j, key, len, len1, n, values;
     if (keys == null) {
       keys = [];
     }
@@ -64449,16 +64825,16 @@ Types = {
     }
     i = 0;
     values = {};
-    for (_i = 0, _len = keys.length; _i < _len; _i++) {
-      key = keys[_i];
+    for (j = 0, len = keys.length; j < len; j++) {
+      key = keys[j];
       if (key !== +key) {
         if (map[key] == null) {
           map[key] = i++;
         }
       }
     }
-    for (_j = 0, _len1 = keys.length; _j < _len1; _j++) {
-      key = keys[_j];
+    for (n = 0, len1 = keys.length; n < len1; n++) {
+      key = keys[n];
       if (key === +key) {
         values[key] = key;
       }
@@ -64499,8 +64875,8 @@ Types = {
         return 'f';
       },
       make: function() {
-        var _ref;
-        return (_ref = _enum.make()) != null ? _ref : +value;
+        var ref;
+        return (ref = _enum.make()) != null ? ref : +value;
       },
       validate: function(value, target, invalid) {
         if (value === +value) {
@@ -64745,7 +65121,7 @@ Types = {
         return new THREE.Vector2(x, y);
       },
       validate: function(value, target, invalid) {
-        var xx, yy, _ref, _ref1;
+        var ref, ref1, xx, yy;
         if (value === +value) {
           value = [value];
         }
@@ -64755,8 +65131,8 @@ Types = {
           value = value.concat(defaults.slice(value.length));
           target.set.apply(target, value);
         } else if (value != null) {
-          xx = (_ref = value.x) != null ? _ref : x;
-          yy = (_ref1 = value.y) != null ? _ref1 : y;
+          xx = (ref = value.x) != null ? ref : x;
+          yy = (ref1 = value.y) != null ? ref1 : y;
           target.set(xx, yy);
         } else {
           return invalid();
@@ -64811,7 +65187,7 @@ Types = {
         return new THREE.Vector3(x, y, z);
       },
       validate: function(value, target, invalid) {
-        var xx, yy, zz, _ref, _ref1, _ref2;
+        var ref, ref1, ref2, xx, yy, zz;
         if (value === +value) {
           value = [value];
         }
@@ -64821,9 +65197,9 @@ Types = {
           value = value.concat(defaults.slice(value.length));
           target.set.apply(target, value);
         } else if (value != null) {
-          xx = (_ref = value.x) != null ? _ref : x;
-          yy = (_ref1 = value.y) != null ? _ref1 : y;
-          zz = (_ref2 = value.z) != null ? _ref2 : z;
+          xx = (ref = value.x) != null ? ref : x;
+          yy = (ref1 = value.y) != null ? ref1 : y;
+          zz = (ref2 = value.z) != null ? ref2 : z;
           target.set(xx, yy, zz);
         } else {
           return invalid();
@@ -64886,7 +65262,7 @@ Types = {
         return new THREE.Vector4(x, y, z, w);
       },
       validate: function(value, target, invalid) {
-        var ww, xx, yy, zz, _ref, _ref1, _ref2, _ref3;
+        var ref, ref1, ref2, ref3, ww, xx, yy, zz;
         if (value === +value) {
           value = [value];
         }
@@ -64896,10 +65272,10 @@ Types = {
           value = value.concat(defaults.slice(value.length));
           target.set.apply(target, value);
         } else if (value != null) {
-          xx = (_ref = value.x) != null ? _ref : x;
-          yy = (_ref1 = value.y) != null ? _ref1 : y;
-          zz = (_ref2 = value.z) != null ? _ref2 : z;
-          ww = (_ref3 = value.w) != null ? _ref3 : w;
+          xx = (ref = value.x) != null ? ref : x;
+          yy = (ref1 = value.y) != null ? ref1 : y;
+          zz = (ref2 = value.z) != null ? ref2 : z;
+          ww = (ref3 = value.w) != null ? ref3 : w;
           target.set(xx, yy, zz, ww);
         } else {
           return invalid();
@@ -65139,7 +65515,7 @@ Types = {
         return new THREE.Color(r, g, b);
       },
       validate: function(value, target, invalid) {
-        var bb, gg, rr, _ref, _ref1, _ref2;
+        var bb, gg, ref, ref1, ref2, rr;
         if (value === "" + value) {
           value = new THREE.Color().setStyle(value);
         } else if (value === +value) {
@@ -65151,9 +65527,9 @@ Types = {
           value = value.concat(defaults.slice(value.length));
           target.setRGB.apply(target, value);
         } else if (value != null) {
-          rr = (_ref = value.r) != null ? _ref : r;
-          gg = (_ref1 = value.g) != null ? _ref1 : g;
-          bb = (_ref2 = value.b) != null ? _ref2 : b;
+          rr = (ref = value.r) != null ? ref : r;
+          gg = (ref1 = value.g) != null ? ref1 : g;
+          bb = (ref2 = value.b) != null ? ref2 : b;
           target.set(rr, gg, bb);
         } else {
           return invalid();
@@ -65204,12 +65580,12 @@ Types = {
         return value;
       },
       validate: function(value, target, invalid) {
-        var _ref;
+        var ref;
         if ((v = map[value]) != null) {
           value = v;
         }
-        value = (_ref = Math.round(value)) != null ? _ref : 0;
-        if (__indexOf.call(range, value) >= 0) {
+        value = (ref = Math.round(value)) != null ? ref : 0;
+        if (indexOf.call(range, value) >= 0) {
           return value;
         }
         return invalid();
@@ -65238,13 +65614,13 @@ Types = {
           temp = temp.concat(missing);
         }
         unique = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (i = _i = 0, _len = temp.length; _i < _len; i = ++_i) {
+          var j, len, results;
+          results = [];
+          for (i = j = 0, len = temp.length; j < len; i = ++j) {
             letter = temp[i];
-            _results.push(temp.indexOf(letter) === i);
+            results.push(temp.indexOf(letter) === i);
           }
-          return _results;
+          return results;
         })();
         if (unique.indexOf(false) < 0) {
           return axesArray.validate(temp, target, invalid);
@@ -65456,11 +65832,12 @@ Types = {
         return stringArray.make();
       },
       validate: function(value, target, invalid) {
+        var error;
         try {
           if (!(value instanceof Array)) {
             value = parse(value);
           }
-        } catch (_error) {
+        } catch (error) {
           return invalid();
         }
         value = value.filter(function(x) {
@@ -65470,6 +65847,28 @@ Types = {
       },
       equals: stringArray.equals,
       clone: stringArray.clone
+    };
+  },
+  data: function(value) {
+    if (value == null) {
+      value = [];
+    }
+    return {
+      make: function() {
+        return [];
+      },
+      validate: function(value, target, invalid) {
+        if (value instanceof Array) {
+          return value;
+        } else if ((value != null ? value.length : void 0) != null) {
+          return value;
+        } else {
+          return invalid();
+        }
+      },
+      emitter: function(a, b) {
+        return Util.Data.getLerpThunk(a, b);
+      }
     };
   }
 };
@@ -65494,8 +65893,8 @@ decorate = function(types) {
         }
         if (t.clone == null) {
           t.clone = function(v) {
-            var _ref;
-            return (_ref = v != null ? typeof v.clone === "function" ? v.clone() : void 0 : void 0) != null ? _ref : v;
+            var ref;
+            return (ref = v != null ? typeof v.clone === "function" ? v.clone() : void 0 : void 0) != null ? ref : v;
           };
         }
         return t;
@@ -65508,17 +65907,18 @@ decorate = function(types) {
 module.exports = decorate(Types);
 
 
-},{"../../util":172}],113:[function(require,module,exports){
+
+},{"../../util":173}],114:[function(require,module,exports){
 var Cartesian, Util, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
 Util = require('../../../util');
 
-Cartesian = (function(_super) {
-  __extends(Cartesian, _super);
+Cartesian = (function(superClass) {
+  extend(Cartesian, superClass);
 
   function Cartesian() {
     return Cartesian.__super__.constructor.apply(this, arguments);
@@ -65586,15 +65986,16 @@ Cartesian = (function(_super) {
 module.exports = Cartesian;
 
 
-},{"../../../util":172,"./view":119}],114:[function(require,module,exports){
+
+},{"../../../util":173,"./view":120}],115:[function(require,module,exports){
 var Cartesian4, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
-Cartesian4 = (function(_super) {
-  __extends(Cartesian4, _super);
+Cartesian4 = (function(superClass) {
+  extend(Cartesian4, superClass);
 
   function Cartesian4() {
     return Cartesian4.__super__.constructor.apply(this, arguments);
@@ -65667,17 +66068,18 @@ Cartesian4 = (function(_super) {
 module.exports = Cartesian4;
 
 
-},{"./view":119}],115:[function(require,module,exports){
+
+},{"./view":120}],116:[function(require,module,exports){
 var Polar, Util, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
 Util = require('../../../util');
 
-Polar = (function(_super) {
-  __extends(Polar, _super);
+Polar = (function(superClass) {
+  extend(Polar, superClass);
 
   function Polar() {
     return Polar.__super__.constructor.apply(this, arguments);
@@ -65710,7 +66112,7 @@ Polar = (function(_super) {
   };
 
   Polar.prototype.change = function(changed, touched, init) {
-    var ady, aspect, bend, dx, dy, dz, e, fdx, focus, g, helix, idx, p, q, r, s, sdx, sdy, sx, sy, sz, transformMatrix, x, y, z, _ref;
+    var ady, aspect, bend, dx, dy, dz, e, fdx, focus, g, helix, idx, p, q, r, ref, s, sdx, sdy, sx, sy, sz, transformMatrix, x, y, z;
     if (!(touched['view'] || touched['view3'] || touched['polar'] || init)) {
       return;
     }
@@ -65733,7 +66135,7 @@ Polar = (function(_super) {
     sy = s.y;
     sz = s.z;
     idx = dx > 0 ? 1 : -1;
-    _ref = Util.Axis.recenterAxis(y, dy, bend), y = _ref[0], dy = _ref[1];
+    ref = Util.Axis.recenterAxis(y, dy, bend), y = ref[0], dy = ref[1];
     ady = Math.abs(dy);
     fdx = dx + (ady * idx - dx) * bend;
     sdx = fdx / sx;
@@ -65777,17 +66179,18 @@ Polar = (function(_super) {
 module.exports = Polar;
 
 
-},{"../../../util":172,"./view":119}],116:[function(require,module,exports){
+
+},{"../../../util":173,"./view":120}],117:[function(require,module,exports){
 var Spherical, Util, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
 Util = require('../../../util');
 
-Spherical = (function(_super) {
-  __extends(Spherical, _super);
+Spherical = (function(superClass) {
+  extend(Spherical, superClass);
 
   function Spherical() {
     return Spherical.__super__.constructor.apply(this, arguments);
@@ -65823,7 +66226,7 @@ Spherical = (function(_super) {
   };
 
   Spherical.prototype.change = function(changed, touched, init) {
-    var adz, aspectX, aspectY, aspectZ, bend, dx, dy, dz, e, fdx, fdy, focus, g, idx, idy, p, q, r, s, scaleY, sdx, sdy, sdz, sx, sy, sz, transformMatrix, x, y, z, _ref, _ref1;
+    var adz, aspectX, aspectY, aspectZ, bend, dx, dy, dz, e, fdx, fdy, focus, g, idx, idy, p, q, r, ref, ref1, s, scaleY, sdx, sdy, sdz, sx, sy, sz, transformMatrix, x, y, z;
     if (!(touched['view'] || touched['view3'] || touched['spherical'] || init)) {
       return;
     }
@@ -65844,8 +66247,8 @@ Spherical = (function(_super) {
     sx = s.x;
     sy = s.y;
     sz = s.z;
-    _ref = Util.Axis.recenterAxis(y, dy, bend), y = _ref[0], dy = _ref[1];
-    _ref1 = Util.Axis.recenterAxis(z, dz, bend), z = _ref1[0], dz = _ref1[1];
+    ref = Util.Axis.recenterAxis(y, dy, bend), y = ref[0], dy = ref[1];
+    ref1 = Util.Axis.recenterAxis(z, dz, bend), z = ref1[0], dz = ref1[1];
     idx = dx > 0 ? 1 : -1;
     idy = dy > 0 ? 1 : -1;
     adz = Math.abs(dz);
@@ -65899,17 +66302,18 @@ Spherical = (function(_super) {
 module.exports = Spherical;
 
 
-},{"../../../util":172,"./view":119}],117:[function(require,module,exports){
+
+},{"../../../util":173,"./view":120}],118:[function(require,module,exports){
 var Stereographic, Util, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
 Util = require('../../../util');
 
-Stereographic = (function(_super) {
-  __extends(Stereographic, _super);
+Stereographic = (function(superClass) {
+  extend(Stereographic, superClass);
 
   function Stereographic() {
     return Stereographic.__super__.constructor.apply(this, arguments);
@@ -65937,7 +66341,7 @@ Stereographic = (function(_super) {
   };
 
   Stereographic.prototype.change = function(changed, touched, init) {
-    var bend, dx, dy, dz, e, g, p, q, r, s, sx, sy, sz, transformMatrix, x, y, z, _ref;
+    var bend, dx, dy, dz, e, g, p, q, r, ref, s, sx, sy, sz, transformMatrix, x, y, z;
     if (!(touched['view'] || touched['view3'] || touched['stereographic'] || init)) {
       return;
     }
@@ -65957,7 +66361,7 @@ Stereographic = (function(_super) {
     sx = s.x;
     sy = s.y;
     sz = s.z;
-    _ref = Util.Axis.recenterAxis(z, dz, bend, 1), z = _ref[0], dz = _ref[1];
+    ref = Util.Axis.recenterAxis(z, dz, bend, 1), z = ref[0], dz = ref[1];
     this.uniforms.stereoBend.value = bend;
     this.viewMatrix.set(2 / dx, 0, 0, -(2 * x + dx) / dx, 0, 2 / dy, 0, -(2 * y + dy) / dy, 0, 0, 2 / dz, -(2 * z + dz) / dz, 0, 0, 0, 1);
     transformMatrix = this.composer(p, r, q, s, null, e);
@@ -65983,17 +66387,18 @@ Stereographic = (function(_super) {
 module.exports = Stereographic;
 
 
-},{"../../../util":172,"./view":119}],118:[function(require,module,exports){
+
+},{"../../../util":173,"./view":120}],119:[function(require,module,exports){
 var Stereographic4, Util, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 View = require('./view');
 
 Util = require('../../../util');
 
-Stereographic4 = (function(_super) {
-  __extends(Stereographic4, _super);
+Stereographic4 = (function(superClass) {
+  extend(Stereographic4, superClass);
 
   function Stereographic4() {
     return Stereographic4.__super__.constructor.apply(this, arguments);
@@ -66020,7 +66425,7 @@ Stereographic4 = (function(_super) {
   };
 
   Stereographic4.prototype.change = function(changed, touched, init) {
-    var bend, dw, dx, dy, dz, g, mult, p, s, w, x, y, z, _ref;
+    var bend, dw, dx, dy, dz, g, mult, p, ref, s, w, x, y, z;
     if (!(touched['view'] || touched['view4'] || touched['stereographic'] || init)) {
       return;
     }
@@ -66042,7 +66447,7 @@ Stereographic4 = (function(_super) {
       a.z *= b.z;
       return a.w *= b.w;
     };
-    _ref = Util.Axis.recenterAxis(w, dw, bend, 1), w = _ref[0], dw = _ref[1];
+    ref = Util.Axis.recenterAxis(w, dw, bend, 1), w = ref[0], dw = ref[1];
     this.basisScale.set(2 / dx, 2 / dy, 2 / dz, 2 / dw);
     this.basisOffset.set(-(2 * x + dx) / dx, -(2 * y + dy) / dy, -(2 * z + dz) / dz, -(2 * w + dw) / dw);
     mult(this.basisScale, s);
@@ -66069,15 +66474,16 @@ Stereographic4 = (function(_super) {
 module.exports = Stereographic4;
 
 
-},{"../../../util":172,"./view":119}],119:[function(require,module,exports){
+
+},{"../../../util":173,"./view":120}],120:[function(require,module,exports){
 var Transform, View,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Transform = require('../transform/transform');
 
-View = (function(_super) {
-  __extends(View, _super);
+View = (function(superClass) {
+  extend(View, superClass);
 
   function View() {
     return View.__super__.constructor.apply(this, arguments);
@@ -66104,10 +66510,11 @@ View = (function(_super) {
 module.exports = View;
 
 
-},{"../transform/transform":108}],120:[function(require,module,exports){
+
+},{"../transform/transform":109}],121:[function(require,module,exports){
 var ArrayBuffer_, DataBuffer, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 DataBuffer = require('./databuffer');
 
@@ -66118,8 +66525,8 @@ Util = require('../../util');
  * 1D + history array
  */
 
-ArrayBuffer_ = (function(_super) {
-  __extends(ArrayBuffer_, _super);
+ArrayBuffer_ = (function(superClass) {
+  extend(ArrayBuffer_, superClass);
 
   function ArrayBuffer_(renderer, shaders, options) {
     this.length = options.length || 1;
@@ -66143,12 +66550,12 @@ ArrayBuffer_ = (function(_super) {
   };
 
   ArrayBuffer_.prototype.fill = function() {
-    var callback, count, done, emit, i, limit, reset, skip, _ref;
+    var callback, count, done, emit, i, limit, ref, reset, skip;
     callback = this.callback;
     if (typeof callback.reset === "function") {
       callback.reset();
     }
-    _ref = this.streamer, emit = _ref.emit, skip = _ref.skip, count = _ref.count, done = _ref.done, reset = _ref.reset;
+    ref = this.streamer, emit = ref.emit, skip = ref.skip, count = ref.count, done = ref.done, reset = ref.reset;
     reset();
     limit = this.samples - this.pad;
     i = 0;
@@ -66170,8 +66577,8 @@ ArrayBuffer_ = (function(_super) {
   };
 
   ArrayBuffer_.prototype.through = function(callback, target) {
-    var consume, done, dst, emit, i, pipe, src, _ref;
-    _ref = src = this.streamer, consume = _ref.consume, done = _ref.done;
+    var consume, done, dst, emit, i, pipe, ref, src;
+    ref = src = this.streamer, consume = ref.consume, done = ref.done;
     emit = (dst = target.streamer).emit;
     i = 0;
     pipe = function() {
@@ -66203,10 +66610,11 @@ ArrayBuffer_ = (function(_super) {
 module.exports = ArrayBuffer_;
 
 
-},{"../../util":172,"./databuffer":123}],121:[function(require,module,exports){
+
+},{"../../util":173,"./databuffer":124}],122:[function(require,module,exports){
 var Atlas, BackedTexture, DataTexture, Renderable, Row, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
@@ -66224,8 +66632,8 @@ BackedTexture = require('./texture/backedtexture');
  * - Will grow itself when full
  */
 
-Atlas = (function(_super) {
-  __extends(Atlas, _super);
+Atlas = (function(superClass) {
+  extend(Atlas, superClass);
 
   function Atlas(renderer, shaders, options) {
     if (this.width == null) {
@@ -66299,7 +66707,7 @@ Atlas = (function(_super) {
   };
 
   Atlas.prototype.allocate = function(key, width, height, emit) {
-    var bottom, gap, h, i, index, max, row, top, w, _i, _len, _ref;
+    var bottom, gap, h, i, index, j, len, max, ref, row, top, w;
     w = this.width;
     h = this.height;
     max = height * 2;
@@ -66318,9 +66726,9 @@ Atlas = (function(_super) {
     bottom = 0;
     index = -1;
     top = 0;
-    _ref = this.rows;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      row = _ref[i];
+    ref = this.rows;
+    for (i = j = 0, len = ref.length; j < len; i = ++j) {
+      row = ref[i];
       gap = row.top - bottom;
       if (gap >= height && index < 0) {
         index = i;
@@ -66397,10 +66805,11 @@ Row = (function() {
 module.exports = Atlas;
 
 
-},{"../../util":172,"../renderable":158,"./texture/backedtexture":130,"./texture/datatexture":131}],122:[function(require,module,exports){
+
+},{"../../util":173,"../renderable":159,"./texture/backedtexture":131,"./texture/datatexture":132}],123:[function(require,module,exports){
 var Buffer, Renderable, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
@@ -66411,8 +66820,8 @@ Util = require('../../util');
  * Base class for sample buffers
  */
 
-Buffer = (function(_super) {
-  __extends(Buffer, _super);
+Buffer = (function(superClass) {
+  extend(Buffer, superClass);
 
   function Buffer(renderer, shaders, options) {
     if (this.items == null) {
@@ -66462,10 +66871,11 @@ Buffer = (function(_super) {
 module.exports = Buffer;
 
 
-},{"../../util":172,"../renderable":158}],123:[function(require,module,exports){
+
+},{"../../util":173,"../renderable":159}],124:[function(require,module,exports){
 var Buffer, DataBuffer, DataTexture, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Buffer = require('./buffer');
 
@@ -66482,8 +66892,8 @@ Util = require('../../util');
  * => specialized into Array/Matrix/VoxelBuffer
  */
 
-DataBuffer = (function(_super) {
-  __extends(DataBuffer, _super);
+DataBuffer = (function(superClass) {
+  extend(DataBuffer, superClass);
 
   function DataBuffer(renderer, shaders, options) {
     this.width = options.width || 1;
@@ -66552,16 +66962,16 @@ DataBuffer = (function(_super) {
     return this.filled;
   };
 
-  DataBuffer.prototype.setCallback = function(callback) {
-    this.callback = callback;
+  DataBuffer.prototype.setCallback = function(callback1) {
+    this.callback = callback1;
     return this.filled = 0;
   };
 
   DataBuffer.prototype.copy = function(data) {
-    var d, i, n, _i;
+    var d, i, j, n, ref;
     n = Math.min(data.length, this.samples * this.channels * this.items);
     d = this.data;
-    for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
+    for (i = j = 0, ref = n; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       d[i] = data[i];
     }
     return this.write(Math.ceil(n / this.channels / this.items));
@@ -66583,8 +66993,8 @@ DataBuffer = (function(_super) {
   };
 
   DataBuffer.prototype.through = function(callback, target) {
-    var consume, done, dst, emit, i, pipe, src, _ref;
-    _ref = src = this.streamer, consume = _ref.consume, done = _ref.done;
+    var consume, done, dst, emit, i, pipe, ref, src;
+    ref = src = this.streamer, consume = ref.consume, done = ref.done;
     emit = (dst = target.streamer).emit;
     i = 0;
     pipe = function() {
@@ -66616,10 +67026,11 @@ DataBuffer = (function(_super) {
 module.exports = DataBuffer;
 
 
-},{"../../util":172,"./buffer":122,"./texture/datatexture":131}],124:[function(require,module,exports){
+
+},{"../../util":173,"./buffer":123,"./texture/datatexture":132}],125:[function(require,module,exports){
 var DataBuffer, MatrixBuffer, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 DataBuffer = require('./databuffer');
 
@@ -66630,8 +67041,8 @@ Util = require('../../util');
  * 2D + history array
  */
 
-MatrixBuffer = (function(_super) {
-  __extends(MatrixBuffer, _super);
+MatrixBuffer = (function(superClass) {
+  extend(MatrixBuffer, superClass);
 
   function MatrixBuffer(renderer, shaders, options) {
     this.width = options.width || 1;
@@ -66657,17 +67068,17 @@ MatrixBuffer = (function(_super) {
   };
 
   MatrixBuffer.prototype.setActive = function(i, j) {
-    var _ref;
-    return _ref = [Math.max(0, this.width - i), Math.max(0, this.height - j)], this.pad.x = _ref[0], this.pad.y = _ref[1], _ref;
+    var ref;
+    return ref = [Math.max(0, this.width - i), Math.max(0, this.height - j)], this.pad.x = ref[0], this.pad.y = ref[1], ref;
   };
 
   MatrixBuffer.prototype.fill = function() {
-    var callback, count, done, emit, i, j, k, limit, n, pad, repeat, reset, skip, _ref;
+    var callback, count, done, emit, i, j, k, limit, n, pad, ref, repeat, reset, skip;
     callback = this.callback;
     if (typeof callback.reset === "function") {
       callback.reset();
     }
-    _ref = this.streamer, emit = _ref.emit, skip = _ref.skip, count = _ref.count, done = _ref.done, reset = _ref.reset;
+    ref = this.streamer, emit = ref.emit, skip = ref.skip, count = ref.count, done = ref.done, reset = ref.reset;
     reset();
     n = this.width;
     pad = this.pad.x;
@@ -66717,8 +67128,8 @@ MatrixBuffer = (function(_super) {
   };
 
   MatrixBuffer.prototype.through = function(callback, target) {
-    var consume, done, dst, emit, i, j, pipe, src, _ref;
-    _ref = src = this.streamer, consume = _ref.consume, done = _ref.done;
+    var consume, done, dst, emit, i, j, pipe, ref, src;
+    ref = src = this.streamer, consume = ref.consume, done = ref.done;
     emit = (dst = target.streamer).emit;
     i = j = 0;
     pipe = function() {
@@ -66768,10 +67179,11 @@ MatrixBuffer = (function(_super) {
 module.exports = MatrixBuffer;
 
 
-},{"../../util":172,"./databuffer":123}],125:[function(require,module,exports){
+
+},{"../../util":173,"./databuffer":124}],126:[function(require,module,exports){
 var Memo, RenderToTexture, Renderable, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
@@ -66784,8 +67196,8 @@ Util = require('../../util');
  * Wrapped RTT for memoizing 4D arrays back to a 2D texture
  */
 
-Memo = (function(_super) {
-  __extends(Memo, _super);
+Memo = (function(superClass) {
+  extend(Memo, superClass);
 
   function Memo(renderer, shaders, options) {
     if (this.items == null) {
@@ -66838,10 +67250,11 @@ Memo = (function(_super) {
 module.exports = Memo;
 
 
-},{"../../util":172,"../renderable":158,"./rendertotexture":128}],126:[function(require,module,exports){
+
+},{"../../util":173,"../renderable":159,"./rendertotexture":129}],127:[function(require,module,exports){
 var Buffer, PushBuffer, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Buffer = require('./buffer');
 
@@ -66852,8 +67265,8 @@ Util = require('../../util');
  * Buffer for CPU-side use
  */
 
-PushBuffer = (function(_super) {
-  __extends(PushBuffer, _super);
+PushBuffer = (function(superClass) {
+  extend(PushBuffer, superClass);
 
   function PushBuffer(renderer, shaders, options) {
     this.width = options.width || 1;
@@ -66888,8 +67301,8 @@ PushBuffer = (function(_super) {
   };
 
   PushBuffer.prototype.setActive = function(i, j, k) {
-    var _ref;
-    return _ref = [this.width - i, this.height - j, this.depth - k], this.pad.x = _ref[0], this.pad.y = _ref[1], this.pad.z = _ref[2], _ref;
+    var ref;
+    return ref = [this.width - i, this.height - j, this.depth - k], this.pad.x = ref[0], this.pad.y = ref[1], this.pad.z = ref[2], ref;
   };
 
   PushBuffer.prototype.read = function() {
@@ -66897,23 +67310,23 @@ PushBuffer = (function(_super) {
   };
 
   PushBuffer.prototype.copy = function(data) {
-    var d, i, n, _i, _results;
+    var d, i, n, p, ref, results;
     n = Math.min(data.length, this.samples);
     d = this.data;
-    _results = [];
-    for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
-      _results.push(d[i] = data[i]);
+    results = [];
+    for (i = p = 0, ref = n; 0 <= ref ? p < ref : p > ref; i = 0 <= ref ? ++p : --p) {
+      results.push(d[i] = data[i]);
     }
-    return _results;
+    return results;
   };
 
   PushBuffer.prototype.fill = function() {
-    var callback, count, done, emit, i, j, k, l, limit, m, n, o, padX, padY, repeat, reset, skip, _ref;
+    var callback, count, done, emit, i, j, k, l, limit, m, n, o, padX, padY, ref, repeat, reset, skip;
     callback = this.callback;
     if (typeof callback.reset === "function") {
       callback.reset();
     }
-    _ref = this.streamer, emit = _ref.emit, skip = _ref.skip, count = _ref.count, done = _ref.done, reset = _ref.reset;
+    ref = this.streamer, emit = ref.emit, skip = ref.skip, count = ref.count, done = ref.done, reset = ref.reset;
     reset();
     n = this.width;
     m = this.height;
@@ -66966,10 +67379,11 @@ PushBuffer = (function(_super) {
 module.exports = PushBuffer;
 
 
-},{"../../util":172,"./buffer":122}],127:[function(require,module,exports){
+
+},{"../../util":173,"./buffer":123}],128:[function(require,module,exports){
 var Buffer, Memo, MemoScreen, Readback, Renderable, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
@@ -66986,8 +67400,8 @@ Util = require('../../util');
  * Readback up to 4D array of up to 4D data from GL
  */
 
-Readback = (function(_super) {
-  __extends(Readback, _super);
+Readback = (function(superClass) {
+  extend(Readback, superClass);
 
   function Readback(renderer, shaders, options) {
     if (this.items == null) {
@@ -67148,16 +67562,16 @@ Readback = (function(_super) {
   };
 
   Readback.prototype.setActive = function(items, width, height, depth) {
-    var h, w, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+    var h, ref, ref1, ref2, ref3, ref4, ref5, w;
     if (!(items !== this.active.items || width !== this.active.width || height !== this.active.height || depth !== this.active.depth)) {
       return;
     }
-    _ref = [items, width, height, depth], this.active.items = _ref[0], this.active.width = _ref[1], this.active.height = _ref[2], this.active.depth = _ref[3];
-    if ((_ref1 = this.floatCompose) != null) {
-      _ref1.cover(width, height, depth);
+    ref = [items, width, height, depth], this.active.items = ref[0], this.active.width = ref[1], this.active.height = ref[2], this.active.depth = ref[3];
+    if ((ref1 = this.floatCompose) != null) {
+      ref1.cover(width, height, depth);
     }
-    if ((_ref2 = this.byteCompose) != null) {
-      _ref2.cover(width * this.stretch, height, depth);
+    if ((ref2 = this.byteCompose) != null) {
+      ref2.cover(width * this.stretch, height, depth);
     }
     items = this.items;
     width = this.active.width;
@@ -67165,17 +67579,17 @@ Readback = (function(_super) {
     depth = this.active.depth;
     w = items * width * this.stretch;
     h = height * depth;
-    _ref3 = [items, width, height, depth], this.sampled.items = _ref3[0], this.sampled.width = _ref3[1], this.sampled.height = _ref3[2], this.sampled.depth = _ref3[3];
-    _ref4 = [w, h], this.rect.w = _ref4[0], this.rect.h = _ref4[1];
-    return _ref5 = [this.sampled.width - this.active.width, this.sampled.height - this.active.height, this.sampled.depth - this.active.depth, this.sampled.items - this.active.items], this.pad.x = _ref5[0], this.pad.y = _ref5[1], this.pad.z = _ref5[2], this.pad.w = _ref5[3], _ref5;
+    ref3 = [items, width, height, depth], this.sampled.items = ref3[0], this.sampled.width = ref3[1], this.sampled.height = ref3[2], this.sampled.depth = ref3[3];
+    ref4 = [w, h], this.rect.w = ref4[0], this.rect.h = ref4[1];
+    return ref5 = [this.sampled.width - this.active.width, this.sampled.height - this.active.height, this.sampled.depth - this.active.depth, this.sampled.items - this.active.items], this.pad.x = ref5[0], this.pad.y = ref5[1], this.pad.z = ref5[2], this.pad.w = ref5[3], ref5;
   };
 
   Readback.prototype.update = function(camera) {
-    var _ref, _ref1;
-    if ((_ref = this.floatMemo) != null) {
-      _ref.render(camera);
+    var ref, ref1;
+    if ((ref = this.floatMemo) != null) {
+      ref.render(camera);
     }
-    return (_ref1 = this.byteMemo) != null ? _ref1.render(camera) : void 0;
+    return (ref1 = this.byteMemo) != null ? ref1.render(camera) : void 0;
   };
 
   Readback.prototype.post = function() {
@@ -67184,13 +67598,13 @@ Readback = (function(_super) {
   };
 
   Readback.prototype.readFloat = function(n) {
-    var _ref;
-    return (_ref = this.floatMemo) != null ? _ref.read(n) : void 0;
+    var ref;
+    return (ref = this.floatMemo) != null ? ref.read(n) : void 0;
   };
 
   Readback.prototype.readByte = function(n) {
-    var _ref;
-    return (_ref = this.byteMemo) != null ? _ref.read(n) : void 0;
+    var ref;
+    return (ref = this.byteMemo) != null ? ref.read(n) : void 0;
   };
 
   Readback.prototype.setCallback = function(callback) {
@@ -67225,12 +67639,12 @@ Readback = (function(_super) {
   };
 
   Readback.prototype.iterate = function() {
-    var callback, consume, count, done, emit, i, j, k, l, limit, m, n, o, p, padW, padX, padY, padZ, repeat, reset, skip, _ref;
+    var callback, consume, count, done, emit, i, j, k, l, limit, m, n, o, p, padW, padX, padY, padZ, ref, repeat, reset, skip;
     emit = this.emitter;
     if (typeof emit.reset === "function") {
       emit.reset();
     }
-    _ref = this.streamer, consume = _ref.consume, skip = _ref.skip, count = _ref.count, done = _ref.done, reset = _ref.reset;
+    ref = this.streamer, consume = ref.consume, skip = ref.skip, count = ref.count, done = ref.done, reset = ref.reset;
     reset();
     n = this.sampled.width | 0;
     m = this.sampled.height | 0;
@@ -67272,24 +67686,24 @@ Readback = (function(_super) {
   };
 
   Readback.prototype.dispose = function() {
-    var _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
-    if ((_ref = this.floatMemo) != null) {
-      _ref.unadopt(this.floatCompose);
+    var ref, ref1, ref2, ref3, ref4, ref5;
+    if ((ref = this.floatMemo) != null) {
+      ref.unadopt(this.floatCompose);
     }
-    if ((_ref1 = this.floatMemo) != null) {
-      _ref1.dispose();
+    if ((ref1 = this.floatMemo) != null) {
+      ref1.dispose();
     }
-    if ((_ref2 = this.floatCompose) != null) {
-      _ref2.dispose();
+    if ((ref2 = this.floatCompose) != null) {
+      ref2.dispose();
     }
-    if ((_ref3 = this.byteMemo) != null) {
-      _ref3.unadopt(this.byteCompose);
+    if ((ref3 = this.byteMemo) != null) {
+      ref3.unadopt(this.byteCompose);
     }
-    if ((_ref4 = this.byteMemo) != null) {
-      _ref4.dispose();
+    if ((ref4 = this.byteMemo) != null) {
+      ref4.dispose();
     }
-    if ((_ref5 = this.byteCompose) != null) {
-      _ref5.dispose();
+    if ((ref5 = this.byteCompose) != null) {
+      ref5.dispose();
     }
     return this.floatMemo = this.byteMemo = this.floatCompose = this.byteCompose = null;
   };
@@ -67301,10 +67715,11 @@ Readback = (function(_super) {
 module.exports = Readback;
 
 
-},{"../../util":172,"../meshes/memoscreen":152,"../renderable":158,"./buffer":122,"./memo":125}],128:[function(require,module,exports){
+
+},{"../../util":173,"../meshes/memoscreen":153,"../renderable":159,"./buffer":123,"./memo":126}],129:[function(require,module,exports){
 var RenderTarget, RenderToTexture, Renderable, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
@@ -67317,12 +67732,12 @@ Util = require('../../util');
  * Render-To-Texture with history
  */
 
-RenderToTexture = (function(_super) {
-  __extends(RenderToTexture, _super);
+RenderToTexture = (function(superClass) {
+  extend(RenderToTexture, superClass);
 
   function RenderToTexture(renderer, shaders, options) {
-    var _ref;
-    this.scene = (_ref = options.scene) != null ? _ref : new THREE.Scene();
+    var ref;
+    this.scene = (ref = options.scene) != null ? ref : new THREE.Scene();
     this.camera = options.camera;
     RenderToTexture.__super__.constructor.call(this, renderer, shaders);
     this.build(options);
@@ -67366,14 +67781,14 @@ RenderToTexture = (function(_super) {
   };
 
   RenderToTexture.prototype.build = function(options) {
-    var _base;
+    var base;
     if (!this.camera) {
       this.camera = new THREE.PerspectiveCamera();
       this.camera.position.set(0, 0, 3);
       this.camera.lookAt(new THREE.Vector3());
     }
-    if (typeof (_base = this.scene).inject === "function") {
-      _base.inject();
+    if (typeof (base = this.scene).inject === "function") {
+      base.inject();
     }
     this.target = new RenderTarget(this.gl, options.width, options.height, options.frames, options);
     this.target.warmup((function(_this) {
@@ -67393,33 +67808,33 @@ RenderToTexture = (function(_super) {
   };
 
   RenderToTexture.prototype.adopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this.scene.add(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this.scene.add(object));
     }
-    return _results;
+    return results;
   };
 
   RenderToTexture.prototype.unadopt = function(renderable) {
-    var object, _i, _len, _ref, _results;
-    _ref = renderable.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this.scene.remove(object));
+    var i, len, object, ref, results;
+    ref = renderable.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this.scene.remove(object));
     }
-    return _results;
+    return results;
   };
 
   RenderToTexture.prototype.render = function(camera) {
-    var _ref;
+    var ref;
     if (camera == null) {
       camera = this.camera;
     }
-    this.renderer.render((_ref = this.scene.scene) != null ? _ref : this.scene, camera, this.target.write);
+    this.renderer.render((ref = this.scene.scene) != null ? ref : this.scene, camera, this.target.write);
     this.target.cycle();
     if (this.filled < this.target.frames) {
       return this.filled++;
@@ -67442,9 +67857,9 @@ RenderToTexture = (function(_super) {
   };
 
   RenderToTexture.prototype.dispose = function() {
-    var _base;
-    if (typeof (_base = this.scene).unject === "function") {
-      _base.unject();
+    var base;
+    if (typeof (base = this.scene).unject === "function") {
+      base.unject();
     }
     this.scene = this.camera = null;
     this.target.dispose();
@@ -67458,10 +67873,11 @@ RenderToTexture = (function(_super) {
 module.exports = RenderToTexture;
 
 
-},{"../../util":172,"../renderable":158,"./texture/rendertarget":132}],129:[function(require,module,exports){
+
+},{"../../util":173,"../renderable":159,"./texture/rendertarget":133}],130:[function(require,module,exports){
 var Atlas, SCRATCH_SIZE, TextAtlas,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Atlas = require('./atlas');
 
@@ -67475,17 +67891,17 @@ SCRATCH_SIZE = 512 / 16;
  * - Emits (x,y,width,height) pointers into the atlas
  */
 
-TextAtlas = (function(_super) {
-  __extends(TextAtlas, _super);
+TextAtlas = (function(superClass) {
+  extend(TextAtlas, superClass);
 
   function TextAtlas(renderer, shaders, options) {
-    var ua, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
-    this.font = (_ref = options.font) != null ? _ref : ['sans-serif'];
+    var ref, ref1, ref2, ref3, ref4, ref5, ua;
+    this.font = (ref = options.font) != null ? ref : ['sans-serif'];
     this.size = options.size || 24;
-    this.style = (_ref1 = options.style) != null ? _ref1 : 'normal';
-    this.variant = (_ref2 = options.variant) != null ? _ref2 : 'normal';
-    this.weight = (_ref3 = options.weight) != null ? _ref3 : 'normal';
-    this.outline = (_ref4 = +((_ref5 = options.outline) != null ? _ref5 : 5)) != null ? _ref4 : 0;
+    this.style = (ref1 = options.style) != null ? ref1 : 'normal';
+    this.variant = (ref2 = options.variant) != null ? ref2 : 'normal';
+    this.weight = (ref3 = options.weight) != null ? ref3 : 'normal';
+    this.outline = (ref4 = +((ref5 = options.outline) != null ? ref5 : 5)) != null ? ref4 : 0;
     options.width || (options.width = 256);
     options.height || (options.height = 256);
     options.type = THREE.UnsignedByteType;
@@ -67503,7 +67919,7 @@ TextAtlas = (function(_super) {
   }
 
   TextAtlas.prototype.build = function(options) {
-    var canvas, colors, context, dilate, font, hex, i, lineHeight, maxWidth, quote, scratch, _i;
+    var canvas, colors, context, dilate, font, hex, i, k, lineHeight, maxWidth, quote, ref, scratch;
     TextAtlas.__super__.build.call(this, options);
     lineHeight = 16;
     lineHeight = this.size;
@@ -67517,7 +67933,7 @@ TextAtlas = (function(_super) {
     };
     font = this.font.map(quote).join(", ");
     context = canvas.getContext('2d');
-    context.font = "" + this.style + " " + this.variant + " " + this.weight + " " + this.size + "px " + this.font;
+    context.font = this.style + " " + this.variant + " " + this.weight + " " + this.size + "px " + this.font;
     context.fillStyle = '#FF0000';
     context.textAlign = 'left';
     context.textBaseline = 'bottom';
@@ -67529,7 +67945,7 @@ TextAtlas = (function(_super) {
      */
     colors = [];
     dilate = this.outline * 3;
-    for (i = _i = 0; 0 <= dilate ? _i < dilate : _i > dilate; i = 0 <= dilate ? ++_i : --_i) {
+    for (i = k = 0, ref = dilate; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       hex = ('00' + Math.max(0, -i * 8 + 128 - (!i) * 8).toString(16)).slice(-2);
       colors.push('#' + hex + hex + hex);
     }
@@ -67550,28 +67966,28 @@ TextAtlas = (function(_super) {
   };
 
   TextAtlas.prototype.begin = function() {
-    var row, _i, _len, _ref, _results;
-    _ref = this.rows;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      row = _ref[_i];
-      _results.push(row.alive = 0);
+    var k, len, ref, results, row;
+    ref = this.rows;
+    results = [];
+    for (k = 0, len = ref.length; k < len; k++) {
+      row = ref[k];
+      results.push(row.alive = 0);
     }
-    return _results;
+    return results;
   };
 
   TextAtlas.prototype.end = function() {
-    var key, mapped, row, _i, _j, _len, _len1, _ref, _ref1;
+    var k, key, l, len, len1, mapped, ref, ref1, row;
     mapped = this.mapped;
-    _ref = this.rows.slice();
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      row = _ref[_i];
+    ref = this.rows.slice();
+    for (k = 0, len = ref.length; k < len; k++) {
+      row = ref[k];
       if (!(row.alive === 0)) {
         continue;
       }
-      _ref1 = row.keys;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        key = _ref1[_j];
+      ref1 = row.keys;
+      for (l = 0, len1 = ref1.length; l < len1; l++) {
+        key = ref1[l];
         delete mapped[key];
       }
       this.collapse(row);
@@ -67606,7 +68022,7 @@ TextAtlas = (function(_super) {
   };
 
   TextAtlas.prototype.draw = function(text) {
-    var a, b, c, colors, ctx, data, dst, gamma, h, i, imageData, j, m, mask, max, o, w, x, y, _i, _j, _k, _ref, _ref1, _ref2;
+    var a, b, c, colors, ctx, data, dst, gamma, h, i, imageData, j, k, l, m, mask, max, n, o, ref, ref1, ref2, w, x, y;
     w = this.width;
     h = this.lineHeight;
     o = this.outline;
@@ -67623,7 +68039,7 @@ TextAtlas = (function(_super) {
       ctx.fillText(text, x, y);
       data = (imageData = ctx.getImageData(0, 0, w, h)).data;
       j = 3;
-      for (i = _i = 0, _ref = data.length / 4; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      for (i = k = 0, ref = data.length / 4; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
         dst[i] = data[j];
         j += 4;
       }
@@ -67631,7 +68047,7 @@ TextAtlas = (function(_super) {
       return this.scratchH = h;
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      for (i = _j = _ref1 = o + 1; _ref1 <= 1 ? _j <= 1 : _j >= 1; i = _ref1 <= 1 ? ++_j : --_j) {
+      for (i = l = ref1 = o + 1; ref1 <= 1 ? l <= 1 : l >= 1; i = ref1 <= 1 ? ++l : --l) {
         j = i > 1 ? i * 2 - 2 : i;
         ctx.strokeStyle = colors[j - 1];
         ctx.lineWidth = j;
@@ -67642,7 +68058,7 @@ TextAtlas = (function(_super) {
       data = (imageData = ctx.getImageData(0, 0, w, h)).data;
       j = 0;
       gamma = this.gamma;
-      for (i = _k = 0, _ref2 = data.length / 4; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+      for (i = n = 0, ref2 = data.length / 4; 0 <= ref2 ? n < ref2 : n > ref2; i = 0 <= ref2 ? ++n : --n) {
         a = data[j];
         mask = a ? data[j + 1] / a : 1;
         if (gamma === .5) {
@@ -67659,8 +68075,8 @@ TextAtlas = (function(_super) {
       j = 0
       for i in [0...data.length / 4]
         v = dst[i]
-         *data[j] = v
-         *data[j+1] = v
+        #data[j] = v
+        #data[j+1] = v
         data[j+2] = v
         data[j+3] = 255
         j += 4
@@ -67678,10 +68094,11 @@ TextAtlas = (function(_super) {
 module.exports = TextAtlas;
 
 
-},{"./atlas":121}],130:[function(require,module,exports){
+
+},{"./atlas":122}],131:[function(require,module,exports){
 var BackedTexture, DataTexture, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Util = require('../../../Util');
 
@@ -67696,8 +68113,8 @@ Contains local copy of its data to allow quick resizing without gl.copyTexImage2
 (which requires render-to-framebuffer)
  */
 
-BackedTexture = (function(_super) {
-  __extends(BackedTexture, _super);
+BackedTexture = (function(superClass) {
+  extend(BackedTexture, superClass);
 
   function BackedTexture(gl, width, height, channels, options) {
     BackedTexture.__super__.constructor.call(this, gl, width, height, channels, options);
@@ -67763,7 +68180,8 @@ BackedTexture = (function(_super) {
 module.exports = BackedTexture;
 
 
-},{"../../../Util":23,"./datatexture":131}],131:[function(require,module,exports){
+
+},{"../../../Util":23,"./datatexture":132}],132:[function(require,module,exports){
 var DataTexture, Util;
 
 Util = require('../../../Util');
@@ -67776,25 +68194,25 @@ Allows partial updates via subImage.
  */
 
 DataTexture = (function() {
-  function DataTexture(gl, width, height, channels, options) {
-    var magFilter, minFilter, type, _ref, _ref1, _ref2;
-    this.gl = gl;
+  function DataTexture(gl1, width, height, channels, options) {
+    var gl, magFilter, minFilter, ref, ref1, ref2, type;
+    this.gl = gl1;
     this.width = width;
     this.height = height;
     this.channels = channels;
     this.n = this.width * this.height * this.channels;
     gl = this.gl;
-    minFilter = (_ref = options.minFilter) != null ? _ref : THREE.NearestFilter;
-    magFilter = (_ref1 = options.magFilter) != null ? _ref1 : THREE.NearestFilter;
-    type = (_ref2 = options.type) != null ? _ref2 : THREE.FloatType;
+    minFilter = (ref = options.minFilter) != null ? ref : THREE.NearestFilter;
+    magFilter = (ref1 = options.magFilter) != null ? ref1 : THREE.NearestFilter;
+    type = (ref2 = options.type) != null ? ref2 : THREE.FloatType;
     this.minFilter = Util.Three.paramToGL(gl, minFilter);
-    this.magFilter = Util.Three.paramToGL(gl, minFilter);
+    this.magFilter = Util.Three.paramToGL(gl, magFilter);
     this.type = Util.Three.paramToGL(gl, type);
     this.ctor = Util.Three.paramToArrayStorage(type);
-    this.build();
+    this.build(options);
   }
 
-  DataTexture.prototype.build = function() {
+  DataTexture.prototype.build = function(options) {
     var gl;
     gl = this.gl;
     this.texture = gl.createTexture();
@@ -67808,12 +68226,14 @@ DataTexture = (function() {
     this.data = new this.ctor(this.n);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, this.data);
-    this.textureObject = new THREE.Texture(new Image(), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.NearestFilter, THREE.NearestFilter);
+    this.textureObject = new THREE.Texture(new Image(), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, options.minFilter, options.magFilter);
     this.textureObject.__webglInit = true;
     this.textureObject.__webglTexture = this.texture;
     this.textureObject.format = this.format3;
     this.textureObject.type = THREE.FloatType;
     this.textureObject.unpackAlignment = 1;
+    this.textureObject.flipY = false;
+    this.textureObject.generateMipmaps = false;
     return this.uniforms = {
       dataResolution: {
         type: 'v2',
@@ -67848,7 +68268,8 @@ DataTexture = (function() {
 module.exports = DataTexture;
 
 
-},{"../../../Util":23}],132:[function(require,module,exports){
+
+},{"../../../Util":23}],133:[function(require,module,exports){
 
 /*
 Virtual RenderTarget that cycles through multiple frames
@@ -67891,20 +68312,20 @@ RenderTarget = (function() {
       };
     })(this);
     this.targets = (function() {
-      var _i, _ref, _results;
-      _results = [];
-      for (i = _i = 0, _ref = this.buffers; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-        _results.push(make());
+      var k, ref, results;
+      results = [];
+      for (i = k = 0, ref = this.buffers; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+        results.push(make());
       }
-      return _results;
+      return results;
     }).call(this);
     this.reads = (function() {
-      var _i, _ref, _results;
-      _results = [];
-      for (i = _i = 0, _ref = this.buffers; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-        _results.push(make());
+      var k, ref, results;
+      results = [];
+      for (i = k = 0, ref = this.buffers; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+        results.push(make());
       }
-      return _results;
+      return results;
     }).call(this);
     this.write = make();
     this.index = 0;
@@ -67925,13 +68346,13 @@ RenderTarget = (function() {
   };
 
   RenderTarget.prototype.cycle = function() {
-    var add, buffers, copy, i, keys, read, _i, _len, _ref;
+    var add, buffers, copy, i, k, keys, len, read, ref;
     keys = ['__webglTexture', '__webglFramebuffer', '__webglRenderbuffer'];
     buffers = this.buffers;
     copy = function(a, b) {
-      var key, _i, _len;
-      for (_i = 0, _len = keys.length; _i < _len; _i++) {
-        key = keys[_i];
+      var k, key, len;
+      for (k = 0, len = keys.length; k < len; k++) {
+        key = keys[k];
         b[key] = a[key];
       }
       return null;
@@ -67940,9 +68361,9 @@ RenderTarget = (function() {
       return (i + j + buffers * 2) % buffers;
     };
     copy(this.write, this.targets[this.index]);
-    _ref = this.reads;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      read = _ref[i];
+    ref = this.reads;
+    for (i = k = 0, len = ref.length; k < len; i = ++k) {
+      read = ref[i];
       copy(this.targets[add(this.index, -i)], read);
     }
     this.index = add(this.index, 1);
@@ -67950,20 +68371,20 @@ RenderTarget = (function() {
   };
 
   RenderTarget.prototype.warmup = function(callback) {
-    var i, _i, _ref, _results;
-    _results = [];
-    for (i = _i = 0, _ref = this.buffers; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    var i, k, ref, results;
+    results = [];
+    for (i = k = 0, ref = this.buffers; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       callback(this.write);
-      _results.push(this.cycle());
+      results.push(this.cycle());
     }
-    return _results;
+    return results;
   };
 
   RenderTarget.prototype.dispose = function() {
-    var target, _i, _len, _ref;
-    _ref = this.targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    var k, len, ref, target;
+    ref = this.targets;
+    for (k = 0, len = ref.length; k < len; k++) {
+      target = ref[k];
       target.dispose();
     }
     return this.targets = this.reads = this.write = null;
@@ -67976,17 +68397,18 @@ RenderTarget = (function() {
 module.exports = RenderTarget;
 
 
-},{}],133:[function(require,module,exports){
+
+},{}],134:[function(require,module,exports){
 var DataBuffer, Util, VoxelBuffer,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 DataBuffer = require('./databuffer');
 
 Util = require('../../util');
 
-VoxelBuffer = (function(_super) {
-  __extends(VoxelBuffer, _super);
+VoxelBuffer = (function(superClass) {
+  extend(VoxelBuffer, superClass);
 
   function VoxelBuffer() {
     return VoxelBuffer.__super__.constructor.apply(this, arguments);
@@ -68003,17 +68425,17 @@ VoxelBuffer = (function(_super) {
   };
 
   VoxelBuffer.prototype.setActive = function(i, j, k) {
-    var _ref;
-    return _ref = [Math.max(0, this.width - i), Math.max(0, this.height - j), Math.max(0, this.depth - k)], this.pad.x = _ref[0], this.pad.y = _ref[1], this.pad.z = _ref[2], _ref;
+    var ref;
+    return ref = [Math.max(0, this.width - i), Math.max(0, this.height - j), Math.max(0, this.depth - k)], this.pad.x = ref[0], this.pad.y = ref[1], this.pad.z = ref[2], ref;
   };
 
   VoxelBuffer.prototype.fill = function() {
-    var callback, count, done, emit, i, j, k, l, limit, m, n, o, padX, padY, repeat, reset, skip, _ref;
+    var callback, count, done, emit, i, j, k, l, limit, m, n, o, padX, padY, ref, repeat, reset, skip;
     callback = this.callback;
     if (typeof callback.reset === "function") {
       callback.reset();
     }
-    _ref = this.streamer, emit = _ref.emit, skip = _ref.skip, count = _ref.count, done = _ref.done, reset = _ref.reset;
+    ref = this.streamer, emit = ref.emit, skip = ref.skip, count = ref.count, done = ref.done, reset = ref.reset;
     reset();
     n = this.width;
     m = this.height;
@@ -68059,8 +68481,8 @@ VoxelBuffer = (function(_super) {
   };
 
   VoxelBuffer.prototype.through = function(callback, target) {
-    var consume, done, dst, emit, i, j, k, pipe, src, _ref;
-    _ref = src = this.streamer, consume = _ref.consume, done = _ref.done;
+    var consume, done, dst, emit, i, j, k, pipe, ref, src;
+    ref = src = this.streamer, consume = ref.consume, done = ref.done;
     emit = (dst = target.streamer).emit;
     i = j = k = 0;
     pipe = function() {
@@ -68120,7 +68542,8 @@ VoxelBuffer = (function(_super) {
 module.exports = VoxelBuffer;
 
 
-},{"../../util":172,"./databuffer":123}],134:[function(require,module,exports){
+
+},{"../../util":173,"./databuffer":124}],135:[function(require,module,exports){
 var Classes;
 
 Classes = {
@@ -68150,7 +68573,8 @@ Classes = {
 module.exports = Classes;
 
 
-},{"./buffer/arraybuffer":120,"./buffer/atlas":121,"./buffer/databuffer":123,"./buffer/matrixbuffer":124,"./buffer/memo":125,"./buffer/pushbuffer":126,"./buffer/readback":127,"./buffer/rendertotexture":128,"./buffer/textatlas":129,"./buffer/voxelbuffer":133,"./meshes/arrow":147,"./meshes/debug":149,"./meshes/face":150,"./meshes/line":151,"./meshes/memoscreen":152,"./meshes/point":153,"./meshes/screen":154,"./meshes/sprite":155,"./meshes/strip":156,"./meshes/surface":157,"./scene":159}],135:[function(require,module,exports){
+
+},{"./buffer/arraybuffer":121,"./buffer/atlas":122,"./buffer/databuffer":124,"./buffer/matrixbuffer":125,"./buffer/memo":126,"./buffer/pushbuffer":127,"./buffer/readback":128,"./buffer/rendertotexture":129,"./buffer/textatlas":130,"./buffer/voxelbuffer":134,"./meshes/arrow":148,"./meshes/debug":150,"./meshes/face":151,"./meshes/line":152,"./meshes/memoscreen":153,"./meshes/point":154,"./meshes/screen":155,"./meshes/sprite":156,"./meshes/strip":157,"./meshes/surface":158,"./scene":160}],136:[function(require,module,exports){
 var RenderFactory;
 
 RenderFactory = (function() {
@@ -68175,10 +68599,11 @@ RenderFactory = (function() {
 module.exports = RenderFactory;
 
 
-},{}],136:[function(require,module,exports){
+
+},{}],137:[function(require,module,exports){
 var ArrowGeometry, ClipGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -68193,11 +68618,11 @@ Cones to attach as arrowheads on line strips
 .....> .....> .....> .....>
  */
 
-ArrowGeometry = (function(_super) {
-  __extends(ArrowGeometry, _super);
+ArrowGeometry = (function(superClass) {
+  extend(ArrowGeometry, superClass);
 
   function ArrowGeometry(options) {
-    var a, anchor, angle, arrow, arrows, attach, b, back, base, c, circle, far, flip, i, index, k, l, layers, near, points, position, ribbons, samples, sides, step, strips, tip, triangles, x, y, z, _i, _j, _k, _l, _m, _n, _o, _ref, _ref1;
+    var a, anchor, angle, arrow, arrows, attach, b, back, base, c, circle, far, flip, i, index, j, k, l, layers, m, n, near, o, p, points, position, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ribbons, samples, sides, step, strips, tip, triangles, x, y, z;
     ArrowGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.sides = sides = +options.sides || 12;
@@ -68205,8 +68630,8 @@ ArrowGeometry = (function(_super) {
     this.strips = strips = +options.strips || 1;
     this.ribbons = ribbons = +options.ribbons || 1;
     this.layers = layers = +options.layers || 1;
-    this.flip = flip = (_ref = options.flip) != null ? _ref : false;
-    this.anchor = anchor = (_ref1 = options.anchor) != null ? _ref1 : flip ? 0 : samples - 1;
+    this.flip = flip = (ref = options.flip) != null ? ref : false;
+    this.anchor = anchor = (ref1 = options.anchor) != null ? ref1 : flip ? 0 : samples - 1;
     arrows = strips * ribbons * layers;
     points = (sides + 2) * arrows;
     triangles = (sides * 2) * arrows;
@@ -68220,15 +68645,15 @@ ArrowGeometry = (function(_super) {
     arrow = this._emitter('arrow');
     attach = this._emitter('attach');
     circle = [];
-    for (k = _i = 0; 0 <= sides ? _i < sides : _i > sides; k = 0 <= sides ? ++_i : --_i) {
+    for (k = j = 0, ref2 = sides; 0 <= ref2 ? j < ref2 : j > ref2; k = 0 <= ref2 ? ++j : --j) {
       angle = k / sides * τ;
       circle.push([Math.cos(angle), Math.sin(angle), 1]);
     }
     base = 0;
-    for (i = _j = 0; 0 <= arrows ? _j < arrows : _j > arrows; i = 0 <= arrows ? ++_j : --_j) {
+    for (i = m = 0, ref3 = arrows; 0 <= ref3 ? m < ref3 : m > ref3; i = 0 <= ref3 ? ++m : --m) {
       tip = base++;
       back = tip + sides + 1;
-      for (k = _k = 0; 0 <= sides ? _k < sides : _k > sides; k = 0 <= sides ? ++_k : --_k) {
+      for (k = n = 0, ref4 = sides; 0 <= ref4 ? n < ref4 : n > ref4; k = 0 <= ref4 ? ++n : --n) {
         a = base + k % sides;
         b = base + (k + 1) % sides;
         index(tip);
@@ -68244,13 +68669,13 @@ ArrowGeometry = (function(_super) {
     far = flip ? samples - 1 : 0;
     near = anchor + step;
     x = anchor;
-    for (l = _l = 0; 0 <= layers ? _l < layers : _l > layers; l = 0 <= layers ? ++_l : --_l) {
-      for (z = _m = 0; 0 <= ribbons ? _m < ribbons : _m > ribbons; z = 0 <= ribbons ? ++_m : --_m) {
-        for (y = _n = 0; 0 <= strips ? _n < strips : _n > strips; y = 0 <= strips ? ++_n : --_n) {
+    for (l = o = 0, ref5 = layers; 0 <= ref5 ? o < ref5 : o > ref5; l = 0 <= ref5 ? ++o : --o) {
+      for (z = p = 0, ref6 = ribbons; 0 <= ref6 ? p < ref6 : p > ref6; z = 0 <= ref6 ? ++p : --p) {
+        for (y = q = 0, ref7 = strips; 0 <= ref7 ? q < ref7 : q > ref7; y = 0 <= ref7 ? ++q : --q) {
           position(x, y, z, l);
           arrow(0, 0, 0);
           attach(near, far);
-          for (k = _o = 0; 0 <= sides ? _o < sides : _o > sides; k = 0 <= sides ? ++_o : --_o) {
+          for (k = r = 0, ref8 = sides; 0 <= ref8 ? r < ref8 : r > ref8; k = 0 <= ref8 ? ++r : --r) {
             position(x, y, z, l);
             c = circle[k];
             arrow(c[0], c[1], c[2]);
@@ -68305,10 +68730,11 @@ ArrowGeometry = (function(_super) {
 module.exports = ArrowGeometry;
 
 
-},{"./clipgeometry":137}],137:[function(require,module,exports){
+
+},{"./clipgeometry":138}],138:[function(require,module,exports){
 var ClipGeometry, Geometry, debug, tick,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Geometry = require('./geometry');
 
@@ -68325,8 +68751,8 @@ tick = function() {
   };
 };
 
-ClipGeometry = (function(_super) {
-  __extends(ClipGeometry, _super);
+ClipGeometry = (function(superClass) {
+  extend(ClipGeometry, superClass);
 
   function ClipGeometry() {
     return ClipGeometry.__super__.constructor.apply(this, arguments);
@@ -68389,10 +68815,11 @@ ClipGeometry = (function(_super) {
 module.exports = ClipGeometry;
 
 
-},{"./geometry":139}],138:[function(require,module,exports){
+
+},{"./geometry":140}],139:[function(require,module,exports){
 var ClipGeometry, FaceGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -68413,11 +68840,11 @@ ClipGeometry = require('./clipgeometry');
 +-+-+   +-+-+   +-+-+   +-+-+
  */
 
-FaceGeometry = (function(_super) {
-  __extends(FaceGeometry, _super);
+FaceGeometry = (function(superClass) {
+  extend(FaceGeometry, superClass);
 
   function FaceGeometry(options) {
-    var base, depth, height, i, index, items, j, l, points, position, samples, sides, triangles, width, x, y, z, _i, _j, _k, _l, _m, _n;
+    var base, depth, height, i, index, items, j, k, l, m, n, o, p, points, position, q, ref, ref1, ref2, ref3, ref4, ref5, samples, sides, triangles, width, x, y, z;
     FaceGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.items = items = +options.items || 2;
@@ -68434,18 +68861,18 @@ FaceGeometry = (function(_super) {
     index = this._emitter('index');
     position = this._emitter('position4');
     base = 0;
-    for (i = _i = 0; 0 <= samples ? _i < samples : _i > samples; i = 0 <= samples ? ++_i : --_i) {
-      for (j = _j = 0; 0 <= sides ? _j < sides : _j > sides; j = 0 <= sides ? ++_j : --_j) {
+    for (i = k = 0, ref = samples; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+      for (j = m = 0, ref1 = sides; 0 <= ref1 ? m < ref1 : m > ref1; j = 0 <= ref1 ? ++m : --m) {
         index(base);
         index(base + j + 1);
         index(base + j + 2);
       }
       base += items;
     }
-    for (z = _k = 0; 0 <= depth ? _k < depth : _k > depth; z = 0 <= depth ? ++_k : --_k) {
-      for (y = _l = 0; 0 <= height ? _l < height : _l > height; y = 0 <= height ? ++_l : --_l) {
-        for (x = _m = 0; 0 <= width ? _m < width : _m > width; x = 0 <= width ? ++_m : --_m) {
-          for (l = _n = 0; 0 <= items ? _n < items : _n > items; l = 0 <= items ? ++_n : --_n) {
+    for (z = n = 0, ref2 = depth; 0 <= ref2 ? n < ref2 : n > ref2; z = 0 <= ref2 ? ++n : --n) {
+      for (y = o = 0, ref3 = height; 0 <= ref3 ? o < ref3 : o > ref3; y = 0 <= ref3 ? ++o : --o) {
+        for (x = p = 0, ref4 = width; 0 <= ref4 ? p < ref4 : p > ref4; x = 0 <= ref4 ? ++p : --p) {
+          for (l = q = 0, ref5 = items; 0 <= ref5 ? q < ref5 : q > ref5; l = 0 <= ref5 ? ++q : --q) {
             position(x, y, z, l);
           }
         }
@@ -68482,10 +68909,11 @@ FaceGeometry = (function(_super) {
 module.exports = FaceGeometry;
 
 
-},{"./clipgeometry":137}],139:[function(require,module,exports){
+
+},{"./clipgeometry":138}],140:[function(require,module,exports){
 var Geometry, debug, tick,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 debug = false;
 
@@ -68500,8 +68928,8 @@ tick = function() {
   };
 };
 
-Geometry = (function(_super) {
-  __extends(Geometry, _super);
+Geometry = (function(superClass) {
+  extend(Geometry, superClass);
 
   function Geometry() {
     THREE.BufferGeometry.call(this);
@@ -68519,9 +68947,9 @@ Geometry = (function(_super) {
   }
 
   Geometry.prototype._reduce = function(dims, maxs) {
-    var dim, i, max, multiple, quads, _i, _len;
+    var dim, i, j, len, max, multiple, quads;
     multiple = false;
-    for (i = _i = 0, _len = dims.length; _i < _len; i = ++_i) {
+    for (i = j = 0, len = dims.length; j < len; i = ++j) {
       dim = dims[i];
       max = maxs[i];
       if (multiple) {
@@ -68564,11 +68992,11 @@ Geometry = (function(_super) {
   };
 
   Geometry.prototype._autochunk = function() {
-    var array, attribute, indexed, name, numItems, _ref;
+    var array, attribute, indexed, name, numItems, ref;
     indexed = this.attributes.index;
-    _ref = this.attributes;
-    for (name in _ref) {
-      attribute = _ref[name];
+    ref = this.attributes;
+    for (name in ref) {
+      attribute = ref[name];
       if (name !== 'index' && indexed) {
         numItems = attribute.array.length / attribute.itemSize;
         if (numItems > this.limit) {
@@ -68597,7 +69025,7 @@ Geometry = (function(_super) {
   };
 
   Geometry.prototype._chunks = function(array, limit) {
-    var a, b, chunks, end, i, j1, j2, j3, jmax, jmin, last, n, o, push, start, _i;
+    var a, b, chunks, end, i, j, j1, j2, j3, jmax, jmin, last, n, o, push, ref, start;
     chunks = [];
     last = 0;
     start = array[0];
@@ -68616,7 +69044,7 @@ Geometry = (function(_super) {
     };
     n = Math.floor(array.length / 3);
     o = 0;
-    for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
+    for (i = j = 0, ref = n; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       j1 = array[o++];
       j2 = array[o++];
       j3 = array[o++];
@@ -68638,16 +69066,16 @@ Geometry = (function(_super) {
   };
 
   Geometry.prototype._chunkify = function(attrib, chunks) {
-    var chunk, from, i, offset, to, _i, _j, _len, _ref, _ref1;
+    var chunk, from, i, j, k, len, offset, ref, ref1, to;
     if (!attrib.u16) {
       return;
     }
     from = attrib.array;
     to = attrib.u16;
-    for (_i = 0, _len = chunks.length; _i < _len; _i++) {
-      chunk = chunks[_i];
+    for (j = 0, len = chunks.length; j < len; j++) {
+      chunk = chunks[j];
       offset = chunk.index;
-      for (i = _j = _ref = chunk.start, _ref1 = chunk.end; _ref <= _ref1 ? _j < _ref1 : _j > _ref1; i = _ref <= _ref1 ? ++_j : --_j) {
+      for (i = k = ref = chunk.start, ref1 = chunk.end; ref <= ref1 ? k < ref1 : k > ref1; i = ref <= ref1 ? ++k : --k) {
         to[i] = from[i] - offset;
       }
     }
@@ -68656,19 +69084,19 @@ Geometry = (function(_super) {
   };
 
   Geometry.prototype._offsets = function(offsets) {
-    var chunk, chunks, end, offset, out, start, _end, _i, _j, _len, _len1, _start;
+    var _end, _start, chunk, chunks, end, j, k, len, len1, offset, out, start;
     if (!this.chunked) {
       this.offsets = offsets;
     } else {
       chunks = this.chunks;
       out = this.offsets;
       out.length = null;
-      for (_i = 0, _len = offsets.length; _i < _len; _i++) {
-        offset = offsets[_i];
+      for (j = 0, len = offsets.length; j < len; j++) {
+        offset = offsets[j];
         start = offset.start;
         end = offset.count - start;
-        for (_j = 0, _len1 = chunks.length; _j < _len1; _j++) {
-          chunk = chunks[_j];
+        for (k = 0, len1 = chunks.length; k < len1; k++) {
+          chunk = chunks[k];
           _start = chunk.start;
           _end = chunk.end;
           if (start <= _start && end > _start || start < _end && end >= _end || start > _start && end < _end) {
@@ -68693,7 +69121,8 @@ Geometry = (function(_super) {
 module.exports = Geometry;
 
 
-},{}],140:[function(require,module,exports){
+
+},{}],141:[function(require,module,exports){
 exports.Geometry = require('./geometry');
 
 exports.ArrowGeometry = require('./arrowgeometry');
@@ -68711,10 +69140,11 @@ exports.StripGeometry = require('./stripgeometry');
 exports.SurfaceGeometry = require('./surfacegeometry');
 
 
-},{"./arrowgeometry":136,"./facegeometry":138,"./geometry":139,"./linegeometry":141,"./screengeometry":142,"./spritegeometry":143,"./stripgeometry":144,"./surfacegeometry":145}],141:[function(require,module,exports){
+
+},{"./arrowgeometry":137,"./facegeometry":139,"./geometry":140,"./linegeometry":142,"./screengeometry":143,"./spritegeometry":144,"./stripgeometry":145,"./surfacegeometry":146}],142:[function(require,module,exports){
 var ClipGeometry, LineGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -68729,11 +69159,11 @@ Line strips arranged in columns and rows
 +----+ +----+ +----+ +----+
  */
 
-LineGeometry = (function(_super) {
-  __extends(LineGeometry, _super);
+LineGeometry = (function(superClass) {
+  extend(LineGeometry, superClass);
 
   function LineGeometry(options) {
-    var base, closed, edge, edger, i, index, j, k, l, layers, line, points, position, quads, ribbons, samples, segments, strip, strips, triangles, wrap, x, y, z, _i, _j, _k, _l, _m, _n, _o, _ref;
+    var base, closed, edge, edger, i, index, j, k, l, layers, line, m, n, o, p, points, position, q, quads, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ribbons, s, samples, segments, strip, strips, triangles, wrap, x, y, z;
     LineGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.closed = closed = options.closed || false;
@@ -68756,9 +69186,9 @@ LineGeometry = (function(_super) {
     line = this._emitter('line');
     strip = this._emitter('strip');
     base = 0;
-    for (i = _i = 0, _ref = ribbons * layers; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-      for (j = _j = 0; 0 <= strips ? _j < strips : _j > strips; j = 0 <= strips ? ++_j : --_j) {
-        for (k = _k = 0; 0 <= segments ? _k < segments : _k > segments; k = 0 <= segments ? ++_k : --_k) {
+    for (i = m = 0, ref = ribbons * layers; 0 <= ref ? m < ref : m > ref; i = 0 <= ref ? ++m : --m) {
+      for (j = n = 0, ref1 = strips; 0 <= ref1 ? n < ref1 : n > ref1; j = 0 <= ref1 ? ++n : --n) {
+        for (k = o = 0, ref2 = segments; 0 <= ref2 ? o < ref2 : o > ref2; k = 0 <= ref2 ? ++o : --o) {
           index(base);
           index(base + 1);
           index(base + 2);
@@ -68781,10 +69211,10 @@ LineGeometry = (function(_super) {
         return 0;
       }
     };
-    for (l = _l = 0; 0 <= layers ? _l < layers : _l > layers; l = 0 <= layers ? ++_l : --_l) {
-      for (z = _m = 0; 0 <= ribbons ? _m < ribbons : _m > ribbons; z = 0 <= ribbons ? ++_m : --_m) {
-        for (y = _n = 0; 0 <= strips ? _n < strips : _n > strips; y = 0 <= strips ? ++_n : --_n) {
-          for (x = _o = 0; 0 <= samples ? _o < samples : _o > samples; x = 0 <= samples ? ++_o : --_o) {
+    for (l = p = 0, ref3 = layers; 0 <= ref3 ? p < ref3 : p > ref3; l = 0 <= ref3 ? ++p : --p) {
+      for (z = q = 0, ref4 = ribbons; 0 <= ref4 ? q < ref4 : q > ref4; z = 0 <= ref4 ? ++q : --q) {
+        for (y = r = 0, ref5 = strips; 0 <= ref5 ? r < ref5 : r > ref5; y = 0 <= ref5 ? ++r : --r) {
+          for (x = s = 0, ref6 = samples; 0 <= ref6 ? s < ref6 : s > ref6; x = 0 <= ref6 ? ++s : --s) {
             if (closed) {
               x = x % wrap;
             }
@@ -68830,10 +69260,11 @@ LineGeometry = (function(_super) {
 module.exports = LineGeometry;
 
 
-},{"./clipgeometry":137}],142:[function(require,module,exports){
+
+},{"./clipgeometry":138}],143:[function(require,module,exports){
 var ScreenGeometry, SurfaceGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 SurfaceGeometry = require('./surfacegeometry');
 
@@ -68854,11 +69285,11 @@ Grid Surface in normalized screen space
 +----+----+----+----+
  */
 
-ScreenGeometry = (function(_super) {
-  __extends(ScreenGeometry, _super);
+ScreenGeometry = (function(superClass) {
+  extend(ScreenGeometry, superClass);
 
   function ScreenGeometry(options) {
-    var _ref, _ref1;
+    var ref, ref1;
     if (this.uniforms == null) {
       this.uniforms = {};
     }
@@ -68866,8 +69297,8 @@ ScreenGeometry = (function(_super) {
       type: 'v4',
       value: new THREE.Vector4
     };
-    options.width = Math.max(2, (_ref = +options.width) != null ? _ref : 2);
-    options.height = Math.max(2, (_ref1 = +options.height) != null ? _ref1 : 2);
+    options.width = Math.max(2, (ref = +options.width) != null ? ref : 2);
+    options.height = Math.max(2, (ref1 = +options.height) != null ? ref1 : 2);
     this.cover();
     ScreenGeometry.__super__.constructor.call(this, options);
   }
@@ -68907,10 +69338,11 @@ ScreenGeometry = (function(_super) {
 module.exports = ScreenGeometry;
 
 
-},{"./surfacegeometry":145}],143:[function(require,module,exports){
+
+},{"./surfacegeometry":146}],144:[function(require,module,exports){
 var ClipGeometry, SpriteGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -68931,11 +69363,11 @@ Render points as quads
 +----+  +----+  +----+  +----+
  */
 
-SpriteGeometry = (function(_super) {
-  __extends(SpriteGeometry, _super);
+SpriteGeometry = (function(superClass) {
+  extend(SpriteGeometry, superClass);
 
   function SpriteGeometry(options) {
-    var base, depth, height, i, index, items, l, points, position, quad, samples, sprite, triangles, v, width, x, y, z, _i, _j, _k, _l, _len, _m, _n;
+    var base, depth, height, i, index, items, j, k, l, len, m, n, o, p, points, position, quad, ref, ref1, ref2, ref3, ref4, samples, sprite, triangles, v, width, x, y, z;
     SpriteGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.items = items = +options.items || 2;
@@ -68954,7 +69386,7 @@ SpriteGeometry = (function(_super) {
     sprite = this._emitter('sprite');
     quad = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
     base = 0;
-    for (i = _i = 0; 0 <= samples ? _i < samples : _i > samples; i = 0 <= samples ? ++_i : --_i) {
+    for (i = j = 0, ref = samples; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       index(base);
       index(base + 1);
       index(base + 2);
@@ -68963,12 +69395,12 @@ SpriteGeometry = (function(_super) {
       index(base + 3);
       base += 4;
     }
-    for (z = _j = 0; 0 <= depth ? _j < depth : _j > depth; z = 0 <= depth ? ++_j : --_j) {
-      for (y = _k = 0; 0 <= height ? _k < height : _k > height; y = 0 <= height ? ++_k : --_k) {
-        for (x = _l = 0; 0 <= width ? _l < width : _l > width; x = 0 <= width ? ++_l : --_l) {
-          for (l = _m = 0; 0 <= items ? _m < items : _m > items; l = 0 <= items ? ++_m : --_m) {
-            for (_n = 0, _len = quad.length; _n < _len; _n++) {
-              v = quad[_n];
+    for (z = k = 0, ref1 = depth; 0 <= ref1 ? k < ref1 : k > ref1; z = 0 <= ref1 ? ++k : --k) {
+      for (y = m = 0, ref2 = height; 0 <= ref2 ? m < ref2 : m > ref2; y = 0 <= ref2 ? ++m : --m) {
+        for (x = n = 0, ref3 = width; 0 <= ref3 ? n < ref3 : n > ref3; x = 0 <= ref3 ? ++n : --n) {
+          for (l = o = 0, ref4 = items; 0 <= ref4 ? o < ref4 : o > ref4; l = 0 <= ref4 ? ++o : --o) {
+            for (p = 0, len = quad.length; p < len; p++) {
+              v = quad[p];
               position(x, y, z, l);
               sprite(v[0], v[1]);
             }
@@ -69005,10 +69437,11 @@ SpriteGeometry = (function(_super) {
 module.exports = SpriteGeometry;
 
 
-},{"./clipgeometry":137}],144:[function(require,module,exports){
+
+},{"./clipgeometry":138}],145:[function(require,module,exports){
 var ClipGeometry, StripGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -69029,11 +69462,11 @@ Triangle strips arranged in items, columns and rows
 +--+--+/    +--+--+/    +--+--+/    +--+--+/
  */
 
-StripGeometry = (function(_super) {
-  __extends(StripGeometry, _super);
+StripGeometry = (function(superClass) {
+  extend(StripGeometry, superClass);
 
   function StripGeometry(options) {
-    var base, depth, f, height, i, index, items, j, l, last, o, points, position, samples, sides, strip, triangles, width, x, y, z, _i, _j, _k, _l, _m, _n;
+    var base, depth, f, height, i, index, items, j, k, l, last, m, n, o, p, points, position, q, r, ref, ref1, ref2, ref3, ref4, ref5, samples, sides, strip, triangles, width, x, y, z;
     StripGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.items = items = +options.items || 2;
@@ -69052,9 +69485,9 @@ StripGeometry = (function(_super) {
     position = this._emitter('position4');
     strip = this._emitter('strip');
     base = 0;
-    for (i = _i = 0; 0 <= samples ? _i < samples : _i > samples; i = 0 <= samples ? ++_i : --_i) {
+    for (i = k = 0, ref = samples; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       o = base;
-      for (j = _j = 0; 0 <= sides ? _j < sides : _j > sides; j = 0 <= sides ? ++_j : --_j) {
+      for (j = m = 0, ref1 = sides; 0 <= ref1 ? m < ref1 : m > ref1; j = 0 <= ref1 ? ++m : --m) {
         if (j & 1) {
           index(o + 1);
           index(o);
@@ -69069,13 +69502,13 @@ StripGeometry = (function(_super) {
       base += items;
     }
     last = items - 1;
-    for (z = _k = 0; 0 <= depth ? _k < depth : _k > depth; z = 0 <= depth ? ++_k : --_k) {
-      for (y = _l = 0; 0 <= height ? _l < height : _l > height; y = 0 <= height ? ++_l : --_l) {
-        for (x = _m = 0; 0 <= width ? _m < width : _m > width; x = 0 <= width ? ++_m : --_m) {
+    for (z = n = 0, ref2 = depth; 0 <= ref2 ? n < ref2 : n > ref2; z = 0 <= ref2 ? ++n : --n) {
+      for (y = p = 0, ref3 = height; 0 <= ref3 ? p < ref3 : p > ref3; y = 0 <= ref3 ? ++p : --p) {
+        for (x = q = 0, ref4 = width; 0 <= ref4 ? q < ref4 : q > ref4; x = 0 <= ref4 ? ++q : --q) {
           f = 1;
           position(x, y, z, 0);
           strip(1, 2, f);
-          for (l = _n = 1; 1 <= last ? _n < last : _n > last; l = 1 <= last ? ++_n : --_n) {
+          for (l = r = 1, ref5 = last; 1 <= ref5 ? r < ref5 : r > ref5; l = 1 <= ref5 ? ++r : --r) {
             position(x, y, z, l);
             strip(l - 1, l + 1, f = -f);
           }
@@ -69115,10 +69548,11 @@ StripGeometry = (function(_super) {
 module.exports = StripGeometry;
 
 
-},{"./clipgeometry":137}],145:[function(require,module,exports){
+
+},{"./clipgeometry":138}],146:[function(require,module,exports){
 var ClipGeometry, SurfaceGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 ClipGeometry = require('./clipgeometry');
 
@@ -69139,11 +69573,11 @@ Grid Surface
 +----+----+----+----+
  */
 
-SurfaceGeometry = (function(_super) {
-  __extends(SurfaceGeometry, _super);
+SurfaceGeometry = (function(superClass) {
+  extend(SurfaceGeometry, superClass);
 
   function SurfaceGeometry(options) {
-    var base, closedX, closedY, edgeX, edgeY, edgerX, edgerY, height, i, index, j, k, l, layers, points, position, quads, segmentsX, segmentsY, surface, surfaces, triangles, width, wrapX, wrapY, x, y, z, _i, _j, _k, _l, _m, _n, _o, _ref;
+    var base, closedX, closedY, edgeX, edgeY, edgerX, edgerY, height, i, index, j, k, l, layers, m, n, o, p, points, position, q, quads, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, s, segmentsX, segmentsY, surface, surfaces, triangles, width, wrapX, wrapY, x, y, z;
     SurfaceGeometry.__super__.constructor.call(this, options);
     this._clipUniforms();
     this.closedX = closedX = options.closedX || false;
@@ -69167,9 +69601,9 @@ SurfaceGeometry = (function(_super) {
     position = this._emitter('position4');
     surface = this._emitter('surface');
     base = 0;
-    for (i = _i = 0, _ref = surfaces * layers; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-      for (j = _j = 0; 0 <= segmentsY ? _j < segmentsY : _j > segmentsY; j = 0 <= segmentsY ? ++_j : --_j) {
-        for (k = _k = 0; 0 <= segmentsX ? _k < segmentsX : _k > segmentsX; k = 0 <= segmentsX ? ++_k : --_k) {
+    for (i = m = 0, ref = surfaces * layers; 0 <= ref ? m < ref : m > ref; i = 0 <= ref ? ++m : --m) {
+      for (j = n = 0, ref1 = segmentsY; 0 <= ref1 ? n < ref1 : n > ref1; j = 0 <= ref1 ? ++n : --n) {
+        for (k = o = 0, ref2 = segmentsX; 0 <= ref2 ? o < ref2 : o > ref2; k = 0 <= ref2 ? ++o : --o) {
           index(base);
           index(base + 1);
           index(base + width);
@@ -69204,14 +69638,14 @@ SurfaceGeometry = (function(_super) {
         return 0;
       }
     };
-    for (l = _l = 0; 0 <= layers ? _l < layers : _l > layers; l = 0 <= layers ? ++_l : --_l) {
-      for (z = _m = 0; 0 <= surfaces ? _m < surfaces : _m > surfaces; z = 0 <= surfaces ? ++_m : --_m) {
-        for (y = _n = 0; 0 <= height ? _n < height : _n > height; y = 0 <= height ? ++_n : --_n) {
+    for (l = p = 0, ref3 = layers; 0 <= ref3 ? p < ref3 : p > ref3; l = 0 <= ref3 ? ++p : --p) {
+      for (z = q = 0, ref4 = surfaces; 0 <= ref4 ? q < ref4 : q > ref4; z = 0 <= ref4 ? ++q : --q) {
+        for (y = r = 0, ref5 = height; 0 <= ref5 ? r < ref5 : r > ref5; y = 0 <= ref5 ? ++r : --r) {
           if (closedY) {
             y = y % wrapY;
           }
           edgeY = edgerY(y);
-          for (x = _o = 0; 0 <= width ? _o < width : _o > width; x = 0 <= width ? ++_o : --_o) {
+          for (x = s = 0, ref6 = width; 0 <= ref6 ? s < ref6 : s > ref6; x = 0 <= ref6 ? ++s : --s) {
             if (closedX) {
               x = x % wrapX;
             }
@@ -69270,7 +69704,8 @@ SurfaceGeometry = (function(_super) {
 module.exports = SurfaceGeometry;
 
 
-},{"./clipgeometry":137}],146:[function(require,module,exports){
+
+},{"./clipgeometry":138}],147:[function(require,module,exports){
 exports.Scene = require('./scene');
 
 exports.Factory = require('./factory');
@@ -69280,17 +69715,18 @@ exports.Renderable = require('./scene');
 exports.Classes = require('./classes');
 
 
-},{"./classes":134,"./factory":135,"./scene":159}],147:[function(require,module,exports){
+
+},{"./classes":135,"./factory":136,"./scene":160}],148:[function(require,module,exports){
 var Arrow, ArrowGeometry, Base,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 ArrowGeometry = require('../geometry').ArrowGeometry;
 
-Arrow = (function(_super) {
-  __extends(Arrow, _super);
+Arrow = (function(superClass) {
+  extend(Arrow, superClass);
 
   function Arrow(renderer, shaders, options) {
     var color, combine, f, factory, hasStyle, linear, map, mask, material, object, position, stpq, uniforms, v;
@@ -69341,84 +69777,85 @@ Arrow = (function(_super) {
 module.exports = Arrow;
 
 
-},{"../geometry":140,"./base":148}],148:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],149:[function(require,module,exports){
 var Base, Renderable, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Renderable = require('../renderable');
 
 Util = require('../../util');
 
-Base = (function(_super) {
-  __extends(Base, _super);
+Base = (function(superClass) {
+  extend(Base, superClass);
 
   function Base(renderer, shaders, options) {
-    var _ref;
+    var ref;
     Base.__super__.constructor.call(this, renderer, shaders, options);
-    this.zUnits = (_ref = options.zUnits) != null ? _ref : 0;
+    this.zUnits = (ref = options.zUnits) != null ? ref : 0;
   }
 
   Base.prototype.raw = function() {
-    var object, _i, _len, _ref;
-    _ref = this.renders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
+    var i, len, object, ref;
+    ref = this.renders;
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
       this._raw(object);
     }
     return null;
   };
 
   Base.prototype.depth = function(write, test) {
-    var object, _i, _len, _ref;
-    _ref = this.renders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
+    var i, len, object, ref;
+    ref = this.renders;
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
       this._depth(object, write, test);
     }
     return null;
   };
 
   Base.prototype.polygonOffset = function(factor, units) {
-    var object, _i, _len, _ref;
-    _ref = this.renders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
+    var i, len, object, ref;
+    ref = this.renders;
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
       this._polygonOffset(object, factor, units);
     }
     return null;
   };
 
   Base.prototype.show = function(transparent, blending, order) {
-    var object, _i, _len, _ref, _results;
-    _ref = this.renders;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      _results.push(this._show(object, transparent, blending, order));
+    var i, len, object, ref, results;
+    ref = this.renders;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
+      results.push(this._show(object, transparent, blending, order));
     }
-    return _results;
+    return results;
   };
 
   Base.prototype.hide = function() {
-    var object, _i, _len, _ref;
-    _ref = this.renders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
+    var i, len, object, ref;
+    ref = this.renders;
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
       this._hide(object);
     }
     return null;
   };
 
   Base.prototype._material = function(options) {
-    var fragmentPrefix, key, material, precision, vertexPrefix, _i, _len, _ref;
+    var fragmentPrefix, i, key, len, material, precision, ref, vertexPrefix;
     precision = this.renderer.getPrecision();
     vertexPrefix = "    precision " + precision + " float;\n    precision " + precision + " int;\nuniform mat4 modelMatrix;\nuniform mat4 modelViewMatrix;\nuniform mat4 projectionMatrix;\nuniform mat4 viewMatrix;\nuniform mat3 normalMatrix;\nuniform vec3 cameraPosition;";
     fragmentPrefix = "    precision " + precision + " float;\n    precision " + precision + " int;\nuniform mat4 viewMatrix;\nuniform vec3 cameraPosition;";
     material = new THREE.RawShaderMaterial(options);
-    _ref = ['vertexGraph', 'fragmentGraph'];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      key = _ref[_i];
+    ref = ['vertexGraph', 'fragmentGraph'];
+    for (i = 0, len = ref.length; i < len; i++) {
+      key = ref[i];
       material[key] = options[key];
     }
     material.vertexShader = [vertexPrefix, material.vertexShader].join('\n');
@@ -69570,9 +70007,8 @@ Base = (function(_super) {
         f.pipe('mesh.fragment.shaded', this.uniforms);
       } else {
         f.require(material);
-        f.pipe('mesh.fragment.map', this.uniforms, defs);
+        f.pipe('mesh.fragment.material', this.uniforms, defs);
       }
-      join = true;
       gamma = true;
     }
     if (gamma && !linear) {
@@ -69594,15 +70030,16 @@ Base = (function(_super) {
 module.exports = Base;
 
 
-},{"../../util":172,"../renderable":158}],149:[function(require,module,exports){
+
+},{"../../util":173,"../renderable":159}],150:[function(require,module,exports){
 var Base, Debug,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
-Debug = (function(_super) {
-  __extends(Debug, _super);
+Debug = (function(superClass) {
+  extend(Debug, superClass);
 
   function Debug(renderer, shaders, options) {
     var object;
@@ -69635,17 +70072,18 @@ Debug = (function(_super) {
 module.exports = Debug;
 
 
-},{"./base":148}],150:[function(require,module,exports){
+
+},{"./base":149}],151:[function(require,module,exports){
 var Base, Face, FaceGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 FaceGeometry = require('../geometry').FaceGeometry;
 
-Face = (function(_super) {
-  __extends(Face, _super);
+Face = (function(superClass) {
+  extend(Face, superClass);
 
   function Face(renderer, shaders, options) {
     var color, combine, f, factory, hasStyle, linear, map, mask, material, object, position, stpq, uniforms, v;
@@ -69701,17 +70139,18 @@ Face = (function(_super) {
 module.exports = Face;
 
 
-},{"../geometry":140,"./base":148}],151:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],152:[function(require,module,exports){
 var Base, Line, LineGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 LineGeometry = require('../geometry').LineGeometry;
 
-Line = (function(_super) {
-  __extends(Line, _super);
+Line = (function(superClass) {
+  extend(Line, superClass);
 
   function Line(renderer, shaders, options) {
     var clip, color, combine, defs, f, factory, hasStyle, linear, map, mask, material, object, position, proximity, stpq, stroke, uniforms, v;
@@ -69782,20 +70221,21 @@ Line = (function(_super) {
 module.exports = Line;
 
 
-},{"../geometry":140,"./base":148}],152:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],153:[function(require,module,exports){
 var MemoScreen, Screen, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Screen = require('./screen');
 
 Util = require('../../util');
 
-MemoScreen = (function(_super) {
-  __extends(MemoScreen, _super);
+MemoScreen = (function(superClass) {
+  extend(MemoScreen, superClass);
 
   function MemoScreen(renderer, shaders, options) {
-    var depth, height, inv, inv1, items, map, object, stpq, width, _i, _len, _ref;
+    var depth, height, i, inv, inv1, items, len, map, object, ref, stpq, width;
     this.memo = (items = options.items, width = options.width, height = options.height, depth = options.depth, stpq = options.stpq, options);
     inv = function(x) {
       return 1 / Math.max(1, x);
@@ -69833,9 +70273,9 @@ MemoScreen = (function(_super) {
       map: map,
       linear: true
     });
-    _ref = this.renders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
+    ref = this.renders;
+    for (i = 0, len = ref.length; i < len; i++) {
+      object = ref[i];
       object.transparent = false;
     }
     null;
@@ -69874,26 +70314,27 @@ MemoScreen = (function(_super) {
 module.exports = MemoScreen;
 
 
-},{"../../util":172,"./screen":154}],153:[function(require,module,exports){
+
+},{"../../util":173,"./screen":155}],154:[function(require,module,exports){
 var Base, Point, SpriteGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 SpriteGeometry = require('../geometry').SpriteGeometry;
 
-Point = (function(_super) {
-  __extends(Point, _super);
+Point = (function(superClass) {
+  extend(Point, superClass);
 
   function Point(renderer, shaders, options) {
-    var alpha, color, combine, defines, edgeFactory, f, factory, fill, fillFactory, hasStyle, linear, map, mask, material, optical, pass, passes, position, scales, shape, shapes, size, stpq, uniforms, v, _ref, _ref1, _ref2, _scale, _shape;
+    var _scale, _shape, alpha, color, combine, defines, edgeFactory, f, factory, fill, fillFactory, hasStyle, linear, map, mask, material, optical, pass, passes, position, ref, ref1, ref2, ref3, scales, shape, shapes, size, stpq, uniforms, v;
     Point.__super__.constructor.call(this, renderer, shaders, options);
     uniforms = options.uniforms, material = options.material, position = options.position, color = options.color, size = options.size, mask = options.mask, map = options.map, combine = options.combine, linear = options.linear, shape = options.shape, optical = options.optical, fill = options.fill, stpq = options.stpq;
     if (uniforms == null) {
       uniforms = {};
     }
-    shape = +shape != null ? +shape : 0;
+    shape = (ref = +shape) != null ? ref : 0;
     if (fill == null) {
       fill = true;
     }
@@ -69901,10 +70342,10 @@ Point = (function(_super) {
     shapes = ['circle', 'square', 'diamond', 'up', 'down', 'left', 'right'];
     passes = ['circle', 'generic', 'generic', 'generic', 'generic', 'generic', 'generic'];
     scales = [1.2, 1, 1.414, 1.16, 1.16, 1.16, 1.16];
-    pass = (_ref = passes[shape]) != null ? _ref : passes[0];
-    _shape = (_ref1 = shapes[shape]) != null ? _ref1 : shapes[0];
-    _scale = (_ref2 = optical && scales[shape]) != null ? _ref2 : 1;
-    alpha = fill ? pass : "" + pass + ".hollow";
+    pass = (ref1 = passes[shape]) != null ? ref1 : passes[0];
+    _shape = (ref2 = shapes[shape]) != null ? ref2 : shapes[0];
+    _scale = (ref3 = optical && scales[shape]) != null ? ref3 : 1;
+    alpha = fill ? pass : pass + ".hollow";
     this.geometry = new SpriteGeometry({
       items: options.items,
       width: options.width,
@@ -69976,10 +70417,11 @@ Point = (function(_super) {
 module.exports = Point;
 
 
-},{"../geometry":140,"./base":148}],154:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],155:[function(require,module,exports){
 var Base, Screen, ScreenGeometry, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
@@ -69987,8 +70429,8 @@ ScreenGeometry = require('../geometry').ScreenGeometry;
 
 Util = require('../../util');
 
-Screen = (function(_super) {
-  __extends(Screen, _super);
+Screen = (function(superClass) {
+  extend(Screen, superClass);
 
   function Screen(renderer, shaders, options) {
     var combine, f, factory, hasStyle, linear, map, object, stpq, uniforms, v;
@@ -70037,17 +70479,18 @@ Screen = (function(_super) {
 module.exports = Screen;
 
 
-},{"../../util":172,"../geometry":140,"./base":148}],155:[function(require,module,exports){
+
+},{"../../util":173,"../geometry":141,"./base":149}],156:[function(require,module,exports){
 var Base, Sprite, SpriteGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 SpriteGeometry = require('../geometry').SpriteGeometry;
 
-Sprite = (function(_super) {
-  __extends(Sprite, _super);
+Sprite = (function(superClass) {
+  extend(Sprite, superClass);
 
   function Sprite(renderer, shaders, options) {
     var color, combine, edgeFactory, f, factory, fillFactory, hasStyle, linear, map, mask, material, position, sprite, stpq, uniforms, v;
@@ -70114,17 +70557,18 @@ Sprite = (function(_super) {
 module.exports = Sprite;
 
 
-},{"../geometry":140,"./base":148}],156:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],157:[function(require,module,exports){
 var Base, Strip, StripGeometry,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
 StripGeometry = require('../geometry').StripGeometry;
 
-Strip = (function(_super) {
-  __extends(Strip, _super);
+Strip = (function(superClass) {
+  extend(Strip, superClass);
 
   function Strip(renderer, shaders, options) {
     var color, combine, f, factory, hasStyle, linear, map, mask, material, object, position, stpq, uniforms, v;
@@ -70180,10 +70624,11 @@ Strip = (function(_super) {
 module.exports = Strip;
 
 
-},{"../geometry":140,"./base":148}],157:[function(require,module,exports){
+
+},{"../geometry":141,"./base":149}],158:[function(require,module,exports){
 var Base, Surface, SurfaceGeometry, Util,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Base = require('./base');
 
@@ -70191,8 +70636,8 @@ SurfaceGeometry = require('../geometry').SurfaceGeometry;
 
 Util = require('../../util');
 
-Surface = (function(_super) {
-  __extends(Surface, _super);
+Surface = (function(superClass) {
+  extend(Surface, superClass);
 
   function Surface(renderer, shaders, options) {
     var color, combine, defs, f, factory, hasHollow, hasStyle, intUV, linear, map, mask, material, object, position, stpq, uniforms, v;
@@ -70256,7 +70701,8 @@ Surface = (function(_super) {
 module.exports = Surface;
 
 
-},{"../../util":172,"../geometry":140,"./base":148}],158:[function(require,module,exports){
+
+},{"../../util":173,"../geometry":141,"./base":149}],159:[function(require,module,exports){
 var Renderable;
 
 Renderable = (function() {
@@ -70298,11 +70744,12 @@ Renderable = (function() {
 module.exports = Renderable;
 
 
-},{}],159:[function(require,module,exports){
+
+},{}],160:[function(require,module,exports){
 var MathBox, Renderable, Scene,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 Renderable = require('./renderable');
 
@@ -70311,8 +70758,8 @@ Renderable = require('./renderable');
  All MathBox renderables sit inside this root, to keep things tidy.
  */
 
-MathBox = (function(_super) {
-  __extends(MathBox, _super);
+MathBox = (function(superClass) {
+  extend(MathBox, superClass);
 
   function MathBox() {
     MathBox.__super__.constructor.apply(this, arguments);
@@ -70335,8 +70782,8 @@ MathBox = (function(_super) {
  Will render injected objects to a 1x1 scratch buffer to ensure availability
  */
 
-Scene = (function(_super) {
-  __extends(Scene, _super);
+Scene = (function(superClass) {
+  extend(Scene, superClass);
 
   function Scene(renderer, shaders, options) {
     Scene.__super__.constructor.call(this, renderer, shaders, options);
@@ -70361,8 +70808,8 @@ Scene = (function(_super) {
   };
 
   Scene.prototype.unject = function() {
-    var _ref;
-    return (_ref = this.scene) != null ? _ref.remove(this.root) : void 0;
+    var ref;
+    return (ref = this.scene) != null ? ref.remove(this.root) : void 0;
   };
 
   Scene.prototype.add = function(object) {
@@ -70401,13 +70848,13 @@ Scene = (function(_super) {
   };
 
   Scene.prototype.render = function() {
-    var added, children, i, pending, visible, _i, _ref;
+    var added, children, i, j, pending, ref, visible;
     if (!this.pending.length) {
       return;
     }
     children = this.root.children;
     added = [];
-    for (i = _i = 0, _ref = this.async; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    for (i = j = 0, ref = this.async; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       pending = this.pending.shift();
       if (!pending) {
         break;
@@ -70420,7 +70867,7 @@ Scene = (function(_super) {
       return v = o.visible;
     });
     children.map(function(o) {
-      return o.visible = __indexOf.call(added, o) < 0;
+      return o.visible = indexOf.call(added, o) < 0;
     });
     this.renderer.render(this.scene, this.camera, this.scratch);
     return children.map(function(o, i) {
@@ -70439,7 +70886,8 @@ Scene = (function(_super) {
 module.exports = Scene;
 
 
-},{"./renderable":158}],160:[function(require,module,exports){
+
+},{"./renderable":159}],161:[function(require,module,exports){
 var Factory, ShaderGraph;
 
 ShaderGraph = require('../../vendor/shadergraph/src');
@@ -70447,12 +70895,12 @@ ShaderGraph = require('../../vendor/shadergraph/src');
 Factory = function(snippets) {
   var fetch;
   fetch = function(name) {
-    var element, ref, s, sel, _ref;
+    var element, ref, ref1, s, sel;
     s = snippets[name];
     if (s != null) {
       return s;
     }
-    ref = (_ref = name[0]) === '#' || _ref === '.' || _ref === ':' || _ref === '[';
+    ref = (ref1 = name[0]) === '#' || ref1 === '.' || ref1 === ':' || ref1 === '[';
     sel = ref ? name : "#" + name;
     element = document.querySelector(sel);
     if ((element != null) && element.tagName === 'SCRIPT') {
@@ -70468,13 +70916,15 @@ Factory = function(snippets) {
 module.exports = Factory;
 
 
-},{"../../vendor/shadergraph/src":205}],161:[function(require,module,exports){
+
+},{"../../vendor/shadergraph/src":206}],162:[function(require,module,exports){
 exports.Factory = require('./factory');
 
 exports.Snippets = require('../../build/shaders');
 
 
-},{"../../build/shaders":1,"./factory":160}],162:[function(require,module,exports){
+
+},{"../../build/shaders":1,"./factory":161}],163:[function(require,module,exports){
 THREE.Bootstrap.registerPlugin('splash', {
   defaults: {
     color: 'mono',
@@ -70510,7 +70960,7 @@ THREE.Bootstrap.registerPlugin('splash', {
     return this.timer = null;
   },
   progress: function(event, three) {
-    var current, el, f, i, increment, t, total, visible, weights, width, _i, _len, _ref, _results;
+    var current, el, f, i, increment, k, len, ref, results, t, total, visible, weights, width;
     if (!this.div) {
       return;
     }
@@ -70541,27 +70991,28 @@ THREE.Bootstrap.registerPlugin('splash', {
           return (+n + weights[j++] * f * three.Time.step * 60) + 'deg';
         });
       };
-      _ref = this.gyro;
-      _results = [];
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        el = _ref[i];
+      ref = this.gyro;
+      results = [];
+      for (i = k = 0, len = ref.length; k < len; i = ++k) {
+        el = ref[i];
         this.transforms[i] = t = increment(this.transforms[i]);
-        _results.push(el.style.transform = el.style.WebkitTransform = t);
+        results.push(el.style.transform = el.style.WebkitTransform = t);
       }
-      return _results;
+      return results;
     }
   },
   destroy: function() {
-    var _ref;
-    if ((_ref = this.div) != null) {
-      _ref.remove();
+    var ref;
+    if ((ref = this.div) != null) {
+      ref.remove();
     }
     return this.div = null;
   }
 });
 
 
-},{}],163:[function(require,module,exports){
+
+},{}],164:[function(require,module,exports){
 var Animation, Animator, Ease;
 
 Ease = require('../util').Ease;
@@ -70582,16 +71033,16 @@ Animator = (function() {
   Animator.prototype.unmake = function(anim) {
     var a;
     return this.anims = (function() {
-      var _i, _len, _ref, _results;
-      _ref = this.anims;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        a = _ref[_i];
+      var i, len, ref, results;
+      ref = this.anims;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        a = ref[i];
         if (a !== anim) {
-          _results.push(a);
+          results.push(a);
         }
       }
-      return _results;
+      return results;
     }).call(this);
   };
 
@@ -70599,16 +71050,16 @@ Animator = (function() {
     var anim, time;
     time = this.context.time;
     return this.anims = (function() {
-      var _i, _len, _ref, _results;
-      _ref = this.anims;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        anim = _ref[_i];
+      var i, len, ref, results;
+      ref = this.anims;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        anim = ref[i];
         if (anim.update(time) !== false) {
-          _results.push(anim);
+          results.push(anim);
         }
       }
-      return _results;
+      return results;
     }).call(this);
   };
 
@@ -70654,11 +71105,11 @@ Animator = (function() {
 })();
 
 Animation = (function() {
-  function Animation(animator, time, type, options) {
+  function Animation(animator, time1, type1, options1) {
     this.animator = animator;
-    this.time = time;
-    this.type = type;
-    this.options = options;
+    this.time = time1;
+    this.type = type1;
+    this.options = options1;
     this.value = this.type.make();
     this.target = this.type.make();
     this.queue = [];
@@ -70697,47 +71148,47 @@ Animation = (function() {
   };
 
   Animation.prototype.cancel = function(from) {
-    var cancelled, queue, stage, _base, _i, _len;
+    var base, cancelled, i, len, queue, stage;
     if (from == null) {
       from = this.getTime();
     }
     queue = this.queue;
     cancelled = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = queue.length; _i < _len; _i++) {
-        stage = queue[_i];
+      var i, len, results;
+      results = [];
+      for (i = 0, len = queue.length; i < len; i++) {
+        stage = queue[i];
         if (stage.end >= from) {
-          _results.push(stage);
+          results.push(stage);
         }
       }
-      return _results;
+      return results;
     })();
     this.queue = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = queue.length; _i < _len; _i++) {
-        stage = queue[_i];
+      var i, len, results;
+      results = [];
+      for (i = 0, len = queue.length; i < len; i++) {
+        stage = queue[i];
         if (stage.end < from) {
-          _results.push(stage);
+          results.push(stage);
         }
       }
-      return _results;
+      return results;
     })();
-    for (_i = 0, _len = cancelled.length; _i < _len; _i++) {
-      stage = cancelled[_i];
+    for (i = 0, len = cancelled.length; i < len; i++) {
+      stage = cancelled[i];
       if (typeof stage.complete === "function") {
         stage.complete(false);
       }
     }
-    if (typeof (_base = this.options).complete === "function") {
-      _base.complete(false);
+    if (typeof (base = this.options).complete === "function") {
+      base.complete(false);
     }
   };
 
   Animation.prototype.notify = function() {
-    var _base;
-    return typeof (_base = this.options).step === "function" ? _base.step(this.value) : void 0;
+    var base;
+    return typeof (base = this.options).step === "function" ? base.step(this.value) : void 0;
   };
 
   Animation.prototype.immediate = function(value, options) {
@@ -70767,9 +71218,9 @@ Animation = (function() {
     });
   };
 
-  Animation.prototype.update = function(time) {
-    var active, clock, complete, ease, end, f, from, method, queue, stage, start, step, to, value, _base, _ref;
-    this.time = time;
+  Animation.prototype.update = function(time1) {
+    var active, base, clock, complete, ease, end, f, from, method, queue, ref, stage, start, step, to, value;
+    this.time = time1;
     if (this.queue.length === 0) {
       return true;
     }
@@ -70777,7 +71228,7 @@ Animation = (function() {
     value = this.value, queue = this.queue;
     active = false;
     while (!active) {
-      _ref = stage = queue[0], from = _ref.from, to = _ref.to, start = _ref.start, end = _ref.end, step = _ref.step, complete = _ref.complete, ease = _ref.ease;
+      ref = stage = queue[0], from = ref.from, to = ref.to, start = ref.start, end = ref.end, step = ref.step, complete = ref.complete, ease = ref.ease;
       if (from == null) {
         from = stage.from = this.type.clone(this.value);
       }
@@ -70809,8 +71260,8 @@ Animation = (function() {
         if (typeof complete === "function") {
           complete(true);
         }
-        if (typeof (_base = this.options).complete === "function") {
-          _base.complete(true);
+        if (typeof (base = this.options).complete === "function") {
+          base.complete(true);
         }
         queue.shift();
         if (queue.length === 0) {
@@ -70829,7 +71280,8 @@ Animation = (function() {
 module.exports = Animator;
 
 
-},{"../util":172}],164:[function(require,module,exports){
+
+},{"../util":173}],165:[function(require,module,exports){
 var API, Util;
 
 Util = require('../util');
@@ -70840,7 +71292,7 @@ API = (function() {
   };
 
   function API(_context, _up, _targets) {
-    var i, root, t, type, _i, _j, _len, _len1, _ref, _ref1;
+    var i, j, l, len, len1, ref, ref1, root, t, type;
     this._context = _context;
     this._up = _up;
     this._targets = _targets;
@@ -70850,15 +71302,15 @@ API = (function() {
     }
     this.isRoot = this._targets.length === 1 && this._targets[0] === root;
     this.isLeaf = this._targets.length === 1 && (this._targets[0].children == null);
-    _ref = this._targets;
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      t = _ref[i];
+    ref = this._targets;
+    for (i = j = 0, len = ref.length; j < len; i = ++j) {
+      t = ref[i];
       this[i] = t;
     }
     this.length = this._targets.length;
-    _ref1 = this._context.controller.getTypes();
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      type = _ref1[_j];
+    ref1 = this._context.controller.getTypes();
+    for (l = 0, len1 = ref1.length; l < len1; l++) {
+      type = ref1[l];
       if (type !== 'root') {
         (function(_this) {
           return (function(type) {
@@ -70896,32 +71348,32 @@ API = (function() {
   };
 
   API.prototype.map = function(callback) {
-    var i, _i, _ref, _results;
-    _results = [];
-    for (i = _i = 0, _ref = this.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-      _results.push(callback(this[i], i, this));
+    var i, j, ref, results;
+    results = [];
+    for (i = j = 0, ref = this.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      results.push(callback(this[i], i, this));
     }
-    return _results;
+    return results;
   };
 
   API.prototype.each = function(callback) {
-    var i, _i, _ref;
-    for (i = _i = 0, _ref = this.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    var i, j, ref;
+    for (i = j = 0, ref = this.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
       callback(this[i], i, this);
     }
     return this;
   };
 
   API.prototype.add = function(type, options, binds) {
-    var controller, node, nodes, target, _i, _len, _ref;
+    var controller, j, len, node, nodes, ref, target;
     controller = this._context.controller;
     if (this.isLeaf) {
       return this._pop().add(type, options, binds);
     }
     nodes = [];
-    _ref = this._targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    ref = this._targets;
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       node = controller.make(type, options, binds);
       controller.add(node, target);
       nodes.push(node);
@@ -70930,64 +71382,64 @@ API = (function() {
   };
 
   API.prototype.remove = function(selector) {
-    var target, _i, _len, _ref;
+    var j, len, ref, target;
     if (selector) {
       return this.select(selector).remove();
     }
-    _ref = this._targets.slice().reverse();
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    ref = this._targets.slice().reverse();
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       this._context.controller.remove(target);
     }
     return this._pop();
   };
 
   API.prototype.set = function(key, value) {
-    var target, _i, _len, _ref;
-    _ref = this._targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    var j, len, ref, target;
+    ref = this._targets;
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       this._context.controller.set(target, key, value);
     }
     return this;
   };
 
   API.prototype.getAll = function(key) {
-    var target, _i, _len, _ref, _results;
-    _ref = this._targets;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
-      _results.push(this._context.controller.get(target, key));
+    var j, len, ref, results, target;
+    ref = this._targets;
+    results = [];
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
+      results.push(this._context.controller.get(target, key));
     }
-    return _results;
+    return results;
   };
 
   API.prototype.get = function(key) {
-    var _ref;
-    return (_ref = this._targets[0]) != null ? _ref.get(key) : void 0;
+    var ref;
+    return (ref = this._targets[0]) != null ? ref.get(key) : void 0;
   };
 
   API.prototype.evaluate = function(key, time) {
-    var _ref;
-    return (_ref = this._targets[0]) != null ? _ref.evaluate(key, time) : void 0;
+    var ref;
+    return (ref = this._targets[0]) != null ? ref.evaluate(key, time) : void 0;
   };
 
   API.prototype.bind = function(key, value) {
-    var target, _i, _len, _ref;
-    _ref = this._targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    var j, len, ref, target;
+    ref = this._targets;
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       this._context.controller.bind(target, key, value);
     }
     return this;
   };
 
   API.prototype.unbind = function(key) {
-    var target, _i, _len, _ref;
-    _ref = this._targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    var j, len, ref, target;
+    ref = this._targets;
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       this._context.controller.unbind(target, key);
     }
     return this;
@@ -71002,13 +71454,13 @@ API = (function() {
   };
 
   API.prototype._pop = function() {
-    var _ref;
-    return (_ref = this._up) != null ? _ref : this;
+    var ref;
+    return (ref = this._up) != null ? ref : this;
   };
 
   API.prototype._reset = function() {
-    var _ref, _ref1;
-    return (_ref = (_ref1 = this._up) != null ? _ref1.reset() : void 0) != null ? _ref : this;
+    var ref, ref1;
+    return (ref = (ref1 = this._up) != null ? ref1.reset() : void 0) != null ? ref : this;
   };
 
   API.prototype.map = function(callback) {
@@ -71061,7 +71513,7 @@ API = (function() {
   };
 
   API.prototype.debug = function() {
-    var getName, info, name, shader, shaders, _i, _len, _ref;
+    var getName, info, j, len, name, ref, shader, shaders;
     info = this.inspect();
     console.log('Renderables: ', info.renderables);
     console.log('Renders: ', info.renders);
@@ -71070,20 +71522,20 @@ API = (function() {
       return owner.constructor.toString().match('function +([^(]*)')[1];
     };
     shaders = [];
-    _ref = info.shaders;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      shader = _ref[_i];
+    ref = info.shaders;
+    for (j = 0, len = ref.length; j < len; j++) {
+      shader = ref[j];
       name = getName(shader.owner);
-      shaders.push("" + name + " - Vertex");
+      shaders.push(name + " - Vertex");
       shaders.push(shader.vertex);
-      shaders.push("" + name + " - Fragment");
+      shaders.push(name + " - Fragment");
       shaders.push(shader.fragment);
     }
     return ShaderGraph.inspect(shaders);
   };
 
   API.prototype.inspect = function(selector, print) {
-    var flatten, info, k, make, map, recurse, renderables, self, target, trait, _i, _info, _len, _ref;
+    var _info, flatten, info, j, k, len, make, map, recurse, ref, renderables, self, target, trait;
     if (typeof trait === 'boolean') {
       print = trait;
       trait = null;
@@ -71092,11 +71544,11 @@ API = (function() {
       print = true;
     }
     map = function(node) {
-      var _ref, _ref1;
-      return (_ref = (_ref1 = node.controller) != null ? _ref1.objects : void 0) != null ? _ref : [];
+      var ref, ref1;
+      return (ref = (ref1 = node.controller) != null ? ref1.objects : void 0) != null ? ref : [];
     };
     recurse = self = function(node, list) {
-      var child, _i, _len, _ref;
+      var child, j, len, ref;
       if (list == null) {
         list = [];
       }
@@ -71104,9 +71556,9 @@ API = (function() {
         list.push(map(node));
       }
       if (node.children != null) {
-        _ref = node.children;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          child = _ref[_i];
+        ref = node.children;
+        for (j = 0, len = ref.length; j < len; j++) {
+          child = ref[j];
           self(child, list);
         }
       }
@@ -71136,9 +71588,9 @@ API = (function() {
       renders: [],
       shaders: []
     };
-    _ref = this._targets;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      target = _ref[_i];
+    ref = this._targets;
+    for (j = 0, len = ref.length; j < len; j++) {
+      target = ref[j];
       if (print) {
         target.print(selector, 'info');
       }
@@ -71148,8 +71600,8 @@ API = (function() {
           return x.renders;
         })),
         shaders: flatten(renderables.map(function(x) {
-          var _ref1;
-          return (_ref1 = x.renders) != null ? _ref1.map(function(r) {
+          var ref1;
+          return (ref1 = x.renders) != null ? ref1.map(function(r) {
             return make(x, r);
           }) : void 0;
         }))
@@ -71168,7 +71620,8 @@ API = (function() {
 module.exports = API;
 
 
-},{"../util":172}],165:[function(require,module,exports){
+
+},{"../util":173}],166:[function(require,module,exports){
 var Controller, Util;
 
 Util = require('../util');
@@ -71196,33 +71649,33 @@ Controller = (function() {
   };
 
   Controller.prototype.set = function(node, key, value) {
-    var e;
+    var e, error;
     try {
       return node.set(key, value);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       node.print(null, 'warn');
       return console.error(e);
     }
   };
 
   Controller.prototype.bind = function(node, key, expr) {
-    var e;
+    var e, error;
     try {
       return node.bind(key, expr);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       node.print(null, 'warn');
       return console.error(e);
     }
   };
 
   Controller.prototype.unbind = function(node, key) {
-    var e;
+    var e, error;
     try {
       return node.unbind(key);
-    } catch (_error) {
-      e = _error;
+    } catch (error) {
+      e = error;
       node.print(null, 'warn');
       return console.error(e);
     }
@@ -71250,7 +71703,8 @@ Controller = (function() {
 module.exports = Controller;
 
 
-},{"../util":172}],166:[function(require,module,exports){
+
+},{"../util":173}],167:[function(require,module,exports){
 exports.Animator = require('./animator');
 
 exports.API = require('./api');
@@ -71258,18 +71712,19 @@ exports.API = require('./api');
 exports.Controller = require('./controller');
 
 
-},{"./animator":163,"./api":164,"./controller":165}],167:[function(require,module,exports){
-var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+},{"./animator":164,"./api":165,"./controller":166}],168:[function(require,module,exports){
+var indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 exports.setOrigin = function(vec, dimensions, origin) {
   var w, x, y, z;
   if (+dimensions === dimensions) {
     dimensions = [dimensions];
   }
-  x = __indexOf.call(dimensions, 1) >= 0 ? 0 : origin.x;
-  y = __indexOf.call(dimensions, 2) >= 0 ? 0 : origin.y;
-  z = __indexOf.call(dimensions, 3) >= 0 ? 0 : origin.z;
-  w = __indexOf.call(dimensions, 4) >= 0 ? 0 : origin.w;
+  x = indexOf.call(dimensions, 1) >= 0 ? 0 : origin.x;
+  y = indexOf.call(dimensions, 2) >= 0 ? 0 : origin.y;
+  z = indexOf.call(dimensions, 3) >= 0 ? 0 : origin.z;
+  w = indexOf.call(dimensions, 4) >= 0 ? 0 : origin.w;
   return vec.set(x, y, z, w);
 };
 
@@ -71325,7 +71780,8 @@ exports.recenterAxis = (function() {
 })();
 
 
-},{}],168:[function(require,module,exports){
+
+},{}],169:[function(require,module,exports){
 // Recycled from threestrap
 
 module.exports = self = {
@@ -71450,7 +71906,7 @@ module.exports = self = {
 
 };
 
-},{}],169:[function(require,module,exports){
+},{}],170:[function(require,module,exports){
 var getSizes;
 
 exports.getSizes = getSizes = function(data) {
@@ -71465,7 +71921,7 @@ exports.getSizes = getSizes = function(data) {
 };
 
 exports.getDimensions = function(data, spec) {
-  var channels, depth, dims, height, items, levels, n, nesting, sizes, width, _ref, _ref1, _ref2, _ref3, _ref4;
+  var channels, depth, dims, height, items, levels, n, nesting, ref, ref1, ref2, ref3, ref4, sizes, width;
   if (spec == null) {
     spec = {};
   }
@@ -71500,18 +71956,18 @@ exports.getDimensions = function(data, spec) {
   if (height === 1 && levels > 3) {
     levels++;
   }
-  n = (_ref = sizes.pop()) != null ? _ref : 1;
+  n = (ref = sizes.pop()) != null ? ref : 1;
   if (levels <= 1) {
-    n /= (_ref1 = dims.channels) != null ? _ref1 : 1;
+    n /= (ref1 = dims.channels) != null ? ref1 : 1;
   }
   if (levels <= 2) {
-    n /= (_ref2 = dims.items) != null ? _ref2 : 1;
+    n /= (ref2 = dims.items) != null ? ref2 : 1;
   }
   if (levels <= 3) {
-    n /= (_ref3 = dims.width) != null ? _ref3 : 1;
+    n /= (ref3 = dims.width) != null ? ref3 : 1;
   }
   if (levels <= 4) {
-    n /= (_ref4 = dims.height) != null ? _ref4 : 1;
+    n /= (ref4 = dims.height) != null ? ref4 : 1;
   }
   n = Math.floor(n);
   if (dims.width == null) {
@@ -71580,7 +72036,7 @@ exports.repeatCall = function(call, times) {
 };
 
 exports.makeEmitter = function(thunk, items, channels) {
-  var inner, outer;
+  var inner, n, next, outer;
   inner = (function() {
     switch (channels) {
       case 0:
@@ -71613,63 +72069,95 @@ exports.makeEmitter = function(thunk, items, channels) {
         };
     }
   })();
-  outer = (function() {
-    switch (items) {
-      case 0:
-        return function() {
-          return true;
-        };
-      case 1:
+  next = null;
+  while (items > 0) {
+    n = Math.min(items, 8);
+    outer = (function() {
+      switch (n) {
+        case 1:
+          return function(emit) {
+            return inner(emit);
+          };
+        case 2:
+          return function(emit) {
+            inner(emit);
+            return inner(emit);
+          };
+        case 3:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 4:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 5:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 6:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 7:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+        case 8:
+          return function(emit) {
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            inner(emit);
+            return inner(emit);
+          };
+      }
+    })();
+    if (next != null) {
+      next = (function(outer, next) {
         return function(emit) {
-          return inner(emit);
+          outer(emit);
+          return next(emit);
         };
-      case 2:
-        return function(emit) {
-          inner(emit);
-          return inner(emit);
-        };
-      case 3:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 4:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 6:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
-      case 8:
-        return function(emit) {
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          inner(emit);
-          return inner(emit);
-        };
+      })(outer, next);
+    } else {
+      next = outer;
     }
-  })();
+    items -= n;
+  }
+  outer = next != null ? next : function() {
+    return true;
+  };
   outer.reset = thunk.reset;
   outer.rebind = thunk.rebind;
   return outer;
 };
 
 exports.getThunk = function(data) {
-  var a, b, c, d, done, first, fourth, i, j, k, l, m, nesting, second, sizes, third, thunk, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+  var a, b, c, d, done, first, fourth, i, j, k, l, m, nesting, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, second, sizes, third, thunk;
   sizes = getSizes(data);
   nesting = sizes.length;
   a = sizes.pop();
@@ -71695,29 +72183,29 @@ exports.getThunk = function(data) {
       break;
     case 2:
       i = j = 0;
-      first = (_ref = data[j]) != null ? _ref : [];
+      first = (ref = data[j]) != null ? ref : [];
       thunk = function() {
-        var x, _ref1;
+        var ref1, x;
         x = first[i++];
         if (i === a) {
           i = 0;
           j++;
-          first = (_ref1 = data[j]) != null ? _ref1 : [];
+          first = (ref1 = data[j]) != null ? ref1 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref1;
+        var ref1;
         i = j = 0;
-        first = (_ref1 = data[j]) != null ? _ref1 : [];
+        first = (ref1 = data[j]) != null ? ref1 : [];
       };
       break;
     case 3:
       i = j = k = 0;
-      second = (_ref1 = data[k]) != null ? _ref1 : [];
-      first = (_ref2 = second[j]) != null ? _ref2 : [];
+      second = (ref1 = data[k]) != null ? ref1 : [];
+      first = (ref2 = second[j]) != null ? ref2 : [];
       thunk = function() {
-        var x, _ref3, _ref4;
+        var ref3, ref4, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -71725,26 +72213,26 @@ exports.getThunk = function(data) {
           if (j === b) {
             j = 0;
             k++;
-            second = (_ref3 = data[k]) != null ? _ref3 : [];
+            second = (ref3 = data[k]) != null ? ref3 : [];
           }
-          first = (_ref4 = second[j]) != null ? _ref4 : [];
+          first = (ref4 = second[j]) != null ? ref4 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref3, _ref4;
+        var ref3, ref4;
         i = j = k = 0;
-        second = (_ref3 = data[k]) != null ? _ref3 : [];
-        first = (_ref4 = second[j]) != null ? _ref4 : [];
+        second = (ref3 = data[k]) != null ? ref3 : [];
+        first = (ref4 = second[j]) != null ? ref4 : [];
       };
       break;
     case 4:
       i = j = k = l = 0;
-      third = (_ref3 = data[l]) != null ? _ref3 : [];
-      second = (_ref4 = third[k]) != null ? _ref4 : [];
-      first = (_ref5 = second[j]) != null ? _ref5 : [];
+      third = (ref3 = data[l]) != null ? ref3 : [];
+      second = (ref4 = third[k]) != null ? ref4 : [];
+      first = (ref5 = second[j]) != null ? ref5 : [];
       thunk = function() {
-        var x, _ref6, _ref7, _ref8;
+        var ref6, ref7, ref8, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -71755,30 +72243,30 @@ exports.getThunk = function(data) {
             if (k === c) {
               k = 0;
               l++;
-              third = (_ref6 = data[l]) != null ? _ref6 : [];
+              third = (ref6 = data[l]) != null ? ref6 : [];
             }
-            second = (_ref7 = third[k]) != null ? _ref7 : [];
+            second = (ref7 = third[k]) != null ? ref7 : [];
           }
-          first = (_ref8 = second[j]) != null ? _ref8 : [];
+          first = (ref8 = second[j]) != null ? ref8 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref6, _ref7, _ref8;
+        var ref6, ref7, ref8;
         i = j = k = l = 0;
-        third = (_ref6 = data[l]) != null ? _ref6 : [];
-        second = (_ref7 = third[k]) != null ? _ref7 : [];
-        first = (_ref8 = second[j]) != null ? _ref8 : [];
+        third = (ref6 = data[l]) != null ? ref6 : [];
+        second = (ref7 = third[k]) != null ? ref7 : [];
+        first = (ref8 = second[j]) != null ? ref8 : [];
       };
       break;
     case 5:
       i = j = k = l = m = 0;
-      fourth = (_ref6 = data[m]) != null ? _ref6 : [];
-      third = (_ref7 = fourth[l]) != null ? _ref7 : [];
-      second = (_ref8 = third[k]) != null ? _ref8 : [];
-      first = (_ref9 = second[j]) != null ? _ref9 : [];
+      fourth = (ref6 = data[m]) != null ? ref6 : [];
+      third = (ref7 = fourth[l]) != null ? ref7 : [];
+      second = (ref8 = third[k]) != null ? ref8 : [];
+      first = (ref9 = second[j]) != null ? ref9 : [];
       thunk = function() {
-        var x, _ref10, _ref11, _ref12, _ref13;
+        var ref10, ref11, ref12, ref13, x;
         x = first[i++];
         if (i === a) {
           i = 0;
@@ -71792,23 +72280,23 @@ exports.getThunk = function(data) {
               if (l === d) {
                 l = 0;
                 m++;
-                fourth = (_ref10 = data[m]) != null ? _ref10 : [];
+                fourth = (ref10 = data[m]) != null ? ref10 : [];
               }
-              third = (_ref11 = fourth[l]) != null ? _ref11 : [];
+              third = (ref11 = fourth[l]) != null ? ref11 : [];
             }
-            second = (_ref12 = third[k]) != null ? _ref12 : [];
+            second = (ref12 = third[k]) != null ? ref12 : [];
           }
-          first = (_ref13 = second[j]) != null ? _ref13 : [];
+          first = (ref13 = second[j]) != null ? ref13 : [];
         }
         return x;
       };
       thunk.reset = function() {
-        var _ref10, _ref11, _ref12, _ref13;
+        var ref10, ref11, ref12, ref13;
         i = j = k = l = m = 0;
-        fourth = (_ref10 = data[m]) != null ? _ref10 : [];
-        third = (_ref11 = fourth[l]) != null ? _ref11 : [];
-        second = (_ref12 = third[k]) != null ? _ref12 : [];
-        first = (_ref13 = second[j]) != null ? _ref13 : [];
+        fourth = (ref10 = data[m]) != null ? ref10 : [];
+        third = (ref11 = fourth[l]) != null ? ref11 : [];
+        second = (ref12 = third[k]) != null ? ref12 : [];
+        first = (ref13 = second[j]) != null ? ref13 : [];
       };
   }
   thunk.rebind = function(d) {
@@ -71956,84 +72444,113 @@ exports.getLerpEmitter = function(expr1, expr2) {
   args = Math.max(expr1.length, expr2.length);
   if (args <= 3) {
     emitter = function(emit, x, i) {
-      var k, l, n, _i, _results;
+      var k, l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, i);
       expr2(emit2, x, i);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 5) {
     emitter = function(emit, x, y, i, j) {
-      var k, l, n, _i, _results;
+      var k, l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, i, j);
       expr2(emit2, x, y, i, j);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 7) {
     emitter = function(emit, x, y, z, i, j, k) {
-      var l, n, _i, _results;
+      var l, n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, z, i, j, k);
       expr2(emit2, x, y, z, i, j, k);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else if (args <= 9) {
     emitter = function(emit, x, y, z, w, i, j, k, l) {
-      var n, _i, _results;
+      var n, o, ref, results;
       p = q = r = s = 0;
       expr1(emit1, x, y, z, w, i, j, k, l);
       expr2(emit2, x, y, z, w, i, j, k, l);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   } else {
     emitter = function(emit, x, y, z, w, i, j, k, l, d, t) {
-      var n, _i, _results;
+      var n, o, ref, results;
       p = q = 0;
       expr1(emit1, x, y, z, w, i, j, k, l, d, t);
       expr2(emit2, x, y, z, w, i, j, k, l, d, t);
       n = Math.min(r, s);
       l = 0;
-      _results = [];
-      for (k = _i = 0; 0 <= n ? _i < n : _i > n; k = 0 <= n ? ++_i : --_i) {
-        _results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
+      results = [];
+      for (k = o = 0, ref = n; 0 <= ref ? o < ref : o > ref; k = 0 <= ref ? ++o : --o) {
+        results.push(emit(scratch[l++], scratch[l++], scratch[l++], scratch[l++]));
       }
-      return _results;
+      return results;
     };
   }
   emitter.lerp = function(f) {
-    var _ref;
-    return _ref = [1 - f, f], lerp1 = _ref[0], lerp2 = _ref[1], _ref;
+    var ref;
+    return ref = [1 - f, f], lerp1 = ref[0], lerp2 = ref[1], ref;
   };
   return emitter;
 };
 
+exports.getLerpThunk = function(data1, data2) {
+  var n, n1, n2, scratch, thunk1, thunk2;
+  n1 = exports.getSizes(data1).reduce(function(a, b) {
+    return a * b;
+  });
+  n2 = exports.getSizes(data2).reduce(function(a, b) {
+    return a * b;
+  });
+  n = Math.min(n1, n2);
+  thunk1 = exports.getThunk(data1);
+  thunk2 = exports.getThunk(data2);
+  scratch = new Float32Array(n);
+  scratch.lerp = function(f) {
+    var a, b, i, results;
+    thunk1.reset();
+    thunk2.reset();
+    i = 0;
+    results = [];
+    while (i < n) {
+      a = thunk1();
+      b = thunk2();
+      results.push(scratch[i++] = a + (b - a) * f);
+    }
+    return results;
+  };
+  return scratch;
+};
 
-},{}],170:[function(require,module,exports){
+
+
+},{}],171:[function(require,module,exports){
 var ease, π;
 
 π = Math.PI;
@@ -72050,9 +72567,10 @@ ease = {
 module.exports = ease;
 
 
-},{}],171:[function(require,module,exports){
+
+},{}],172:[function(require,module,exports){
 var index, letters, parseOrder, toFloatString, toType,
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 letters = 'xyzw'.split('');
 
@@ -72119,14 +72637,14 @@ exports.sample2DArray = function(textures) {
 exports.binaryOperator = function(type, op, curry) {
   type = toType(type);
   if (curry != null) {
-    return "" + type + " binaryOperator(" + type + " a) {\n  return a " + op + " " + curry + ";\n}";
+    return type + " binaryOperator(" + type + " a) {\n  return a " + op + " " + curry + ";\n}";
   } else {
-    return "" + type + " binaryOperator(" + type + " a, " + type + " b) {\n  return a " + op + " b;\n}";
+    return type + " binaryOperator(" + type + " a, " + type + " b) {\n  return a " + op + " b;\n}";
   }
 };
 
 exports.extendVec = function(from, to, value) {
-  var ctor, diff, parts, _i, _results;
+  var ctor, diff, k, parts, results;
   if (value == null) {
     value = 0;
   }
@@ -72138,9 +72656,9 @@ exports.extendVec = function(from, to, value) {
   to = toType(to);
   value = toFloatString(value);
   parts = (function() {
-    _results = [];
-    for (var _i = 0; 0 <= diff ? _i <= diff : _i >= diff; 0 <= diff ? _i++ : _i--){ _results.push(_i); }
-    return _results;
+    results = [];
+    for (var k = 0; 0 <= diff ? k <= diff : k >= diff; 0 <= diff ? k++ : k--){ results.push(k); }
+    return results;
   }).apply(this).map(function(x) {
     if (x) {
       return value;
@@ -72149,7 +72667,7 @@ exports.extendVec = function(from, to, value) {
     }
   });
   ctor = parts.join(',');
-  return "" + to + " extendVec(" + from + " v) { return " + to + "(" + ctor + "); }";
+  return to + " extendVec(" + from + " v) { return " + to + "(" + ctor + "); }";
 };
 
 exports.truncateVec = function(from, to) {
@@ -72160,11 +72678,11 @@ exports.truncateVec = function(from, to) {
   swizzle = '.' + ('xyzw'.substr(0, to));
   from = toType(from);
   to = toType(to);
-  return "" + to + " truncateVec(" + from + " v) { return v" + swizzle + "; }";
+  return to + " truncateVec(" + from + " v) { return v" + swizzle + "; }";
 };
 
 exports.injectVec4 = function(order) {
-  var args, channel, i, mask, swizzler, _i, _len;
+  var args, channel, i, k, len, mask, swizzler;
   swizzler = ['0.0', '0.0', '0.0', '0.0'];
   order = parseOrder(order);
   order = order.map(function(v) {
@@ -72174,7 +72692,7 @@ exports.injectVec4 = function(order) {
       return v;
     }
   });
-  for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+  for (i = k = 0, len = order.length; k < len; i = ++k) {
     channel = order[i];
     swizzler[channel] = ['a', 'b', 'c', 'd'][i];
   }
@@ -72194,7 +72712,8 @@ exports.swizzleVec4 = function(order, size) {
   }
   order = parseOrder(order);
   order = order.map(function(v) {
-    if (__indexOf.call([0, 1, 2, 3, 4], +v) >= 0) {
+    var ref;
+    if (ref = +v, indexOf.call([0, 1, 2, 3, 4], ref) >= 0) {
       v = +v;
     }
     if (v === "" + v) {
@@ -72210,7 +72729,7 @@ exports.swizzleVec4 = function(order, size) {
 };
 
 exports.invertSwizzleVec4 = function(order) {
-  var i, j, letter, mask, src, swizzler, _i, _len;
+  var i, j, k, len, letter, mask, src, swizzler;
   swizzler = ['0.0', '0.0', '0.0', '0.0'];
   order = parseOrder(order);
   order = order.map(function(v) {
@@ -72220,7 +72739,7 @@ exports.invertSwizzleVec4 = function(order) {
       return v;
     }
   });
-  for (i = _i = 0, _len = order.length; _i < _len; i = ++_i) {
+  for (i = k = 0, len = order.length; k < len; i = ++k) {
     letter = order[i];
     src = letters[i];
     j = index[letter];
@@ -72240,18 +72759,19 @@ exports.identity = function(type) {
     args = args.join(', ');
     return "void identity(" + args + ") { }";
   } else {
-    return "" + type + " identity(" + type + " x) {\n  return x;\n}";
+    return type + " identity(" + type + " x) {\n  return x;\n}";
   }
 };
 
 exports.constant = function(type, value) {
-  return "" + type + " constant() {\n  return " + value + ";\n}";
+  return type + " constant() {\n  return " + value + ";\n}";
 };
 
 exports.toType = toType;
 
 
-},{}],172:[function(require,module,exports){
+
+},{}],173:[function(require,module,exports){
 exports.Axis = require('./axis');
 
 exports.Data = require('./data');
@@ -72271,12 +72791,13 @@ exports.Ticks = require('./ticks');
 exports.VDOM = require('./vdom');
 
 
-},{"./axis":167,"./data":169,"./ease":170,"./glsl":171,"./js":173,"./pretty":174,"./three":175,"./ticks":176,"./vdom":177}],173:[function(require,module,exports){
+
+},{"./axis":168,"./data":170,"./ease":171,"./glsl":172,"./js":174,"./pretty":175,"./three":176,"./ticks":177,"./vdom":178}],174:[function(require,module,exports){
 exports.merge = function() {
-  var k, obj, v, x, _i, _len;
+  var i, k, len, obj, v, x;
   x = {};
-  for (_i = 0, _len = arguments.length; _i < _len; _i++) {
-    obj = arguments[_i];
+  for (i = 0, len = arguments.length; i < len; i++) {
+    obj = arguments[i];
     for (k in obj) {
       v = obj[k];
       x[k] = v;
@@ -72290,7 +72811,7 @@ exports.clone = function(o) {
 };
 
 exports.parseQuoted = function(str) {
-  var accum, char, chunk, list, munch, quote, token, unescape, _i, _len;
+  var accum, char, chunk, i, len, list, munch, quote, token, unescape;
   accum = "";
   unescape = function(str) {
     return str = str.replace(/\\/g, '');
@@ -72304,8 +72825,8 @@ exports.parseQuoted = function(str) {
   str = str.split(/(?=(?:\\.|["' ,]))/g);
   quote = false;
   list = [];
-  for (_i = 0, _len = str.length; _i < _len; _i++) {
-    chunk = str[_i];
+  for (i = 0, len = str.length; i < len; i++) {
+    chunk = str[i];
     char = chunk[0];
     token = chunk.slice(1);
     switch (char) {
@@ -72343,7 +72864,8 @@ exports.parseQuoted = function(str) {
 };
 
 
-},{}],174:[function(require,module,exports){
+
+},{}],175:[function(require,module,exports){
 var NUMBER_PRECISION, NUMBER_THRESHOLD, checkFactor, checkUnit, escapeHTML, formatFactors, formatFraction, formatMultiple, formatPrimes, prettyFormat, prettyJSXBind, prettyJSXPair, prettyJSXProp, prettyMarkup, prettyNumber, prettyPrint;
 
 NUMBER_PRECISION = 5;
@@ -72373,7 +72895,7 @@ formatMultiple = function(v, f, k, compact) {
   if (compact) {
     return "" + d + k;
   } else {
-    return "" + d + "*" + k;
+    return d + "*" + k;
   }
 };
 
@@ -72386,7 +72908,7 @@ formatFraction = function(v, f, k, compact) {
   } else if (k !== '1') {
     d += compact ? "" + k : "*" + k;
   }
-  return "" + d + "/" + f;
+  return d + "/" + f;
 };
 
 formatFactors = [
@@ -72439,7 +72961,7 @@ prettyNumber = function(options) {
   cacheIndex = formatIndex + threshold + precision;
   numberCache = cache ? {} : null;
   return function(v) {
-    var best, cached, d, denom, f, k, list, match, n, numer, out, p, _i, _j, _len, _len1, _ref, _ref1;
+    var best, cached, d, denom, f, i, j, k, len, len1, list, match, n, numer, out, p, ref, ref1;
     if (numberCache != null) {
       if ((cached = numberCache[v]) != null) {
         return cached;
@@ -72458,18 +72980,18 @@ prettyNumber = function(options) {
         return best = d;
       }
     };
-    _ref = formatFactors[formatIndex];
-    for (k in _ref) {
-      f = _ref[k];
+    ref = formatFactors[formatIndex];
+    for (k in ref) {
+      f = ref[k];
       if (checkUnit(v / f)) {
         match("" + (formatMultiple(v / f, 1, k, compact)));
       } else {
-        for (_i = 0, _len = formatPrimes.length; _i < _len; _i++) {
-          _ref1 = formatPrimes[_i], denom = _ref1[0], list = _ref1[1];
+        for (i = 0, len = formatPrimes.length; i < len; i++) {
+          ref1 = formatPrimes[i], denom = ref1[0], list = ref1[1];
           numer = v / f * denom;
           if (checkUnit(numer)) {
-            for (_j = 0, _len1 = list.length; _j < _len1; _j++) {
-              p = list[_j];
+            for (j = 0, len1 = list.length; j < len1; j++) {
+              p = list[j];
               while (checkUnit(n = numer / p) && checkUnit(d = denom / p)) {
                 numer = n;
                 denom = d;
@@ -72541,7 +73063,7 @@ prettyMarkup = function(markup) {
           quoted = !quoted;
           if (quoted) {
             args.push(nested ? attr : str);
-            return "" + char + "%c";
+            return char + "%c";
           } else {
             args.push(nested ? obj : tag);
             return "%c" + char;
@@ -72558,7 +73080,7 @@ prettyMarkup = function(markup) {
         case '}':
           if (--nested === 0) {
             args.push(tag);
-            return "" + char + "%c";
+            return char + "%c";
           } else {
             return char;
           }
@@ -72635,15 +73157,15 @@ prettyJSXPair = (function() {
               return v.toString();
             } else {
               return "{" + ((function() {
-                var _results;
-                _results = [];
+                var results;
+                results = [];
                 for (kk in v) {
                   vv = v[kk];
                   if (v.hasOwnProperty(kk)) {
-                    _results.push("" + (key(kk)) + ": " + (value(vv)));
+                    results.push((key(kk)) + ": " + (value(vv)));
                   }
                 }
-                return _results;
+                return results;
               })()).join(", ") + "}";
             }
           } else {
@@ -72662,13 +73184,13 @@ escapeHTML = function(str) {
 };
 
 prettyFormat = function(str) {
-  var arg, args, out, _i, _len;
+  var arg, args, i, len, out;
   args = [].slice.call(arguments);
   args.shift();
   out = "<span>";
   str = escapeHTML(str);
-  for (_i = 0, _len = args.length; _i < _len; _i++) {
-    arg = args[_i];
+  for (i = 0, len = args.length; i < len; i++) {
+    arg = args[i];
     str = str.replace(/%([a-z])/, function(_, f) {
       var v;
       v = args.shift();
@@ -72702,7 +73224,8 @@ for x in [1, 2, 1/2, 3, 1/3, Math.PI, Math.PI / 2, Math.PI * 2, Math.PI * 3, Mat
  */
 
 
-},{}],175:[function(require,module,exports){
+
+},{}],176:[function(require,module,exports){
 exports.paramToGL = function(gl, p) {
   if (p === THREE.RepeatWrapping) {
     return gl.REPEAT;
@@ -72888,7 +73411,8 @@ exports.transformComposer = function() {
 };
 
 
-},{}],176:[function(require,module,exports){
+
+},{}],177:[function(require,module,exports){
 
 /*
  Generate equally spaced ticks in a range at sensible positions.
@@ -72918,12 +73442,12 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   ideal = span / n;
   if (!nice) {
     ticks = (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
-        _results.push(min + i * ideal);
+      var j, ref1, results;
+      results = [];
+      for (i = j = 0, ref1 = n; 0 <= ref1 ? j <= ref1 : j >= ref1; i = 0 <= ref1 ? ++j : --j) {
+        results.push(min + i * ideal);
       }
-      return _results;
+      return results;
     })();
     if (!start) {
       ticks.shift();
@@ -72943,13 +73467,13 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   ref = unit * (Math.pow(base, Math.floor(Math.log(ideal / unit) / Math.log(base))));
   factors = base % 2 === 0 ? [base / 2, 1, 1 / 2] : base % 3 === 0 ? [base / 3, 1, 1 / 3] : [1];
   steps = (function() {
-    var _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = factors.length; _i < _len; _i++) {
-      f = factors[_i];
-      _results.push(ref * f);
+    var j, len, results;
+    results = [];
+    for (j = 0, len = factors.length; j < len; j++) {
+      f = factors[j];
+      results.push(ref * f);
     }
-    return _results;
+    return results;
   })();
   distance = Infinity;
   step = steps.reduce(function(ref, step) {
@@ -72968,12 +73492,12 @@ linear = function(min, max, n, unit, base, factor, start, end, zero, nice) {
   max = (Math.floor(max / step) - +(!end)) * step;
   n = Math.ceil((max - min) / step);
   ticks = (function() {
-    var _i, _results;
-    _results = [];
-    for (i = _i = 0; 0 <= n ? _i <= n : _i >= n; i = 0 <= n ? ++_i : --_i) {
-      _results.push(min + i * step);
+    var j, ref1, results;
+    results = [];
+    for (i = j = 0, ref1 = n; 0 <= ref1 ? j <= ref1 : j >= ref1; i = 0 <= ref1 ? ++j : --j) {
+      results.push(min + i * step);
     }
-    return _results;
+    return results;
   })();
   if (!zero) {
     ticks = ticks.filter(function(x) {
@@ -73012,8 +73536,9 @@ exports.linear = linear;
 exports.log = log;
 
 
-},{}],177:[function(require,module,exports){
-var HEAP, Types, apply, createClass, descriptor, element, hint, id, key, map, mount, prop, recycle, set, unmount, unset, _i, _len, _ref;
+
+},{}],178:[function(require,module,exports){
+var HEAP, Types, apply, createClass, descriptor, element, hint, id, j, key, len, map, mount, prop, recycle, ref1, set, unmount, unset;
 
 HEAP = [];
 
@@ -73043,14 +73568,14 @@ descriptor = function() {
 };
 
 hint = function(n) {
-  var i, _i, _results;
+  var i, j, ref1, results;
   n *= 2;
   n = Math.max(0, HEAP.length - n);
-  _results = [];
-  for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
-    _results.push(HEAP.push(descriptor()));
+  results = [];
+  for (i = j = 0, ref1 = n; 0 <= ref1 ? j < ref1 : j > ref1; i = 0 <= ref1 ? ++j : --j) {
+    results.push(HEAP.push(descriptor()));
   }
-  return _results;
+  return results;
 };
 
 element = function(type, props, children) {
@@ -73063,7 +73588,7 @@ element = function(type, props, children) {
 };
 
 recycle = function(el) {
-  var child, children, _i, _len;
+  var child, children, j, len;
   if (!el.type) {
     return;
   }
@@ -73071,15 +73596,15 @@ recycle = function(el) {
   el.type = el.props = el.children = el.instance = null;
   HEAP.push(el);
   if (children != null) {
-    for (_i = 0, _len = children.length; _i < _len; _i++) {
-      child = children[_i];
+    for (j = 0, len = children.length; j < len; j++) {
+      child = children[j];
       recycle(child);
     }
   }
 };
 
 apply = function(el, last, node, parent, index) {
-  var child, childNodes, children, comp, dirty, i, k, key, nextChildren, nextProps, nextState, prevProps, prevState, props, ref, same, should, type, v, value, _base, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3, _ref4;
+  var base, child, childNodes, children, comp, dirty, i, j, k, key, l, len, len1, nextChildren, nextProps, nextState, prevProps, prevState, props, ref, ref1, ref2, ref3, ref4, ref5, same, should, type, v, value;
   if (el != null) {
     if (last == null) {
       return mount(el, parent, index);
@@ -73098,10 +73623,10 @@ apply = function(el, last, node, parent, index) {
         return mount(el, parent, index);
       } else {
         el.instance = last.instance;
-        type = ((_ref = el.type) != null ? _ref.isComponentClass : void 0) ? el.type : Types[el.type];
+        type = ((ref1 = el.type) != null ? ref1.isComponentClass : void 0) ? el.type : Types[el.type];
         props = last != null ? last.props : void 0;
         nextProps = el.props;
-        children = (_ref1 = last != null ? last.children : void 0) != null ? _ref1 : null;
+        children = (ref2 = last != null ? last.children : void 0) != null ? ref2 : null;
         nextChildren = el.children;
         if (nextProps != null) {
           nextProps.children = nextChildren;
@@ -73136,18 +73661,18 @@ apply = function(el, last, node, parent, index) {
             if (el.props == null) {
               el.props = {};
             }
-            _ref2 = comp.defaultProps;
-            for (k in _ref2) {
-              v = _ref2[k];
-              if ((_base = el.props)[k] == null) {
-                _base[k] = v;
+            ref3 = comp.defaultProps;
+            for (k in ref3) {
+              v = ref3[k];
+              if ((base = el.props)[k] == null) {
+                base[k] = v;
               }
             }
             el.props.children = el.children;
             if (typeof comp.willReceiveProps === "function") {
               comp.willReceiveProps(el.props);
             }
-            should = node._COMPONENT_FORCE || ((_ref3 = typeof comp.shouldUpdate === "function" ? comp.shouldUpdate(el.props) : void 0) != null ? _ref3 : true);
+            should = node._COMPONENT_FORCE || ((ref4 = typeof comp.shouldUpdate === "function" ? comp.shouldUpdate(el.props) : void 0) != null ? ref4 : true);
             if (should) {
               nextState = comp.getNextState();
               if (typeof comp.willUpdate === "function") {
@@ -73184,7 +73709,7 @@ apply = function(el, last, node, parent, index) {
             }
           }
           if (nextChildren != null) {
-            if ((_ref4 = typeof nextChildren) === 'string' || _ref4 === 'number') {
+            if ((ref5 = typeof nextChildren) === 'string' || ref5 === 'number') {
               if (nextChildren !== children) {
                 node.textContent = nextChildren;
               }
@@ -73194,12 +73719,12 @@ apply = function(el, last, node, parent, index) {
               } else {
                 childNodes = node.childNodes;
                 if (children != null) {
-                  for (i = _i = 0, _len = nextChildren.length; _i < _len; i = ++_i) {
+                  for (i = j = 0, len = nextChildren.length; j < len; i = ++j) {
                     child = nextChildren[i];
                     apply(child, children[i], childNodes[i], node, i);
                   }
                 } else {
-                  for (i = _j = 0, _len1 = nextChildren.length; _j < _len1; i = ++_j) {
+                  for (i = l = 0, len1 = nextChildren.length; l < len1; i = ++l) {
                     child = nextChildren[i];
                     apply(child, null, childNodes[i], node, i);
                   }
@@ -73222,16 +73747,16 @@ apply = function(el, last, node, parent, index) {
 };
 
 mount = function(el, parent, index) {
-  var child, children, comp, ctor, i, k, key, node, type, v, value, _base, _i, _len, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+  var base, child, children, comp, ctor, i, j, k, key, len, node, ref1, ref2, ref3, ref4, ref5, ref6, type, v, value;
   if (index == null) {
     index = 0;
   }
-  type = ((_ref = el.type) != null ? _ref.isComponentClass : void 0) ? el.type : Types[el.type];
+  type = ((ref1 = el.type) != null ? ref1.isComponentClass : void 0) ? el.type : Types[el.type];
   if (el instanceof Node) {
     node = el;
   } else {
     if (type != null) {
-      ctor = ((_ref1 = el.type) != null ? _ref1.isComponentClass : void 0) ? el.type : Types[el.type];
+      ctor = ((ref2 = el.type) != null ? ref2.isComponentClass : void 0) ? el.type : Types[el.type];
       if (!ctor) {
         el = el.rendered = element('noscript');
         node = mount(el, parent, index);
@@ -73241,11 +73766,11 @@ mount = function(el, parent, index) {
       if (el.props == null) {
         el.props = {};
       }
-      _ref2 = comp.defaultProps;
-      for (k in _ref2) {
-        v = _ref2[k];
-        if ((_base = el.props)[k] == null) {
-          _base[k] = v;
+      ref3 = comp.defaultProps;
+      for (k in ref3) {
+        v = ref3[k];
+        if ((base = el.props)[k] == null) {
+          base[k] = v;
         }
       }
       el.props.children = el.children;
@@ -73262,25 +73787,25 @@ mount = function(el, parent, index) {
       }
       node._COMPONENT = comp;
       return node;
-    } else if ((_ref3 = typeof el) === 'string' || _ref3 === 'number') {
+    } else if ((ref4 = typeof el) === 'string' || ref4 === 'number') {
       node = document.createTextNode(el);
     } else {
       node = document.createElement(el.type);
-      _ref4 = el.props;
-      for (key in _ref4) {
-        value = _ref4[key];
+      ref5 = el.props;
+      for (key in ref5) {
+        value = ref5[key];
         set(node, key, value);
       }
     }
     children = el.children;
     if (children != null) {
-      if ((_ref5 = typeof children) === 'string' || _ref5 === 'number') {
+      if ((ref6 = typeof children) === 'string' || ref6 === 'number') {
         node.textContent = children;
       } else {
         if (children.type != null) {
           mount(children, node, 0);
         } else {
-          for (i = _i = 0, _len = children.length; _i < _len; i = ++_i) {
+          for (i = j = 0, len = children.length; j < len; i = ++j) {
             child = children[i];
             mount(child, node, i);
           }
@@ -73293,7 +73818,7 @@ mount = function(el, parent, index) {
 };
 
 unmount = function(comp, node) {
-  var child, k, _i, _len, _ref, _results;
+  var child, j, k, len, ref1, results;
   if (comp) {
     if (typeof comp.willUnmount === "function") {
       comp.willUnmount();
@@ -73302,18 +73827,18 @@ unmount = function(comp, node) {
       delete comp[k];
     }
   }
-  _ref = node.childNodes;
-  _results = [];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    child = _ref[_i];
+  ref1 = node.childNodes;
+  results = [];
+  for (j = 0, len = ref1.length; j < len; j++) {
+    child = ref1[j];
     unmount(child._COMPONENT, child);
-    _results.push(delete child._COMPONENT);
+    results.push(delete child._COMPONENT);
   }
-  return _results;
+  return results;
 };
 
 prop = function(key) {
-  var prefix, prefixes, _i, _len;
+  var j, len, prefix, prefixes;
   if (typeof document === 'undefined') {
     return true;
   }
@@ -73322,8 +73847,8 @@ prop = function(key) {
   }
   key = key[0].toUpperCase() + key.slice(1);
   prefixes = ['webkit', 'moz', 'ms', 'o'];
-  for (_i = 0, _len = prefixes.length; _i < _len; _i++) {
-    prefix = prefixes[_i];
+  for (j = 0, len = prefixes.length; j < len; j++) {
+    prefix = prefixes[j];
     if (document.documentElement.style[prefix + key] != null) {
       return prefix + key;
     }
@@ -73332,19 +73857,19 @@ prop = function(key) {
 
 map = {};
 
-_ref = ['transform'];
-for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-  key = _ref[_i];
+ref1 = ['transform'];
+for (j = 0, len = ref1.length; j < len; j++) {
+  key = ref1[j];
   map[key] = prop(key);
 }
 
 set = function(node, key, value, orig) {
-  var k, v, _ref1;
+  var k, ref2, v;
   if (key === 'style') {
     for (k in value) {
       v = value[k];
       if ((orig != null ? orig[k] : void 0) !== v) {
-        node.style[(_ref1 = map[k]) != null ? _ref1 : k] = v;
+        node.style[(ref2 = map[k]) != null ? ref2 : k] = v;
       }
     }
     return;
@@ -73359,11 +73884,11 @@ set = function(node, key, value, orig) {
 };
 
 unset = function(node, key, orig) {
-  var k, v, _ref1;
+  var k, ref2, v;
   if (key === 'style') {
     for (k in orig) {
       v = orig[k];
-      node.style[(_ref1 = map[k]) != null ? _ref1 : k] = '';
+      node.style[(ref2 = map[k]) != null ? ref2 : k] = '';
     }
     return;
   }
@@ -73376,7 +73901,7 @@ unset = function(node, key, orig) {
 };
 
 createClass = function(prototype) {
-  var Component, a, aliases, b, _ref1;
+  var Component, a, aliases, b, ref2;
   aliases = {
     willMount: 'componentWillMount',
     didMount: 'componentDidMount',
@@ -73393,11 +73918,11 @@ createClass = function(prototype) {
     }
   }
   Component = (function() {
-    function Component(node, props, state, children) {
+    function Component(node, props1, state1, children1) {
       var bind, k, nextState, v;
-      this.props = props != null ? props : {};
-      this.state = state != null ? state : null;
-      this.children = children != null ? children : null;
+      this.props = props1 != null ? props1 : {};
+      this.state = state1 != null ? state1 : null;
+      this.children = children1 != null ? children1 : null;
       bind = function(f, self) {
         if (typeof f === 'function') {
           return f.bind(self);
@@ -73421,27 +73946,27 @@ createClass = function(prototype) {
         node._COMPONENT_DIRTY = true;
       };
       this.forceUpdate = function() {
-        var el, _results;
+        var el, results;
         node._COMPONENT_FORCE = node._COMPONENT_DIRTY = true;
         el = node;
-        _results = [];
+        results = [];
         while (el = el.parentNode) {
           if (el._COMPONENT) {
-            _results.push(el._COMPONENT_FORCE = true);
+            results.push(el._COMPONENT_FORCE = true);
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       };
       this.getNextState = function() {
         return nextState;
       };
       this.applyNextState = function() {
-        var prevState, _ref1;
+        var prevState, ref2;
         node._COMPONENT_FORCE = node._COMPONENT_DIRTY = false;
         prevState = this.state;
-        _ref1 = [null, nextState], nextState = _ref1[0], this.state = _ref1[1];
+        ref2 = [null, nextState], nextState = ref2[0], this.state = ref2[1];
         return prevState;
       };
       return;
@@ -73451,7 +73976,7 @@ createClass = function(prototype) {
 
   })();
   Component.isComponentClass = true;
-  Component.prototype.defaultProps = (_ref1 = typeof prototype.getDefaultProps === "function" ? prototype.getDefaultProps() : void 0) != null ? _ref1 : {};
+  Component.prototype.defaultProps = (ref2 = typeof prototype.getDefaultProps === "function" ? prototype.getDefaultProps() : void 0) != null ? ref2 : {};
   return Component;
 };
 
@@ -73465,7 +73990,8 @@ module.exports = {
 };
 
 
-},{}],178:[function(require,module,exports){
+
+},{}],179:[function(require,module,exports){
 
 /*
   Graph of nodes with outlets
@@ -73491,14 +74017,14 @@ Graph = (function() {
   }
 
   Graph.prototype.inputs = function() {
-    var inputs, node, outlet, _i, _j, _len, _len1, _ref, _ref1;
+    var i, inputs, j, len, len1, node, outlet, ref, ref1;
     inputs = [];
-    _ref = this.nodes;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
-      _ref1 = node.inputs;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        outlet = _ref1[_j];
+    ref = this.nodes;
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
+      ref1 = node.inputs;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        outlet = ref1[j];
         if (outlet.input === null) {
           inputs.push(outlet);
         }
@@ -73508,14 +74034,14 @@ Graph = (function() {
   };
 
   Graph.prototype.outputs = function() {
-    var node, outlet, outputs, _i, _j, _len, _len1, _ref, _ref1;
+    var i, j, len, len1, node, outlet, outputs, ref, ref1;
     outputs = [];
-    _ref = this.nodes;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
-      _ref1 = node.outputs;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        outlet = _ref1[_j];
+    ref = this.nodes;
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
+      ref1 = node.outputs;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        outlet = ref1[j];
         if (outlet.output.length === 0) {
           outputs.push(outlet);
         }
@@ -73527,40 +74053,40 @@ Graph = (function() {
   Graph.prototype.getIn = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.inputs();
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.inputs();
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Graph.prototype.getOut = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.outputs();
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.outputs();
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Graph.prototype.add = function(node, ignore) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.add(_node);
       }
       return;
@@ -73573,10 +74099,10 @@ Graph = (function() {
   };
 
   Graph.prototype.remove = function(node, ignore) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.remove(_node);
       }
       return;
@@ -73590,10 +74116,10 @@ Graph = (function() {
   };
 
   Graph.prototype.adopt = function(node) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.adopt(_node);
       }
       return;
@@ -73609,7 +74135,8 @@ Graph = (function() {
 module.exports = Graph;
 
 
-},{}],179:[function(require,module,exports){
+
+},{}],180:[function(require,module,exports){
 exports.Graph = require('./graph');
 
 exports.Node = require('./node');
@@ -73621,7 +74148,8 @@ exports.IN = exports.Graph.IN;
 exports.OUT = exports.Graph.OUT;
 
 
-},{"./graph":178,"./node":180,"./outlet":181}],180:[function(require,module,exports){
+
+},{"./graph":179,"./node":181,"./outlet":182}],181:[function(require,module,exports){
 var Graph, Node, Outlet;
 
 Graph = require('./graph');
@@ -73654,32 +74182,32 @@ Node = (function() {
   Node.prototype.getIn = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.inputs;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.inputs;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Node.prototype.getOut = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.outputs;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.outputs;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
@@ -73688,12 +74216,12 @@ Node = (function() {
   };
 
   Node.prototype.setOutlets = function(outlets) {
-    var existing, hash, key, match, outlet, _i, _j, _k, _len, _len1, _len2, _ref;
+    var existing, hash, i, j, k, key, len, len1, len2, match, outlet, ref;
     if (outlets != null) {
       if (this.outlets == null) {
         this.outlets = {};
-        for (_i = 0, _len = outlets.length; _i < _len; _i++) {
-          outlet = outlets[_i];
+        for (i = 0, len = outlets.length; i < len; i++) {
+          outlet = outlets[i];
           if (!(outlet instanceof Outlet)) {
             outlet = Outlet.make(outlet);
           }
@@ -73705,13 +74233,13 @@ Node = (function() {
         return [outlet.name, outlet.inout, outlet.type].join('-');
       };
       match = {};
-      for (_j = 0, _len1 = outlets.length; _j < _len1; _j++) {
-        outlet = outlets[_j];
+      for (j = 0, len1 = outlets.length; j < len1; j++) {
+        outlet = outlets[j];
         match[hash(outlet)] = true;
       }
-      _ref = this.outlets;
-      for (key in _ref) {
-        outlet = _ref[key];
+      ref = this.outlets;
+      for (key in ref) {
+        outlet = ref[key];
         key = hash(outlet);
         if (match[key]) {
           match[key] = outlet;
@@ -73719,8 +74247,8 @@ Node = (function() {
           this._remove(outlet);
         }
       }
-      for (_k = 0, _len2 = outlets.length; _k < _len2; _k++) {
-        outlet = outlets[_k];
+      for (k = 0, len2 = outlets.length; k < len2; k++) {
+        outlet = outlets[k];
         existing = match[hash(outlet)];
         if (existing instanceof Outlet) {
           this._morph(existing, outlet);
@@ -73737,15 +74265,15 @@ Node = (function() {
   };
 
   Node.prototype.connect = function(node, empty, force) {
-    var dest, dests, hint, hints, list, outlets, source, sources, type, typeHint, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+    var dest, dests, hint, hints, i, j, k, len, len1, len2, list, outlets, ref, ref1, ref2, source, sources, type, typeHint;
     outlets = {};
     hints = {};
     typeHint = function(outlet) {
       return type + '/' + outlet.hint;
     };
-    _ref = node.inputs;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      dest = _ref[_i];
+    ref = node.inputs;
+    for (i = 0, len = ref.length; i < len; i++) {
+      dest = ref[i];
       if (!force && dest.input) {
         continue;
       }
@@ -73761,9 +74289,9 @@ Node = (function() {
     sources = sources.filter(function(outlet) {
       return !(empty && outlet.output.length);
     });
-    _ref1 = sources.slice();
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      source = _ref1[_j];
+    ref1 = sources.slice();
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      source = ref1[j];
       type = source.type;
       hint = typeHint(source);
       dests = outlets[type];
@@ -73777,9 +74305,9 @@ Node = (function() {
     if (!sources.length) {
       return this;
     }
-    _ref2 = sources.slice();
-    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-      source = _ref2[_k];
+    ref2 = sources.slice();
+    for (k = 0, len2 = ref2.length; k < len2; k++) {
+      source = ref2[k];
       type = source.type;
       dests = outlets[type];
       if (dests && dests.length) {
@@ -73790,15 +74318,15 @@ Node = (function() {
   };
 
   Node.prototype.disconnect = function(node) {
-    var outlet, _i, _j, _len, _len1, _ref, _ref1;
-    _ref = this.inputs;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      outlet = _ref[_i];
+    var i, j, len, len1, outlet, ref, ref1;
+    ref = this.inputs;
+    for (i = 0, len = ref.length; i < len; i++) {
+      outlet = ref[i];
       outlet.disconnect();
     }
-    _ref1 = this.outputs;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      outlet = _ref1[_j];
+    ref1 = this.outputs;
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      outlet = ref1[j];
       outlet.disconnect();
     }
     return this;
@@ -73864,7 +74392,8 @@ Node = (function() {
 module.exports = Node;
 
 
-},{"./graph":178,"./outlet":181}],181:[function(require,module,exports){
+
+},{"./graph":179,"./outlet":182}],182:[function(require,module,exports){
 var Graph, Outlet;
 
 Graph = require('./graph');
@@ -73876,15 +74405,15 @@ Graph = require('./graph');
 
 Outlet = (function() {
   Outlet.make = function(outlet, extra) {
-    var key, meta, value, _ref;
+    var key, meta, ref, value;
     if (extra == null) {
       extra = {};
     }
     meta = extra;
     if (outlet.meta != null) {
-      _ref = outlet.meta;
-      for (key in _ref) {
-        value = _ref[key];
+      ref = outlet.meta;
+      for (key in ref) {
+        value = ref[key];
         meta[key] = value;
       }
     }
@@ -73903,15 +74432,15 @@ Outlet = (function() {
     return name = name.replace(/(In|Out|Inout|InOut)$/, '');
   };
 
-  function Outlet(inout, name, hint, type, meta, id) {
+  function Outlet(inout, name1, hint, type, meta1, id) {
     this.inout = inout;
-    this.name = name;
+    this.name = name1;
     this.hint = hint;
     this.type = type;
-    this.meta = meta != null ? meta : {};
+    this.meta = meta1 != null ? meta1 : {};
     this.id = id;
     if (this.hint == null) {
-      this.hint = Outlet.hint(name);
+      this.hint = Outlet.hint(this.name);
     }
     this.node = null;
     this.input = null;
@@ -73955,7 +74484,7 @@ Outlet = (function() {
   };
 
   Outlet.prototype.disconnect = function(outlet) {
-    var index, _i, _len, _ref;
+    var i, index, len, ref;
     if (this.input) {
       this.input.disconnect(this);
     }
@@ -73967,9 +74496,9 @@ Outlet = (function() {
           return outlet.input = null;
         }
       } else {
-        _ref = this.output;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          outlet = _ref[_i];
+        ref = this.output;
+        for (i = 0, len = ref.length; i < len; i++) {
+          outlet = ref[i];
           outlet.input = null;
         }
         return this.output = [];
@@ -73984,7 +74513,8 @@ Outlet = (function() {
 module.exports = Outlet;
 
 
-},{"./graph":178}],182:[function(require,module,exports){
+
+},{"./graph":179}],183:[function(require,module,exports){
 var Block, Graph, Layout, OutletError, Program, debug;
 
 Graph = require('../graph');
@@ -73997,21 +74527,21 @@ debug = false;
 
 Block = (function() {
   Block.previous = function(outlet) {
-    var _ref;
-    return (_ref = outlet.input) != null ? _ref.node.owner : void 0;
+    var ref;
+    return (ref = outlet.input) != null ? ref.node.owner : void 0;
   };
 
   function Block() {
-    var _ref;
+    var ref;
     if (this.namespace == null) {
       this.namespace = Program.entry();
     }
-    this.node = new Graph.Node(this, (_ref = typeof this.makeOutlets === "function" ? this.makeOutlets() : void 0) != null ? _ref : {});
+    this.node = new Graph.Node(this, (ref = typeof this.makeOutlets === "function" ? this.makeOutlets() : void 0) != null ? ref : {});
   }
 
   Block.prototype.refresh = function() {
-    var _ref;
-    return this.node.setOutlets((_ref = typeof this.makeOutlets === "function" ? this.makeOutlets() : void 0) != null ? _ref : {});
+    var ref;
+    return this.node.setOutlets((ref = typeof this.makeOutlets === "function" ? this.makeOutlets() : void 0) != null ? ref : {});
   };
 
   Block.prototype.clone = function() {
@@ -74041,8 +74571,8 @@ Block = (function() {
   Block.prototype["export"] = function(layout, depth) {};
 
   Block.prototype._info = function(suffix) {
-    var string, _ref, _ref1;
-    string = (_ref = (_ref1 = this.node.owner.snippet) != null ? _ref1._name : void 0) != null ? _ref : this.node.owner.namespace;
+    var ref, ref1, string;
+    string = (ref = (ref1 = this.node.owner.snippet) != null ? ref1._name : void 0) != null ? ref : this.node.owner.namespace;
     if (suffix != null) {
       return string += '.' + suffix;
     }
@@ -74064,15 +74594,15 @@ Block = (function() {
   };
 
   Block.prototype._inputs = function(module, program, depth) {
-    var arg, outlet, _i, _len, _ref, _ref1, _results;
-    _ref = module.main.signature;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      arg = _ref[_i];
+    var arg, i, len, outlet, ref, ref1, results;
+    ref = module.main.signature;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      arg = ref[i];
       outlet = this.node.get(arg.name);
-      _results.push((_ref1 = Block.previous(outlet)) != null ? _ref1.call(program, depth + 1) : void 0);
+      results.push((ref1 = Block.previous(outlet)) != null ? ref1.call(program, depth + 1) : void 0);
     }
-    return _results;
+    return results;
   };
 
   Block.prototype._callback = function(module, layout, depth, name, external, outlet) {
@@ -74084,12 +74614,12 @@ Block = (function() {
   };
 
   Block.prototype._link = function(module, layout, depth) {
-    var block, ext, key, orig, outlet, parent, _i, _len, _ref, _ref1, _ref2, _results;
+    var block, ext, i, key, len, orig, outlet, parent, ref, ref1, ref2, results;
     debug && console.log('block::_link', this.toString(), module.namespace);
-    _ref = module.symbols;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      key = _ref[_i];
+    ref = module.symbols;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      key = ref[i];
       ext = module.externals[key];
       outlet = this.node.get(ext.name);
       if (!outlet) {
@@ -74098,9 +74628,9 @@ Block = (function() {
       if (outlet.meta.child != null) {
         continue;
       }
-      _ref1 = [outlet, outlet, null], orig = _ref1[0], parent = _ref1[1], block = _ref1[2];
+      ref1 = [outlet, outlet, null], orig = ref1[0], parent = ref1[1], block = ref1[2];
       while (!block && parent) {
-        _ref2 = [outlet.meta.parent, parent], parent = _ref2[0], outlet = _ref2[1];
+        ref2 = [outlet.meta.parent, parent], parent = ref2[0], outlet = ref2[1];
       }
       block = Block.previous(outlet);
       if (!block) {
@@ -74108,22 +74638,22 @@ Block = (function() {
       }
       debug && console.log('callback -> ', this.toString(), ext.name, outlet);
       block.callback(layout, depth + 1, key, ext, outlet.input);
-      _results.push(block != null ? block["export"](layout, depth + 1) : void 0);
+      results.push(block != null ? block["export"](layout, depth + 1) : void 0);
     }
-    return _results;
+    return results;
   };
 
   Block.prototype._trace = function(module, layout, depth) {
-    var arg, outlet, _i, _len, _ref, _ref1, _results;
+    var arg, i, len, outlet, ref, ref1, results;
     debug && console.log('block::_trace', this.toString(), module.namespace);
-    _ref = module.main.signature;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      arg = _ref[_i];
+    ref = module.main.signature;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      arg = ref[i];
       outlet = this.node.get(arg.name);
-      _results.push((_ref1 = Block.previous(outlet)) != null ? _ref1["export"](layout, depth + 1) : void 0);
+      results.push((ref1 = Block.previous(outlet)) != null ? ref1["export"](layout, depth + 1) : void 0);
     }
-    return _results;
+    return results;
   };
 
   return Block;
@@ -74142,15 +74672,16 @@ OutletError.prototype = new Error;
 module.exports = Block;
 
 
-},{"../graph":202,"../linker":207}],183:[function(require,module,exports){
+
+},{"../graph":203,"../linker":208}],184:[function(require,module,exports){
 var Block, Call,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Block = require('./block');
 
-Call = (function(_super) {
-  __extends(Call, _super);
+Call = (function(superClass) {
+  extend(Call, superClass);
 
   function Call(snippet) {
     this.snippet = snippet;
@@ -74168,26 +74699,26 @@ Call = (function(_super) {
     externals = this.snippet.externals;
     symbols = this.snippet.symbols;
     params = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = main.length; _i < _len; _i++) {
-        outlet = main[_i];
-        _results.push(this._outlet(outlet, {
+      var i, len, results;
+      results = [];
+      for (i = 0, len = main.length; i < len; i++) {
+        outlet = main[i];
+        results.push(this._outlet(outlet, {
           callback: false
         }));
       }
-      return _results;
+      return results;
     }).call(this);
     callbacks = (function() {
-      var _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = symbols.length; _i < _len; _i++) {
-        key = symbols[_i];
-        _results.push(this._outlet(externals[key], {
+      var i, len, results;
+      results = [];
+      for (i = 0, len = symbols.length; i < len; i++) {
+        key = symbols[i];
+        results.push(this._outlet(externals[key], {
           callback: true
         }));
       }
-      return _results;
+      return results;
     }).call(this);
     return params.concat(callbacks);
   };
@@ -74212,10 +74743,11 @@ Call = (function(_super) {
 module.exports = Call;
 
 
-},{"./block":182}],184:[function(require,module,exports){
+
+},{"./block":183}],185:[function(require,module,exports){
 var Block, Callback, Graph,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Graph = require('../graph');
 
@@ -74226,8 +74758,8 @@ Block = require('./block');
   Re-use a subgraph as a callback
  */
 
-Callback = (function(_super) {
-  __extends(Callback, _super);
+Callback = (function(superClass) {
+  extend(Callback, superClass);
 
   function Callback(graph) {
     this.graph = graph;
@@ -74244,19 +74776,19 @@ Callback = (function(_super) {
   };
 
   Callback.prototype.makeOutlets = function() {
-    var handle, ins, outlet, outlets, outs, type, _i, _j, _len, _len1, _ref, _ref1;
+    var handle, i, ins, j, len, len1, outlet, outlets, outs, ref, ref1, type;
     this.make();
     outlets = [];
     ins = [];
     outs = [];
     handle = (function(_this) {
       return function(outlet, list) {
-        var dupe, _base;
+        var base, dupe;
         if (outlet.meta.callback) {
           if (outlet.inout === Graph.IN) {
             dupe = outlet.dupe();
-            if ((_base = dupe.meta).child == null) {
-              _base.child = outlet;
+            if ((base = dupe.meta).child == null) {
+              base.child = outlet;
             }
             outlet.meta.parent = dupe;
             return outlets.push(dupe);
@@ -74266,14 +74798,14 @@ Callback = (function(_super) {
         }
       };
     })(this);
-    _ref = this.graph.inputs();
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      outlet = _ref[_i];
+    ref = this.graph.inputs();
+    for (i = 0, len = ref.length; i < len; i++) {
+      outlet = ref[i];
       handle(outlet, ins);
     }
-    _ref1 = this.graph.outputs();
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      outlet = _ref1[_j];
+    ref1 = this.graph.outputs();
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      outlet = ref1[j];
       handle(outlet, outs);
     }
     ins = ins.join(',');
@@ -74319,7 +74851,8 @@ Callback = (function(_super) {
 module.exports = Callback;
 
 
-},{"../graph":202,"./block":182}],185:[function(require,module,exports){
+
+},{"../graph":203,"./block":183}],186:[function(require,module,exports){
 exports.Block = require('./block');
 
 exports.Call = require('./call');
@@ -74331,10 +74864,11 @@ exports.Isolate = require('./isolate');
 exports.Join = require('./join');
 
 
-},{"./block":182,"./call":183,"./callback":184,"./isolate":186,"./join":187}],186:[function(require,module,exports){
+
+},{"./block":183,"./call":184,"./callback":185,"./isolate":187,"./join":188}],187:[function(require,module,exports){
 var Block, Graph, Isolate,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Graph = require('../graph');
 
@@ -74345,8 +74879,8 @@ Block = require('./block');
   Isolate a subgraph as a single node
  */
 
-Isolate = (function(_super) {
-  __extends(Isolate, _super);
+Isolate = (function(superClass) {
+  extend(Isolate, superClass);
 
   function Isolate(graph) {
     this.graph = graph;
@@ -74363,27 +74897,27 @@ Isolate = (function(_super) {
   };
 
   Isolate.prototype.makeOutlets = function() {
-    var done, dupe, name, outlet, outlets, seen, set, _base, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+    var base, done, dupe, i, j, len, len1, name, outlet, outlets, ref, ref1, ref2, seen, set;
     this.make();
     outlets = [];
     seen = {};
     done = {};
-    _ref = ['inputs', 'outputs'];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      set = _ref[_i];
-      _ref1 = this.graph[set]();
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        outlet = _ref1[_j];
+    ref = ['inputs', 'outputs'];
+    for (i = 0, len = ref.length; i < len; i++) {
+      set = ref[i];
+      ref1 = this.graph[set]();
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        outlet = ref1[j];
         name = void 0;
-        if (((_ref2 = outlet.hint) === 'return' || _ref2 === 'callback') && outlet.inout === Graph.OUT) {
+        if (((ref2 = outlet.hint) === 'return' || ref2 === 'callback') && outlet.inout === Graph.OUT) {
           name = outlet.hint;
         }
         if (seen[name] != null) {
           name = void 0;
         }
         dupe = outlet.dupe(name);
-        if ((_base = dupe.meta).child == null) {
-          _base.child = outlet;
+        if ((base = dupe.meta).child == null) {
+          base.child = outlet;
         }
         outlet.meta.parent = dupe;
         if (name != null) {
@@ -74426,10 +74960,11 @@ Isolate = (function(_super) {
 module.exports = Isolate;
 
 
-},{"../graph":202,"./block":182}],187:[function(require,module,exports){
+
+},{"../graph":203,"./block":183}],188:[function(require,module,exports){
 var Block, Join,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
 
 Block = require('./block');
 
@@ -74438,8 +74973,8 @@ Block = require('./block');
   Join multiple disconnected nodes
  */
 
-Join = (function(_super) {
-  __extends(Join, _super);
+Join = (function(superClass) {
+  extend(Join, superClass);
 
   function Join(nodes) {
     this.nodes = nodes;
@@ -74455,27 +74990,27 @@ Join = (function(_super) {
   };
 
   Join.prototype.call = function(program, depth) {
-    var block, node, _i, _len, _ref, _results;
-    _ref = this.nodes;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
+    var block, i, len, node, ref, results;
+    ref = this.nodes;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
       block = node.owner;
-      _results.push(block.call(program, depth));
+      results.push(block.call(program, depth));
     }
-    return _results;
+    return results;
   };
 
   Join.prototype["export"] = function(layout, depth) {
-    var block, node, _i, _len, _ref, _results;
-    _ref = this.nodes;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
+    var block, i, len, node, ref, results;
+    ref = this.nodes;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
       block = node.owner;
-      _results.push(block["export"](layout, depth));
+      results.push(block["export"](layout, depth));
     }
-    return _results;
+    return results;
   };
 
   return Join;
@@ -74485,7 +75020,8 @@ Join = (function(_super) {
 module.exports = Join;
 
 
-},{"./block":182}],188:[function(require,module,exports){
+
+},{"./block":183}],189:[function(require,module,exports){
 
 /*
   Cache decorator  
@@ -74519,7 +75055,8 @@ cache = function(fetch) {
 module.exports = cache;
 
 
-},{"./hash":190,"./queue":194}],189:[function(require,module,exports){
+
+},{"./hash":191,"./queue":195}],190:[function(require,module,exports){
 var Block, Factory, Graph, State, Visualize;
 
 Graph = require('../graph').Graph;
@@ -74605,8 +75142,8 @@ Factory = (function() {
   };
 
   Factory.prototype.end = function() {
-    var main, op, sub, _ref;
-    _ref = this._exit(), sub = _ref[0], main = _ref[1];
+    var main, op, ref, sub;
+    ref = this._exit(), sub = ref[0], main = ref[1];
     op = sub.op;
     if (this[op]) {
       this[op](sub, main);
@@ -74619,8 +75156,8 @@ Factory = (function() {
   };
 
   Factory.prototype.graph = function() {
-    var graph, _ref;
-    while (((_ref = this._stack) != null ? _ref.length : void 0) > 1) {
+    var graph, ref;
+    while (((ref = this._stack) != null ? ref.length : void 0) > 1) {
       this.end();
     }
     if (this._graph) {
@@ -74656,15 +75193,15 @@ Factory = (function() {
   };
 
   Factory.prototype._concat = function(factory) {
-    var block, error;
+    var block, error, error1;
     if (factory._state.nodes.length === 0) {
       return this;
     }
     this._tail(factory._state, factory._graph);
     try {
       block = new Block.Isolate(factory._graph);
-    } catch (_error) {
-      error = _error;
+    } catch (error1) {
+      error = error1;
       if (this.config.autoInspect) {
         Visualize.inspect(error, this._graph, factory);
       }
@@ -74675,15 +75212,15 @@ Factory = (function() {
   };
 
   Factory.prototype._import = function(factory) {
-    var block, error;
+    var block, error, error1;
     if (factory._state.nodes.length === 0) {
       throw "Can't import empty callback";
     }
     this._tail(factory._state, factory._graph);
     try {
       block = new Block.Callback(factory._graph);
-    } catch (_error) {
-      error = _error;
+    } catch (error1) {
+      error = error1;
       if (this.config.autoInspect) {
         Visualize.inspect(error, this._graph, factory);
       }
@@ -74694,13 +75231,13 @@ Factory = (function() {
   };
 
   Factory.prototype._combine = function(sub, main) {
-    var from, to, _i, _j, _len, _len1, _ref, _ref1;
-    _ref = sub.start;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      to = _ref[_i];
-      _ref1 = main.end;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        from = _ref1[_j];
+    var from, j, k, len, len1, ref, ref1, to;
+    ref = sub.start;
+    for (j = 0, len = ref.length; j < len; j++) {
+      to = ref[j];
+      ref1 = main.end;
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        from = ref1[k];
         from.connect(to, sub.multi);
       }
     }
@@ -74709,14 +75246,14 @@ Factory = (function() {
   };
 
   Factory.prototype._isolate = function(sub, main) {
-    var block, error, subgraph;
+    var block, error, error1, subgraph;
     if (sub.nodes.length) {
       subgraph = this._subgraph(sub);
       this._tail(sub, subgraph);
       try {
         block = new Block.Isolate(subgraph);
-      } catch (_error) {
-        error = _error;
+      } catch (error1) {
+        error = error1;
         if (this.config.autoInspect) {
           Visualize.inspect(error, this._graph, subgraph);
         }
@@ -74727,14 +75264,14 @@ Factory = (function() {
   };
 
   Factory.prototype._callback = function(sub, main) {
-    var block, error, subgraph;
+    var block, error, error1, subgraph;
     if (sub.nodes.length) {
       subgraph = this._subgraph(sub);
       this._tail(sub, subgraph);
       try {
         block = new Block.Callback(subgraph);
-      } catch (_error) {
-        error = _error;
+      } catch (error1) {
+        error = error1;
         if (this.config.autoInspect) {
           Visualize.inspect(error, this._graph, subgraph);
         }
@@ -74778,14 +75315,14 @@ Factory = (function() {
     }
     graph.compile = (function(_this) {
       return function(namespace) {
-        var error;
+        var error, error1;
         if (namespace == null) {
           namespace = 'main';
         }
         try {
           return graph.tail.owner.compile(_this.language, namespace);
-        } catch (_error) {
-          error = _error;
+        } catch (error1) {
+          error = error1;
           if (_this.config.autoInspect) {
             graph.inspect(error);
           }
@@ -74795,14 +75332,14 @@ Factory = (function() {
     })(this);
     graph.link = (function(_this) {
       return function(namespace) {
-        var error;
+        var error, error1;
         if (namespace == null) {
           namespace = 'main';
         }
         try {
           return graph.tail.owner.link(_this.language, namespace);
-        } catch (_error) {
-          error = _error;
+        } catch (error1) {
+          error = error1;
           if (_this.config.autoInspect) {
             graph.inspect(error);
           }
@@ -74851,12 +75388,12 @@ Factory = (function() {
   };
 
   Factory.prototype._pop = function() {
-    var _ref;
+    var ref;
     this._state = this._stack[1];
     if (this._state == null) {
       this._state = new State;
     }
-    return (_ref = this._stack.shift()) != null ? _ref : new State;
+    return (ref = this._stack.shift()) != null ? ref : new State;
   };
 
   Factory.prototype._auto = function(block) {
@@ -74868,12 +75405,12 @@ Factory = (function() {
   };
 
   Factory.prototype._append = function(block) {
-    var end, node, _i, _len, _ref;
+    var end, j, len, node, ref;
     node = block.node;
     this._graph.add(node);
-    _ref = this._state.end;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      end = _ref[_i];
+    ref = this._state.end;
+    for (j = 0, len = ref.length; j < len; j++) {
+      end = ref[j];
       end.connect(node);
     }
     if (!this._state.start.length) {
@@ -74887,12 +75424,12 @@ Factory = (function() {
   };
 
   Factory.prototype._prepend = function(block) {
-    var node, start, _i, _len, _ref;
+    var j, len, node, ref, start;
     node = block.node;
     this._graph.add(node);
-    _ref = this._state.start;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      start = _ref[_i];
+    ref = this._state.start;
+    for (j = 0, len = ref.length; j < len; j++) {
+      start = ref[j];
       node.connect(start);
     }
     if (!this._state.end.length) {
@@ -74922,13 +75459,13 @@ Factory = (function() {
 })();
 
 State = (function() {
-  function State(op, multi, start, end, nodes, tail) {
-    this.op = op != null ? op : null;
-    this.multi = multi != null ? multi : false;
-    this.start = start != null ? start : [];
-    this.end = end != null ? end : [];
+  function State(op1, multi1, start1, end1, nodes, tail1) {
+    this.op = op1 != null ? op1 : null;
+    this.multi = multi1 != null ? multi1 : false;
+    this.start = start1 != null ? start1 : [];
+    this.end = end1 != null ? end1 : [];
     this.nodes = nodes != null ? nodes : [];
-    this.tail = tail != null ? tail : [];
+    this.tail = tail1 != null ? tail1 : [];
   }
 
   return State;
@@ -74938,7 +75475,8 @@ State = (function() {
 module.exports = Factory;
 
 
-},{"../block":185,"../graph":202,"../visualize":213}],190:[function(require,module,exports){
+
+},{"../block":186,"../graph":203,"../visualize":214}],191:[function(require,module,exports){
 var c1, c2, c3, c4, c5, hash, imul, test;
 
 c1 = 0xcc9e2d51;
@@ -75004,7 +75542,8 @@ hash = function(string) {
 module.exports = hash;
 
 
-},{}],191:[function(require,module,exports){
+
+},{}],192:[function(require,module,exports){
 exports.Factory = require('./factory');
 
 exports.Material = require('./material');
@@ -75018,7 +75557,8 @@ exports.queue = require('./queue');
 exports.hash = require('./hash');
 
 
-},{"./cache":188,"./factory":189,"./hash":190,"./library":192,"./material":193,"./queue":194}],192:[function(require,module,exports){
+
+},{"./cache":189,"./factory":190,"./hash":191,"./library":193,"./material":194,"./queue":195}],193:[function(require,module,exports){
 
 /*
   Snippet library
@@ -75075,7 +75615,8 @@ library = function(language, snippets, load) {
 module.exports = library;
 
 
-},{}],193:[function(require,module,exports){
+
+},{}],194:[function(require,module,exports){
 var Material, Visualize, debug, tick;
 
 debug = false;
@@ -75094,9 +75635,9 @@ tick = function() {
 };
 
 Material = (function() {
-  function Material(vertex, fragment) {
-    this.vertex = vertex;
-    this.fragment = fragment;
+  function Material(vertex1, fragment1) {
+    this.vertex = vertex1;
+    this.fragment = fragment1;
     if (debug) {
       this.tock = tick();
     }
@@ -75107,7 +75648,7 @@ Material = (function() {
   };
 
   Material.prototype.link = function(options) {
-    var attributes, fragment, key, shader, uniforms, value, varyings, vertex, _i, _len, _ref, _ref1, _ref2, _ref3;
+    var attributes, fragment, i, key, len, ref, ref1, ref2, ref3, shader, uniforms, value, varyings, vertex;
     if (options == null) {
       options = {};
     }
@@ -75116,22 +75657,22 @@ Material = (function() {
     attributes = {};
     vertex = this.vertex.link('main');
     fragment = this.fragment.link('main');
-    _ref = [vertex, fragment];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      shader = _ref[_i];
-      _ref1 = shader.uniforms;
-      for (key in _ref1) {
-        value = _ref1[key];
+    ref = [vertex, fragment];
+    for (i = 0, len = ref.length; i < len; i++) {
+      shader = ref[i];
+      ref1 = shader.uniforms;
+      for (key in ref1) {
+        value = ref1[key];
         uniforms[key] = value;
       }
-      _ref2 = shader.varyings;
-      for (key in _ref2) {
-        value = _ref2[key];
+      ref2 = shader.varyings;
+      for (key in ref2) {
+        value = ref2[key];
         varyings[key] = value;
       }
-      _ref3 = shader.attributes;
-      for (key in _ref3) {
-        value = _ref3[key];
+      ref3 = shader.attributes;
+      for (key in ref3) {
+        value = ref3[key];
         attributes[key] = value;
       }
     }
@@ -75162,7 +75703,8 @@ Material = (function() {
 module.exports = Material;
 
 
-},{"../visualize":213}],194:[function(require,module,exports){
+
+},{"../visualize":214}],195:[function(require,module,exports){
 var queue;
 
 queue = function(limit) {
@@ -75230,7 +75772,8 @@ queue = function(limit) {
 module.exports = queue;
 
 
-},{}],195:[function(require,module,exports){
+
+},{}],196:[function(require,module,exports){
 
 /*
   Compile snippet back into GLSL, but with certain symbols replaced by prefixes / placeholders
@@ -75257,18 +75800,18 @@ tick = function() {
 };
 
 replaced = function(signatures) {
-  var key, out, s, sig, _i, _j, _len, _len1, _ref, _ref1;
+  var i, j, key, len, len1, out, ref, ref1, s, sig;
   out = {};
   s = function(sig) {
     return out[sig.name] = true;
   };
   s(signatures.main);
-  _ref = ['external', 'internal', 'varying', 'uniform', 'attribute'];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    key = _ref[_i];
-    _ref1 = signatures[key];
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      sig = _ref1[_j];
+  ref = ['external', 'internal', 'varying', 'uniform', 'attribute'];
+  for (i = 0, len = ref.length; i < len; i++) {
+    key = ref[i];
+    ref1 = signatures[key];
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      sig = ref1[j];
       s(sig);
     }
   }
@@ -75283,12 +75826,12 @@ String-replacement based compiler
 string_compiler = function(code, placeholders) {
   var key, re;
   re = new RegExp('\\b(' + ((function() {
-    var _results;
-    _results = [];
+    var results;
+    results = [];
     for (key in placeholders) {
-      _results.push(key);
+      results.push(key);
     }
-    return _results;
+    return results;
   })()).join('|') + ')\\b', 'g');
   code = code.replace(/\/\/[^\n]*/g, '');
   code = code.replace(/\/\*([^*]|\*[^\/])*\*\//g, '');
@@ -75311,13 +75854,13 @@ string_compiler = function(code, placeholders) {
       return replace[key];
     });
     defs = (function() {
-      var _results;
-      _results = [];
+      var results;
+      results = [];
       for (key in defines) {
         value = defines[key];
-        _results.push("#define " + key + " " + value);
+        results.push("#define " + key + " " + value);
       }
-      return _results;
+      return results;
     })();
     if (defs.length) {
       defs.push('');
@@ -75329,14 +75872,16 @@ string_compiler = function(code, placeholders) {
 module.exports = compile;
 
 
-},{}],196:[function(require,module,exports){
+
+},{}],197:[function(require,module,exports){
 module.exports = {
   SHADOW_ARG: '_i_o',
   RETURN_ARG: 'return'
 };
 
 
-},{}],197:[function(require,module,exports){
+
+},{}],198:[function(require,module,exports){
 var Definition, decl, defaults, get, three, threejs, win;
 
 module.exports = decl = {};
@@ -75352,16 +75897,16 @@ get = function(n) {
 };
 
 decl.node = function(node) {
-  var _ref, _ref1;
-  if (((_ref = node.children[5]) != null ? _ref.type : void 0) === 'function') {
+  var ref, ref1;
+  if (((ref = node.children[5]) != null ? ref.type : void 0) === 'function') {
     return decl["function"](node);
-  } else if (((_ref1 = node.token) != null ? _ref1.type : void 0) === 'keyword') {
+  } else if (((ref1 = node.token) != null ? ref1.type : void 0) === 'keyword') {
     return decl.external(node);
   }
 };
 
 decl.external = function(node) {
-  var c, i, ident, list, next, out, quant, storage, struct, type, _i, _len, _ref;
+  var c, i, ident, j, len, list, next, out, quant, ref, storage, struct, type;
   c = node.children;
   storage = get(c[1]);
   struct = get(c[3]);
@@ -75371,9 +75916,9 @@ decl.external = function(node) {
     storage = 'global';
   }
   out = [];
-  _ref = list.children;
-  for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-    c = _ref[i];
+  ref = list.children;
+  for (i = j = 0, len = ref.length; j < len; i = ++j) {
+    c = ref[i];
     if (c.type === 'ident') {
       ident = get(c);
       next = list.children[i + 1];
@@ -75402,14 +75947,14 @@ decl["function"] = function(node) {
   args = func.children[1];
   body = func.children[2];
   decls = (function() {
-    var _i, _len, _ref, _results;
-    _ref = args.children;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      child = _ref[_i];
-      _results.push(decl.argument(child));
+    var j, len, ref, results;
+    ref = args.children;
+    results = [];
+    for (j = 0, len = ref.length; j < len; j++) {
+      child = ref[j];
+      results.push(decl.argument(child));
     }
-    return _results;
+    return results;
   })();
   return [
     {
@@ -75499,7 +76044,7 @@ three = {
 };
 
 decl.type = function(name, spec, quant, count, dir, storage) {
-  var dirs, inout, param, storages, type, value, _ref;
+  var dirs, inout, param, ref, storages, type, value;
   dirs = {
     "in": decl["in"],
     out: decl.out,
@@ -75519,21 +76064,21 @@ decl.type = function(name, spec, quant, count, dir, storage) {
   if (quant) {
     value = [value];
   }
-  inout = (_ref = dirs[dir]) != null ? _ref : dirs["in"];
+  inout = (ref = dirs[dir]) != null ? ref : dirs["in"];
   storage = storages[storage];
   param = decl.param(dir, storage, spec, quant, count);
   return new Definition(name, type, spec, param, value, inout);
 };
 
 Definition = (function() {
-  function Definition(name, type, spec, param, value, inout, meta) {
-    this.name = name;
-    this.type = type;
-    this.spec = spec;
-    this.param = param;
-    this.value = value;
-    this.inout = inout;
-    this.meta = meta;
+  function Definition(name1, type1, spec1, param1, value1, inout1, meta1) {
+    this.name = name1;
+    this.type = type1;
+    this.spec = spec1;
+    this.param = param1;
+    this.value = value1;
+    this.inout = inout1;
+    this.meta = meta1;
   }
 
   Definition.prototype.split = function() {
@@ -75555,7 +76100,8 @@ Definition = (function() {
 })();
 
 
-},{}],198:[function(require,module,exports){
+
+},{}],199:[function(require,module,exports){
 var $, Graph, _;
 
 Graph = require('../graph');
@@ -75603,16 +76149,16 @@ module.exports = _ = {
     return "#define " + a + " " + b;
   },
   "function": function(type, entry, params, vars, calls) {
-    return "" + type + " " + entry + "(" + params + ") {\n" + vars + calls + "}";
+    return type + " " + entry + "(" + params + ") {\n" + vars + calls + "}";
   },
   invoke: function(ret, entry, args) {
-    ret = ret ? "" + ret + " = " : '';
+    ret = ret ? ret + " = " : '';
     args = _.list(args);
     return "  " + ret + entry + "(" + args + ")";
   },
   same: function(a, b) {
-    var A, B, i, _i, _len;
-    for (i = _i = 0, _len = a.length; _i < _len; i = ++_i) {
+    var A, B, i, k, len;
+    for (i = k = 0, len = a.length; k < len; i = ++k) {
       A = a[i];
       B = b[i];
       if (!B) {
@@ -75628,12 +76174,12 @@ module.exports = _ = {
     return true;
   },
   call: function(lookup, dangling, entry, signature, body) {
-    var arg, args, copy, id, inout, isReturn, meta, name, omit, op, other, ret, rets, shadow, _i, _len, _ref, _ref1;
+    var arg, args, copy, id, inout, isReturn, k, len, meta, name, omit, op, other, ref, ref1, ret, rets, shadow;
     args = [];
     ret = '';
     rets = 1;
-    for (_i = 0, _len = signature.length; _i < _len; _i++) {
-      arg = signature[_i];
+    for (k = 0, len = signature.length; k < len; k++) {
+      arg = signature[k];
       name = arg.name;
       copy = id = lookup(name);
       other = null;
@@ -75641,7 +76187,7 @@ module.exports = _ = {
       omit = false;
       inout = arg.inout;
       isReturn = name === $.RETURN_ARG;
-      if (shadow = (_ref = arg.meta) != null ? _ref.shadowed : void 0) {
+      if (shadow = (ref = arg.meta) != null ? ref.shadowed : void 0) {
         other = lookup(shadow);
         if (other) {
           body.vars[other] = "  " + arg.param(other);
@@ -75655,7 +76201,7 @@ module.exports = _ = {
           }
         }
       }
-      if (shadow = (_ref1 = arg.meta) != null ? _ref1.shadow : void 0) {
+      if (shadow = (ref1 = arg.meta) != null ? ref1.shadow : void 0) {
         other = lookup(shadow);
         if (other) {
           if (!dangling(shadow)) {
@@ -75711,14 +76257,14 @@ module.exports = _ = {
     }
     if (code == null) {
       vars = (function() {
-        var _ref, _results;
-        _ref = body.vars;
-        _results = [];
-        for (v in _ref) {
-          decl = _ref[v];
-          _results.push(decl);
+        var ref, results;
+        ref = body.vars;
+        results = [];
+        for (v in ref) {
+          decl = ref[v];
+          results.push(decl);
         }
-        return _results;
+        return results;
       })();
       calls = body.calls;
       post = body.post;
@@ -75747,13 +76293,13 @@ module.exports = _ = {
     };
   },
   links: function(links) {
-    var l, out, _i, _len;
+    var k, l, len, out;
     out = {
       defs: [],
       bodies: []
     };
-    for (_i = 0, _len = links.length; _i < _len; _i++) {
-      l = links[_i];
+    for (k = 0, len = links.length; k < len; k++) {
+      l = links[k];
       _.link(l, out);
     }
     out.defs = _.lines(out.defs);
@@ -75768,7 +76314,7 @@ module.exports = _ = {
   },
   link: (function(_this) {
     return function(link, out) {
-      var arg, entry, external, inner, ins, list, main, map, module, name, other, outer, outs, returnVar, wrapper, _dangling, _i, _j, _len, _len1, _lookup, _name, _ref, _ref1;
+      var _dangling, _lookup, _name, arg, entry, external, inner, ins, k, len, len1, list, main, map, module, n, name, other, outer, outs, ref, ref1, returnVar, wrapper;
       module = link.module, name = link.name, external = link.external;
       main = module.main;
       entry = module.entry;
@@ -75779,15 +76325,15 @@ module.exports = _ = {
       outs = [];
       map = {};
       returnVar = [module.namespace, $.RETURN_ARG].join('');
-      _ref = external.signature;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        arg = _ref[_i];
+      ref = external.signature;
+      for (k = 0, len = ref.length; k < len; k++) {
+        arg = ref[k];
         list = arg.inout === Graph.IN ? ins : outs;
         list.push(arg);
       }
-      _ref1 = main.signature;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        arg = _ref1[_j];
+      ref1 = main.signature;
+      for (n = 0, len1 = ref1.length; n < len1; n++) {
+        arg = ref1[n];
         list = arg.inout === Graph.IN ? ins : outs;
         other = list.shift();
         _name = other.name;
@@ -75809,8 +76355,8 @@ module.exports = _ = {
         "return": returnVar
       };
       _lookup = function(name) {
-        var _ref2;
-        return (_ref2 = map[name]) != null ? _ref2 : name;
+        var ref2;
+        return (ref2 = map[name]) != null ? ref2 : name;
       };
       outer = _.body();
       wrapper = _.call(_lookup, _dangling, entry, external.signature, outer);
@@ -75821,7 +76367,7 @@ module.exports = _ = {
     };
   })(this),
   defuse: function(code) {
-    var b, blocks, hash, head, i, j, level, line, re, rest, strip, _i, _j, _len, _len1;
+    var b, blocks, hash, head, i, j, k, len, len1, level, line, n, re, rest, strip;
     re = /([A-Za-z0-9_]+\s+)?[A-Za-z0-9_]+\s+[A-Za-z0-9_]+\s*\([^)]*\)\s*;\s*/mg;
     strip = function(code) {
       return code.replace(re, function(m) {
@@ -75830,7 +76376,7 @@ module.exports = _ = {
     };
     blocks = code.split(/(?=[{}])/g);
     level = 0;
-    for (i = _i = 0, _len = blocks.length; _i < _len; i = ++_i) {
+    for (i = k = 0, len = blocks.length; k < len; i = ++k) {
       b = blocks[i];
       switch (b[0]) {
         case '{':
@@ -75841,7 +76387,7 @@ module.exports = _ = {
       }
       if (level === 0) {
         hash = b.split(/^[ \t]*#/m);
-        for (j = _j = 0, _len1 = hash.length; _j < _len1; j = ++_j) {
+        for (j = n = 0, len1 = hash.length; n < len1; j = ++n) {
           line = hash[j];
           if (j > 0) {
             line = line.split(/\n/);
@@ -75870,13 +76416,13 @@ module.exports = _ = {
     });
   },
   hoist: function(code) {
-    var defs, line, lines, list, out, re, _i, _len;
+    var defs, k, len, line, lines, list, out, re;
     re = /^#define ([^ ]+ _pg_[0-9]+_|_pg_[0-9]+_ [^ ]+)$/;
     lines = code.split(/\n/g);
     defs = [];
     out = [];
-    for (_i = 0, _len = lines.length; _i < _len; _i++) {
-      line = lines[_i];
+    for (k = 0, len = lines.length; k < len; k++) {
+      line = lines[k];
       list = line.match(re) ? defs : out;
       list.push(line);
     }
@@ -75885,8 +76431,9 @@ module.exports = _ = {
 };
 
 
-},{"../graph":202,"./constants":196}],199:[function(require,module,exports){
-var k, v, _i, _len, _ref;
+
+},{"../graph":203,"./constants":197}],200:[function(require,module,exports){
+var i, k, len, ref, v;
 
 exports.compile = require('./compile');
 
@@ -75894,14 +76441,15 @@ exports.parse = require('./parse');
 
 exports.generate = require('./generate');
 
-_ref = require('./constants');
-for (v = _i = 0, _len = _ref.length; _i < _len; v = ++_i) {
-  k = _ref[v];
+ref = require('./constants');
+for (v = i = 0, len = ref.length; i < len; v = ++i) {
+  k = ref[v];
   exports[k] = v;
 }
 
 
-},{"./compile":195,"./constants":196,"./generate":198,"./parse":200}],200:[function(require,module,exports){
+
+},{"./compile":196,"./constants":197,"./generate":199,"./parse":201}],201:[function(require,module,exports){
 var $, collect, debug, decl, extractSignatures, mapSymbols, parse, parseGLSL, parser, processAST, sortSymbols, tick, tokenizer, walk;
 
 tokenizer = require('../../vendor/glsl-tokenizer');
@@ -75927,14 +76475,14 @@ parse = function(name, code) {
 };
 
 parseGLSL = function(name, code) {
-  var ast, e, error, errors, fmt, tock, _i, _len, _ref, _ref1;
+  var ast, e, error, error1, errors, fmt, j, len, ref, ref1, tock;
   if (debug) {
     tock = tick();
   }
   try {
-    _ref = tokenizer().process(parser(), code), (_ref1 = _ref[0], ast = _ref1[0]), errors = _ref[1];
-  } catch (_error) {
-    e = _error;
+    ref = tokenizer().process(parser(), code), (ref1 = ref[0], ast = ref1[0]), errors = ref[1];
+  } catch (error1) {
+    e = error1;
     errors = [
       {
         message: e
@@ -75956,7 +76504,7 @@ parseGLSL = function(name, code) {
       }
     };
     return code.map(function(line, i) {
-      return "" + (pad(i + 1)) + ": " + line;
+      return (pad(i + 1)) + ": " + line;
     }).join("\n");
   };
   if (!ast || errors.length) {
@@ -75964,9 +76512,9 @@ parseGLSL = function(name, code) {
       name = '(inline code)';
     }
     console.warn(fmt(code));
-    for (_i = 0, _len = errors.length; _i < _len; _i++) {
-      error = errors[_i];
-      console.error("" + name + " -", error.message);
+    for (j = 0, len = errors.length; j < len; j++) {
+      error = errors[j];
+      console.error(name + " -", error.message);
     }
     throw new Error("GLSL parse error");
   }
@@ -75974,13 +76522,13 @@ parseGLSL = function(name, code) {
 };
 
 processAST = function(ast, code) {
-  var externals, internals, main, signatures, symbols, tock, _ref;
+  var externals, internals, main, ref, signatures, symbols, tock;
   if (debug) {
     tock = tick();
   }
   symbols = [];
   walk(mapSymbols, collect(symbols), ast, '');
-  _ref = sortSymbols(symbols), main = _ref[0], internals = _ref[1], externals = _ref[2];
+  ref = sortSymbols(symbols), main = ref[0], internals = ref[1], externals = ref[2];
   signatures = extractSignatures(main, internals, externals);
   if (debug) {
     tock('GLSL AST');
@@ -76003,27 +76551,27 @@ mapSymbols = function(node, collect) {
 
 collect = function(out) {
   return function(value) {
-    var obj, _i, _len, _results;
+    var j, len, obj, results;
     if (value != null) {
-      _results = [];
-      for (_i = 0, _len = value.length; _i < _len; _i++) {
-        obj = value[_i];
-        _results.push(out.push(obj));
+      results = [];
+      for (j = 0, len = value.length; j < len; j++) {
+        obj = value[j];
+        results.push(out.push(obj));
       }
-      return _results;
+      return results;
     }
   };
 };
 
 sortSymbols = function(symbols) {
-  var e, externals, found, internals, main, maybe, s, _i, _len;
+  var e, externals, found, internals, j, len, main, maybe, s;
   main = null;
   internals = [];
   externals = [];
   maybe = {};
   found = false;
-  for (_i = 0, _len = symbols.length; _i < _len; _i++) {
-    s = symbols[_i];
+  for (j = 0, len = symbols.length; j < len; j++) {
+    s = symbols[j];
     if (!s.body) {
       if (s.storage === 'global') {
         internals.push(s);
@@ -76034,15 +76582,15 @@ sortSymbols = function(symbols) {
     } else {
       if (maybe[s.ident]) {
         externals = (function() {
-          var _j, _len1, _results;
-          _results = [];
-          for (_j = 0, _len1 = externals.length; _j < _len1; _j++) {
-            e = externals[_j];
+          var k, len1, results;
+          results = [];
+          for (k = 0, len1 = externals.length; k < len1; k++) {
+            e = externals[k];
             if (e.ident !== s.ident) {
-              _results.push(e);
+              results.push(e);
             }
           }
-          return _results;
+          return results;
         })();
         delete maybe[s.ident];
       }
@@ -76059,7 +76607,7 @@ sortSymbols = function(symbols) {
 };
 
 extractSignatures = function(main, internals, externals) {
-  var def, defn, func, sigs, symbol, _i, _j, _len, _len1;
+  var def, defn, func, j, k, len, len1, sigs, symbol;
   sigs = {
     uniform: [],
     attribute: [],
@@ -76073,19 +76621,19 @@ extractSignatures = function(main, internals, externals) {
     return decl.type(symbol.ident, symbol.type, symbol.quant, symbol.count, symbol.inout, symbol.storage);
   };
   func = function(symbol, inout) {
-    var a, arg, b, d, def, inTypes, outTypes, signature, type, _i, _len;
+    var a, arg, b, d, def, inTypes, j, len, outTypes, signature, type;
     signature = (function() {
-      var _i, _len, _ref, _results;
-      _ref = symbol.args;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        arg = _ref[_i];
-        _results.push(defn(arg));
+      var j, len, ref, results;
+      ref = symbol.args;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        arg = ref[j];
+        results.push(defn(arg));
       }
-      return _results;
+      return results;
     })();
-    for (_i = 0, _len = signature.length; _i < _len; _i++) {
-      d = signature[_i];
+    for (j = 0, len = signature.length; j < len; j++) {
+      d = signature[j];
       if (!(d.inout === decl.inout)) {
         continue;
       }
@@ -76106,26 +76654,26 @@ extractSignatures = function(main, internals, externals) {
       signature.unshift(decl.type($.RETURN_ARG, symbol.type, false, '', 'out'));
     }
     inTypes = ((function() {
-      var _j, _len1, _results;
-      _results = [];
-      for (_j = 0, _len1 = signature.length; _j < _len1; _j++) {
-        d = signature[_j];
+      var k, len1, results;
+      results = [];
+      for (k = 0, len1 = signature.length; k < len1; k++) {
+        d = signature[k];
         if (d.inout === decl["in"]) {
-          _results.push(d.type);
+          results.push(d.type);
         }
       }
-      return _results;
+      return results;
     })()).join(',');
     outTypes = ((function() {
-      var _j, _len1, _results;
-      _results = [];
-      for (_j = 0, _len1 = signature.length; _j < _len1; _j++) {
-        d = signature[_j];
+      var k, len1, results;
+      results = [];
+      for (k = 0, len1 = signature.length; k < len1; k++) {
+        d = signature[k];
         if (d.inout === decl.out) {
-          _results.push(d.type);
+          results.push(d.type);
         }
       }
-      return _results;
+      return results;
     })()).join(',');
     type = "(" + inTypes + ")(" + outTypes + ")";
     return def = {
@@ -76137,14 +76685,14 @@ extractSignatures = function(main, internals, externals) {
     };
   };
   sigs.main = func(main, decl.out);
-  for (_i = 0, _len = internals.length; _i < _len; _i++) {
-    symbol = internals[_i];
+  for (j = 0, len = internals.length; j < len; j++) {
+    symbol = internals[j];
     sigs.internal.push({
       name: symbol.ident
     });
   }
-  for (_j = 0, _len1 = externals.length; _j < _len1; _j++) {
-    symbol = externals[_j];
+  for (k = 0, len1 = externals.length; k < len1; k++) {
+    symbol = externals[k];
     switch (symbol.decl) {
       case 'external':
         def = defn(symbol);
@@ -76161,13 +76709,13 @@ extractSignatures = function(main, internals, externals) {
 debug = false;
 
 walk = function(map, collect, node, indent) {
-  var child, i, recurse, _i, _len, _ref, _ref1, _ref2;
-  debug && console.log(indent, node.type, (_ref = node.token) != null ? _ref.data : void 0, (_ref1 = node.token) != null ? _ref1.type : void 0);
+  var child, i, j, len, recurse, ref, ref1, ref2;
+  debug && console.log(indent, node.type, (ref = node.token) != null ? ref.data : void 0, (ref1 = node.token) != null ? ref1.type : void 0);
   recurse = map(node, collect);
   if (recurse) {
-    _ref2 = node.children;
-    for (i = _i = 0, _len = _ref2.length; _i < _len; i = ++_i) {
-      child = _ref2[i];
+    ref2 = node.children;
+    for (i = j = 0, len = ref2.length; j < len; i = ++j) {
+      child = ref2[i];
       walk(map, collect, child, indent + '  ', debug);
     }
   }
@@ -76190,7 +76738,8 @@ module.exports = walk;
 module.exports = parse;
 
 
-},{"../../vendor/glsl-parser":216,"../../vendor/glsl-tokenizer":220,"./constants":196,"./decl":197}],201:[function(require,module,exports){
+
+},{"../../vendor/glsl-parser":217,"../../vendor/glsl-tokenizer":221,"./constants":197,"./decl":198}],202:[function(require,module,exports){
 
 /*
   Graph of nodes with outlets
@@ -76216,14 +76765,14 @@ Graph = (function() {
   }
 
   Graph.prototype.inputs = function() {
-    var inputs, node, outlet, _i, _j, _len, _len1, _ref, _ref1;
+    var i, inputs, j, len, len1, node, outlet, ref, ref1;
     inputs = [];
-    _ref = this.nodes;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
-      _ref1 = node.inputs;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        outlet = _ref1[_j];
+    ref = this.nodes;
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
+      ref1 = node.inputs;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        outlet = ref1[j];
         if (outlet.input === null) {
           inputs.push(outlet);
         }
@@ -76233,14 +76782,14 @@ Graph = (function() {
   };
 
   Graph.prototype.outputs = function() {
-    var node, outlet, outputs, _i, _j, _len, _len1, _ref, _ref1;
+    var i, j, len, len1, node, outlet, outputs, ref, ref1;
     outputs = [];
-    _ref = this.nodes;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      node = _ref[_i];
-      _ref1 = node.outputs;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        outlet = _ref1[_j];
+    ref = this.nodes;
+    for (i = 0, len = ref.length; i < len; i++) {
+      node = ref[i];
+      ref1 = node.outputs;
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        outlet = ref1[j];
         if (outlet.output.length === 0) {
           outputs.push(outlet);
         }
@@ -76252,40 +76801,40 @@ Graph = (function() {
   Graph.prototype.getIn = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.inputs();
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.inputs();
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Graph.prototype.getOut = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.outputs();
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.outputs();
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Graph.prototype.add = function(node, ignore) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.add(_node);
       }
       return;
@@ -76298,10 +76847,10 @@ Graph = (function() {
   };
 
   Graph.prototype.remove = function(node, ignore) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.remove(_node);
       }
       return;
@@ -76315,10 +76864,10 @@ Graph = (function() {
   };
 
   Graph.prototype.adopt = function(node) {
-    var _i, _len, _node;
+    var _node, i, len;
     if (node.length) {
-      for (_i = 0, _len = node.length; _i < _len; _i++) {
-        _node = node[_i];
+      for (i = 0, len = node.length; i < len; i++) {
+        _node = node[i];
         this.adopt(_node);
       }
       return;
@@ -76334,7 +76883,8 @@ Graph = (function() {
 module.exports = Graph;
 
 
-},{}],202:[function(require,module,exports){
+
+},{}],203:[function(require,module,exports){
 exports.Graph = require('./graph');
 
 exports.Node = require('./node');
@@ -76346,7 +76896,8 @@ exports.IN = exports.Graph.IN;
 exports.OUT = exports.Graph.OUT;
 
 
-},{"./graph":201,"./node":203,"./outlet":204}],203:[function(require,module,exports){
+
+},{"./graph":202,"./node":204,"./outlet":205}],204:[function(require,module,exports){
 var Graph, Node, Outlet;
 
 Graph = require('./graph');
@@ -76379,32 +76930,32 @@ Node = (function() {
   Node.prototype.getIn = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.inputs;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.inputs;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
   Node.prototype.getOut = function(name) {
     var outlet;
     return ((function() {
-      var _i, _len, _ref, _results;
-      _ref = this.outputs;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        outlet = _ref[_i];
+      var i, len, ref, results;
+      ref = this.outputs;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        outlet = ref[i];
         if (outlet.name === name) {
-          _results.push(outlet);
+          results.push(outlet);
         }
       }
-      return _results;
+      return results;
     }).call(this))[0];
   };
 
@@ -76413,12 +76964,12 @@ Node = (function() {
   };
 
   Node.prototype.setOutlets = function(outlets) {
-    var existing, hash, key, match, outlet, _i, _j, _k, _len, _len1, _len2, _ref;
+    var existing, hash, i, j, k, key, len, len1, len2, match, outlet, ref;
     if (outlets != null) {
       if (this.outlets == null) {
         this.outlets = {};
-        for (_i = 0, _len = outlets.length; _i < _len; _i++) {
-          outlet = outlets[_i];
+        for (i = 0, len = outlets.length; i < len; i++) {
+          outlet = outlets[i];
           if (!(outlet instanceof Outlet)) {
             outlet = Outlet.make(outlet);
           }
@@ -76430,13 +76981,13 @@ Node = (function() {
         return [outlet.name, outlet.inout, outlet.type].join('-');
       };
       match = {};
-      for (_j = 0, _len1 = outlets.length; _j < _len1; _j++) {
-        outlet = outlets[_j];
+      for (j = 0, len1 = outlets.length; j < len1; j++) {
+        outlet = outlets[j];
         match[hash(outlet)] = true;
       }
-      _ref = this.outlets;
-      for (key in _ref) {
-        outlet = _ref[key];
+      ref = this.outlets;
+      for (key in ref) {
+        outlet = ref[key];
         key = hash(outlet);
         if (match[key]) {
           match[key] = outlet;
@@ -76444,8 +76995,8 @@ Node = (function() {
           this._remove(outlet);
         }
       }
-      for (_k = 0, _len2 = outlets.length; _k < _len2; _k++) {
-        outlet = outlets[_k];
+      for (k = 0, len2 = outlets.length; k < len2; k++) {
+        outlet = outlets[k];
         existing = match[hash(outlet)];
         if (existing instanceof Outlet) {
           this._morph(existing, outlet);
@@ -76462,15 +77013,15 @@ Node = (function() {
   };
 
   Node.prototype.connect = function(node, empty, force) {
-    var dest, dests, hint, hints, list, outlets, source, sources, type, typeHint, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+    var dest, dests, hint, hints, i, j, k, len, len1, len2, list, outlets, ref, ref1, ref2, source, sources, type, typeHint;
     outlets = {};
     hints = {};
     typeHint = function(outlet) {
       return type + '/' + outlet.hint;
     };
-    _ref = node.inputs;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      dest = _ref[_i];
+    ref = node.inputs;
+    for (i = 0, len = ref.length; i < len; i++) {
+      dest = ref[i];
       if (!force && dest.input) {
         continue;
       }
@@ -76486,9 +77037,9 @@ Node = (function() {
     sources = sources.filter(function(outlet) {
       return !(empty && outlet.output.length);
     });
-    _ref1 = sources.slice();
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      source = _ref1[_j];
+    ref1 = sources.slice();
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      source = ref1[j];
       type = source.type;
       hint = typeHint(source);
       dests = outlets[type];
@@ -76502,9 +77053,9 @@ Node = (function() {
     if (!sources.length) {
       return this;
     }
-    _ref2 = sources.slice();
-    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-      source = _ref2[_k];
+    ref2 = sources.slice();
+    for (k = 0, len2 = ref2.length; k < len2; k++) {
+      source = ref2[k];
       type = source.type;
       dests = outlets[type];
       if (dests && dests.length) {
@@ -76515,15 +77066,15 @@ Node = (function() {
   };
 
   Node.prototype.disconnect = function(node) {
-    var outlet, _i, _j, _len, _len1, _ref, _ref1;
-    _ref = this.inputs;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      outlet = _ref[_i];
+    var i, j, len, len1, outlet, ref, ref1;
+    ref = this.inputs;
+    for (i = 0, len = ref.length; i < len; i++) {
+      outlet = ref[i];
       outlet.disconnect();
     }
-    _ref1 = this.outputs;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      outlet = _ref1[_j];
+    ref1 = this.outputs;
+    for (j = 0, len1 = ref1.length; j < len1; j++) {
+      outlet = ref1[j];
       outlet.disconnect();
     }
     return this;
@@ -76589,7 +77140,8 @@ Node = (function() {
 module.exports = Node;
 
 
-},{"./graph":201,"./outlet":204}],204:[function(require,module,exports){
+
+},{"./graph":202,"./outlet":205}],205:[function(require,module,exports){
 var Graph, Outlet;
 
 Graph = require('./graph');
@@ -76601,15 +77153,15 @@ Graph = require('./graph');
 
 Outlet = (function() {
   Outlet.make = function(outlet, extra) {
-    var key, meta, value, _ref;
+    var key, meta, ref, value;
     if (extra == null) {
       extra = {};
     }
     meta = extra;
     if (outlet.meta != null) {
-      _ref = outlet.meta;
-      for (key in _ref) {
-        value = _ref[key];
+      ref = outlet.meta;
+      for (key in ref) {
+        value = ref[key];
         meta[key] = value;
       }
     }
@@ -76628,15 +77180,15 @@ Outlet = (function() {
     return name = name.replace(/(In|Out|Inout|InOut)$/, '');
   };
 
-  function Outlet(inout, name, hint, type, meta, id) {
+  function Outlet(inout, name1, hint, type, meta1, id) {
     this.inout = inout;
-    this.name = name;
+    this.name = name1;
     this.hint = hint;
     this.type = type;
-    this.meta = meta != null ? meta : {};
+    this.meta = meta1 != null ? meta1 : {};
     this.id = id;
     if (this.hint == null) {
-      this.hint = Outlet.hint(name);
+      this.hint = Outlet.hint(this.name);
     }
     this.node = null;
     this.input = null;
@@ -76680,7 +77232,7 @@ Outlet = (function() {
   };
 
   Outlet.prototype.disconnect = function(outlet) {
-    var index, _i, _len, _ref;
+    var i, index, len, ref;
     if (this.input) {
       this.input.disconnect(this);
     }
@@ -76692,9 +77244,9 @@ Outlet = (function() {
           return outlet.input = null;
         }
       } else {
-        _ref = this.output;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          outlet = _ref[_i];
+        ref = this.output;
+        for (i = 0, len = ref.length; i < len; i++) {
+          outlet = ref[i];
           outlet.input = null;
         }
         return this.output = [];
@@ -76709,7 +77261,8 @@ Outlet = (function() {
 module.exports = Outlet;
 
 
-},{"./graph":201}],205:[function(require,module,exports){
+
+},{"./graph":202}],206:[function(require,module,exports){
 var Block, Factory, GLSL, Graph, Linker, ShaderGraph, Snippet, Visualize, cache, inspect, library, merge, visualize;
 
 Block = require('./block');
@@ -76735,14 +77288,14 @@ inspect = Visualize.inspect;
 Snippet = Linker.Snippet;
 
 merge = function(a, b) {
-  var key, out, value, _ref;
+  var key, out, ref, value;
   if (b == null) {
     b = {};
   }
   out = {};
   for (key in a) {
     value = a[key];
-    out[key] = (_ref = b[key]) != null ? _ref : a[key];
+    out[key] = (ref = b[key]) != null ? ref : a[key];
   }
   return out;
 };
@@ -76777,8 +77330,8 @@ ShaderGraph = (function() {
     return new Factory.Material(this.shader(config), this.shader(config));
   };
 
-  ShaderGraph.prototype.overlay = function(shader) {
-    return ShaderGraph.overlay(shader);
+  ShaderGraph.prototype.inspect = function(shader) {
+    return ShaderGraph.inspect(shader);
   };
 
   ShaderGraph.prototype.visualize = function(shader) {
@@ -76816,7 +77369,8 @@ if (typeof window !== 'undefined') {
 }
 
 
-},{"./block":185,"./factory":191,"./glsl":199,"./graph":202,"./linker":207,"./visualize":213}],206:[function(require,module,exports){
+
+},{"./block":186,"./factory":192,"./glsl":200,"./graph":203,"./linker":208,"./visualize":214}],207:[function(require,module,exports){
 var Graph, Priority, assemble;
 
 Graph = require('../graph');
@@ -76842,24 +77396,24 @@ assemble = function(language, namespace, calls, requires) {
   attributes = {};
   library = {};
   process = function() {
-    var body, code, includes, lib, main, ns, r, sorted, _ref;
+    var body, code, includes, lib, main, ns, r, ref, sorted;
     for (ns in requires) {
       r = requires[ns];
       required(r.node, r.module);
     }
-    _ref = handle(calls), body = _ref[0], calls = _ref[1];
+    ref = handle(calls), body = ref[0], calls = ref[1];
     if (namespace != null) {
       body.entry = namespace;
     }
     main = generate.build(body, calls);
     sorted = ((function() {
-      var _results;
-      _results = [];
+      var results;
+      results = [];
       for (ns in library) {
         lib = library[ns];
-        _results.push(lib);
+        results.push(lib);
       }
-      return _results;
+      return results;
     })()).sort(function(a, b) {
       return Priority.compare(a.priority, b.priority);
     });
@@ -76884,21 +77438,21 @@ assemble = function(language, namespace, calls, requires) {
   };
   handle = (function(_this) {
     return function(calls) {
-      var body, c, call, ns, _i, _len;
+      var body, c, call, i, len, ns;
       calls = (function() {
-        var _results;
-        _results = [];
+        var results;
+        results = [];
         for (ns in calls) {
           c = calls[ns];
-          _results.push(c);
+          results.push(c);
         }
-        return _results;
+        return results;
       })();
       calls.sort(function(a, b) {
         return b.priority - a.priority;
       });
       call = function(node, module, priority) {
-        var entry, main, _dangling, _lookup;
+        var _dangling, _lookup, entry, main;
         include(node, module, priority);
         main = module.main;
         entry = module.entry;
@@ -76911,8 +77465,8 @@ assemble = function(language, namespace, calls, requires) {
         return generate.call(_lookup, _dangling, entry, main.signature, body);
       };
       body = generate.body();
-      for (_i = 0, _len = calls.length; _i < _len; _i++) {
-        c = calls[_i];
+      for (i = 0, len = calls.length; i < len; i++) {
+        c = calls[i];
         call(c.node, c.module, c.priority);
       }
       return [body, calls];
@@ -76931,37 +77485,37 @@ assemble = function(language, namespace, calls, requires) {
     }
   };
   include = function(node, module, priority) {
-    var def, key, lib, ns, _ref, _ref1, _ref2, _ref3;
+    var def, key, lib, ns, ref, ref1, ref2, ref3;
     priority = Priority.make(priority);
-    _ref = module.library;
-    for (ns in _ref) {
-      lib = _ref[ns];
+    ref = module.library;
+    for (ns in ref) {
+      lib = ref[ns];
       adopt(ns, lib.code, Priority.nest(priority, lib.priority));
     }
     adopt(module.namespace, module.body, priority);
-    _ref1 = module.uniforms;
-    for (key in _ref1) {
-      def = _ref1[key];
+    ref1 = module.uniforms;
+    for (key in ref1) {
+      def = ref1[key];
       uniforms[key] = def;
     }
-    _ref2 = module.varyings;
-    for (key in _ref2) {
-      def = _ref2[key];
+    ref2 = module.varyings;
+    for (key in ref2) {
+      def = ref2[key];
       varyings[key] = def;
     }
-    _ref3 = module.attributes;
-    for (key in _ref3) {
-      def = _ref3[key];
+    ref3 = module.attributes;
+    for (key in ref3) {
+      def = ref3[key];
       attributes[key] = def;
     }
     return required(node, module);
   };
   required = function(node, module) {
-    var copy, ext, k, key, v, _i, _len, _ref, _results;
-    _ref = module.symbols;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      key = _ref[_i];
+    var copy, ext, i, k, key, len, ref, results, v;
+    ref = module.symbols;
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      key = ref[i];
       ext = module.externals[key];
       if (isDangling(node, ext.name)) {
         copy = {};
@@ -76971,12 +77525,12 @@ assemble = function(language, namespace, calls, requires) {
         }
         copy.name = lookup(node, ext.name);
         externals[key] = copy;
-        _results.push(symbols.push(key));
+        results.push(symbols.push(key));
       } else {
-        _results.push(void 0);
+        results.push(void 0);
       }
     }
-    return _results;
+    return results;
   };
   isDangling = function(node, name) {
     var outlet;
@@ -77005,7 +77559,8 @@ assemble = function(language, namespace, calls, requires) {
 module.exports = assemble;
 
 
-},{"../graph":202,"./priority":210}],207:[function(require,module,exports){
+
+},{"../graph":203,"./priority":211}],208:[function(require,module,exports){
 exports.Snippet = require('./snippet');
 
 exports.Program = require('./program');
@@ -77021,7 +77576,8 @@ exports.priority = require('./priority');
 exports.load = exports.Snippet.load;
 
 
-},{"./assemble":206,"./layout":208,"./link":209,"./priority":210,"./program":211,"./snippet":212}],208:[function(require,module,exports){
+
+},{"./assemble":207,"./layout":209,"./link":210,"./priority":211,"./program":212,"./snippet":213}],209:[function(require,module,exports){
 var Layout, Snippet, debug, link;
 
 Snippet = require('./snippet');
@@ -77099,7 +77655,8 @@ Layout = (function() {
 module.exports = Layout;
 
 
-},{"./link":209,"./snippet":212}],209:[function(require,module,exports){
+
+},{"./link":210,"./snippet":213}],210:[function(require,module,exports){
 var Graph, Priority, link;
 
 Graph = require('../graph');
@@ -77126,7 +77683,7 @@ link = function(language, links, modules, exported) {
   varyings = {};
   library = {};
   process = function() {
-    var code, e, exports, header, lib, m, ns, sorted, _i, _len;
+    var code, e, exports, header, i, len, lib, m, ns, sorted;
     exports = generate.links(links);
     header = [];
     if (exports.defs != null) {
@@ -77135,18 +77692,18 @@ link = function(language, links, modules, exported) {
     if (exports.bodies != null) {
       header.push(exports.bodies);
     }
-    for (_i = 0, _len = modules.length; _i < _len; _i++) {
-      m = modules[_i];
+    for (i = 0, len = modules.length; i < len; i++) {
+      m = modules[i];
       include(m.node, m.module, m.priority);
     }
     sorted = ((function() {
-      var _results;
-      _results = [];
+      var results;
+      results = [];
       for (ns in library) {
         lib = library[ns];
-        _results.push(lib);
+        results.push(lib);
       }
-      return _results;
+      return results;
     })()).sort(function(a, b) {
       return Priority.compare(a.priority, b.priority);
     });
@@ -77185,48 +77742,48 @@ link = function(language, links, modules, exported) {
     }
   };
   include = function(node, module, priority) {
-    var def, ext, key, lib, ns, _i, _len, _ref, _ref1, _ref2, _ref3, _ref4, _results;
+    var def, ext, i, key, len, lib, ns, ref, ref1, ref2, ref3, ref4, results;
     priority = Priority.make(priority);
-    _ref = module.library;
-    for (ns in _ref) {
-      lib = _ref[ns];
+    ref = module.library;
+    for (ns in ref) {
+      lib = ref[ns];
       adopt(ns, lib.code, Priority.nest(priority, lib.priority));
     }
     adopt(module.namespace, module.body, priority);
-    _ref1 = module.uniforms;
-    for (key in _ref1) {
-      def = _ref1[key];
+    ref1 = module.uniforms;
+    for (key in ref1) {
+      def = ref1[key];
       uniforms[key] = def;
     }
-    _ref2 = module.varyings;
-    for (key in _ref2) {
-      def = _ref2[key];
+    ref2 = module.varyings;
+    for (key in ref2) {
+      def = ref2[key];
       varyings[key] = def;
     }
-    _ref3 = module.attributes;
-    for (key in _ref3) {
-      def = _ref3[key];
+    ref3 = module.attributes;
+    for (key in ref3) {
+      def = ref3[key];
       attributes[key] = def;
     }
-    _ref4 = module.symbols;
-    _results = [];
-    for (_i = 0, _len = _ref4.length; _i < _len; _i++) {
-      key = _ref4[_i];
+    ref4 = module.symbols;
+    results = [];
+    for (i = 0, len = ref4.length; i < len; i++) {
+      key = ref4[i];
       ext = module.externals[key];
       if (isDangling(node, ext.name)) {
         externals[key] = ext;
-        _results.push(symbols.push(key));
+        results.push(symbols.push(key));
       } else {
-        _results.push(void 0);
+        results.push(void 0);
       }
     }
-    return _results;
+    return results;
   };
   isDangling = function(node, name) {
-    var module, outlet, _ref, _ref1;
+    var module, outlet, ref, ref1;
     outlet = node.get(name);
     if (!outlet) {
-      module = (_ref = (_ref1 = node.owner.snippet) != null ? _ref1._name : void 0) != null ? _ref : node.owner.namespace;
+      module = (ref = (ref1 = node.owner.snippet) != null ? ref1._name : void 0) != null ? ref : node.owner.namespace;
       throw new Error("Unable to link program. Unlinked callback `" + name + "` on `" + module + "`");
     }
     if (outlet.inout === Graph.IN) {
@@ -77241,13 +77798,15 @@ link = function(language, links, modules, exported) {
 module.exports = link;
 
 
-},{"../graph":202,"./priority":210}],210:[function(require,module,exports){
+
+},{"../graph":203,"./priority":211}],211:[function(require,module,exports){
 exports.make = function(x) {
+  var ref;
   if (x == null) {
     x = [];
   }
   if (!(x instanceof Array)) {
-    x = [+x != null ? +x : 0];
+    x = [(ref = +x) != null ? ref : 0];
   }
   return x;
 };
@@ -77257,9 +77816,9 @@ exports.nest = function(a, b) {
 };
 
 exports.compare = function(a, b) {
-  var i, n, p, q, _i;
+  var i, j, n, p, q, ref;
   n = Math.min(a.length, b.length);
-  for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
+  for (i = j = 0, ref = n; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
     p = a[i];
     q = b[i];
     if (p > q) {
@@ -77289,7 +77848,8 @@ exports.max = function(a, b) {
 };
 
 
-},{}],211:[function(require,module,exports){
+
+},{}],212:[function(require,module,exports){
 var Program, Snippet, assemble;
 
 Snippet = require('./snippet');
@@ -77351,8 +77911,8 @@ Program = (function() {
   };
 
   Program.prototype.assemble = function() {
-    var data, key, snippet, _ref;
-    data = assemble(this.language, (_ref = this.namespace) != null ? _ref : Program.entry, this.calls, this.requires);
+    var data, key, ref, snippet;
+    data = assemble(this.language, (ref = this.namespace) != null ? ref : Program.entry, this.calls, this.requires);
     snippet = new Snippet;
     for (key in data) {
       snippet[key] = data[key];
@@ -77368,7 +77928,8 @@ Program = (function() {
 module.exports = Program;
 
 
-},{"./assemble":206,"./snippet":212}],212:[function(require,module,exports){
+
+},{"./assemble":207,"./snippet":213}],213:[function(require,module,exports){
 var Snippet;
 
 Snippet = (function() {
@@ -77379,15 +77940,15 @@ Snippet = (function() {
   };
 
   Snippet.load = function(language, name, code) {
-    var compiler, program, sigs, _ref;
+    var compiler, program, ref, sigs;
     program = language.parse(name, code);
-    _ref = language.compile(program), sigs = _ref[0], compiler = _ref[1];
+    ref = language.compile(program), sigs = ref[0], compiler = ref[1];
     return new Snippet(language, sigs, compiler, name, code);
   };
 
-  function Snippet(language, _signatures, _compiler, _name, _original) {
-    var _ref;
-    this.language = language;
+  function Snippet(language1, _signatures, _compiler, _name, _original) {
+    var ref;
+    this.language = language1;
     this._signatures = _signatures;
     this._compiler = _compiler;
     this._name = _name;
@@ -77414,7 +77975,7 @@ Snippet = (function() {
       delete this._original;
     }
     if (!this._name) {
-      this._name = (_ref = this._signatures) != null ? _ref.main.name : void 0;
+      this._name = (ref = this._signatures) != null ? ref.main.name : void 0;
     }
   }
 
@@ -77423,14 +77984,14 @@ Snippet = (function() {
   };
 
   Snippet.prototype.bind = function(config, uniforms, namespace, defines) {
-    var a, def, defs, e, exceptions, exist, global, k, key, local, name, redef, u, v, x, _a, _e, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _u, _v;
+    var _a, _e, _u, _v, a, def, defs, e, exceptions, exist, global, i, j, k, key, l, len, len1, len2, len3, len4, len5, local, m, n, name, o, redef, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, u, v, x;
     if (uniforms === '' + uniforms) {
-      _ref = [uniforms, namespace != null ? namespace : {}, defines != null ? defines : {}], namespace = _ref[0], uniforms = _ref[1], defines = _ref[2];
+      ref = [uniforms, namespace != null ? namespace : {}, defines != null ? defines : {}], namespace = ref[0], uniforms = ref[1], defines = ref[2];
     } else if (namespace !== '' + namespace) {
-      _ref1 = [namespace != null ? namespace : {}, void 0], defines = _ref1[0], namespace = _ref1[1];
+      ref1 = [namespace != null ? namespace : {}, void 0], defines = ref1[0], namespace = ref1[1];
     }
     this.main = this._signatures.main;
-    this.namespace = (_ref2 = namespace != null ? namespace : this.namespace) != null ? _ref2 : Snippet.namespace();
+    this.namespace = (ref2 = namespace != null ? namespace : this.namespace) != null ? ref2 : Snippet.namespace();
     this.entry = this.namespace + this.main.name;
     this.uniforms = {};
     this.varyings = {};
@@ -77449,9 +78010,9 @@ Snippet = (function() {
       };
     })(this);
     if (config.globals) {
-      _ref3 = config.globals;
-      for (_i = 0, _len = _ref3.length; _i < _len; _i++) {
-        key = _ref3[_i];
+      ref3 = config.globals;
+      for (i = 0, len = ref3.length; i < len; i++) {
+        key = ref3[i];
         global(key);
       }
     }
@@ -77494,29 +78055,29 @@ Snippet = (function() {
         value: def.value
       };
     };
-    _ref4 = this._signatures.uniform;
-    for (_j = 0, _len1 = _ref4.length; _j < _len1; _j++) {
-      def = _ref4[_j];
+    ref4 = this._signatures.uniform;
+    for (j = 0, len1 = ref4.length; j < len1; j++) {
+      def = ref4[j];
       x(def);
     }
-    _ref5 = this._signatures.uniform;
-    for (_k = 0, _len2 = _ref5.length; _k < _len2; _k++) {
-      def = _ref5[_k];
+    ref5 = this._signatures.uniform;
+    for (l = 0, len2 = ref5.length; l < len2; l++) {
+      def = ref5[l];
       u(redef(def));
     }
-    _ref6 = this._signatures.varying;
-    for (_l = 0, _len3 = _ref6.length; _l < _len3; _l++) {
-      def = _ref6[_l];
+    ref6 = this._signatures.varying;
+    for (m = 0, len3 = ref6.length; m < len3; m++) {
+      def = ref6[m];
       v(redef(def));
     }
-    _ref7 = this._signatures.external;
-    for (_m = 0, _len4 = _ref7.length; _m < _len4; _m++) {
-      def = _ref7[_m];
+    ref7 = this._signatures.external;
+    for (n = 0, len4 = ref7.length; n < len4; n++) {
+      def = ref7[n];
       e(def);
     }
-    _ref8 = this._signatures.attribute;
-    for (_n = 0, _len5 = _ref8.length; _n < _len5; _n++) {
-      def = _ref8[_n];
+    ref8 = this._signatures.attribute;
+    for (o = 0, len5 = ref8.length; o < len5; o++) {
+      def = ref8[o];
       a(redef(def));
     }
     for (name in uniforms) {
@@ -77528,13 +78089,13 @@ Snippet = (function() {
     this.body = this.code = this._compiler(this.namespace, exceptions, defines);
     if (defines) {
       defs = ((function() {
-        var _results;
-        _results = [];
+        var results;
+        results = [];
         for (k in defines) {
           v = defines[k];
-          _results.push("#define " + k + " " + v);
+          results.push("#define " + k + " " + v);
         }
-        return _results;
+        return results;
       })()).join('\n');
       if (defs.length) {
         this._original = [defs, "//----------------------------------------", this._original].join("\n");
@@ -77550,7 +78111,8 @@ Snippet = (function() {
 module.exports = Snippet;
 
 
-},{}],213:[function(require,module,exports){
+
+},{}],214:[function(require,module,exports){
 var Graph, markup, merge, resolve, serialize, visualize;
 
 Graph = require('../Graph').Graph;
@@ -77591,10 +78153,10 @@ resolve = function(arg) {
 };
 
 merge = function(args) {
-  var arg, out, _i, _len;
+  var arg, i, len, out;
   out = [];
-  for (_i = 0, _len = args.length; _i < _len; _i++) {
-    arg = args[_i];
+  for (i = 0, len = args.length; i < len; i++) {
+    arg = args[i];
     if (arg instanceof Array) {
       out = out.concat(merge(arg));
     } else if (arg != null) {
@@ -77608,25 +78170,25 @@ exports.visualize = function() {
   var graph, list;
   list = merge(resolve([].slice.call(arguments)));
   return markup.merge((function() {
-    var _i, _len, _results;
-    _results = [];
-    for (_i = 0, _len = list.length; _i < _len; _i++) {
-      graph = list[_i];
+    var i, len, results;
+    results = [];
+    for (i = 0, len = list.length; i < len; i++) {
+      graph = list[i];
       if (graph) {
-        _results.push(visualize(graph));
+        results.push(visualize(graph));
       }
     }
-    return _results;
+    return results;
   })());
 };
 
 exports.inspect = function() {
-  var contents, el, element, _i, _len, _ref;
+  var contents, el, element, i, len, ref;
   contents = exports.visualize.apply(null, arguments);
   element = markup.overlay(contents);
-  _ref = document.querySelectorAll('.shadergraph-overlay');
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    el = _ref[_i];
+  ref = document.querySelectorAll('.shadergraph-overlay');
+  for (i = 0, len = ref.length; i < len; i++) {
+    el = ref[i];
     el.remove();
   }
   document.body.appendChild(element);
@@ -77635,8 +78197,9 @@ exports.inspect = function() {
 };
 
 
-},{"../Graph":179,"./markup":214,"./serialize":215}],214:[function(require,module,exports){
-var connect, cssColor, escapeText, hash, hashColor, makeSVG, merge, overlay, path, process, sqr, trim, wrap, _activate, _markup, _order;
+
+},{"../Graph":180,"./markup":215,"./serialize":216}],215:[function(require,module,exports){
+var _activate, _markup, _order, connect, cssColor, escapeText, hash, hashColor, makeSVG, merge, overlay, path, process, sqr, trim, wrap;
 
 hash = require('../factory/hash');
 
@@ -77683,12 +78246,12 @@ process = function(data) {
 };
 
 _activate = function(el) {
-  var code, codes, _i, _len, _results;
+  var code, codes, i, len, results;
   codes = el.querySelectorAll('.shadergraph-code');
-  _results = [];
-  for (_i = 0, _len = codes.length; _i < _len; _i++) {
-    code = codes[_i];
-    _results.push((function() {
+  results = [];
+  for (i = 0, len = codes.length; i < len; i++) {
+    code = codes[i];
+    results.push((function() {
       var popup;
       popup = code;
       popup.parentNode.classList.add('shadergraph-has-code');
@@ -77700,43 +78263,43 @@ _activate = function(el) {
       });
     })());
   }
-  return _results;
+  return results;
 };
 
 _order = function(data) {
-  var link, linkMap, node, nodeMap, recurse, _i, _j, _k, _len, _len1, _len2, _name, _ref, _ref1, _ref2;
+  var i, j, k, len, len1, len2, link, linkMap, name, node, nodeMap, recurse, ref1, ref2, ref3;
   nodeMap = {};
   linkMap = {};
-  _ref = data.nodes;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    node = _ref[_i];
+  ref1 = data.nodes;
+  for (i = 0, len = ref1.length; i < len; i++) {
+    node = ref1[i];
     nodeMap[node.id] = node;
   }
-  _ref1 = data.links;
-  for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-    link = _ref1[_j];
-    if (linkMap[_name = link.from] == null) {
-      linkMap[_name] = [];
+  ref2 = data.links;
+  for (j = 0, len1 = ref2.length; j < len1; j++) {
+    link = ref2[j];
+    if (linkMap[name = link.from] == null) {
+      linkMap[name] = [];
     }
     linkMap[link.from].push(link);
   }
   recurse = function(node, depth) {
-    var next, _k, _len2, _ref2;
+    var k, len2, next, ref3;
     if (depth == null) {
       depth = 0;
     }
-    node.depth = Math.max((_ref2 = node.depth) != null ? _ref2 : 0, depth);
+    node.depth = Math.max((ref3 = node.depth) != null ? ref3 : 0, depth);
     if (next = linkMap[node.id]) {
-      for (_k = 0, _len2 = next.length; _k < _len2; _k++) {
-        link = next[_k];
+      for (k = 0, len2 = next.length; k < len2; k++) {
+        link = next[k];
         recurse(nodeMap[link.to], depth + 1);
       }
     }
     return null;
   };
-  _ref2 = data.nodes;
-  for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-    node = _ref2[_k];
+  ref3 = data.nodes;
+  for (k = 0, len2 = ref3.length; k < len2; k++) {
+    node = ref3[k];
     if (node.depth == null) {
       recurse(node);
     }
@@ -77745,15 +78308,15 @@ _order = function(data) {
 };
 
 _markup = function(data, links) {
-  var addOutlet, block, clear, color, column, columns, div, link, node, outlet, outlets, wrapper, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3;
+  var addOutlet, block, clear, color, column, columns, div, i, j, k, l, len, len1, len2, len3, len4, link, m, node, outlet, outlets, ref1, ref2, ref3, ref4, wrapper;
   _order(data);
   wrapper = document.createElement('div');
   wrapper.classList.add('shadergraph-graph');
   columns = [];
   outlets = {};
-  _ref = data.nodes;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    node = _ref[_i];
+  ref1 = data.nodes;
+  for (i = 0, len = ref1.length; i < len; i++) {
+    node = ref1[i];
     block = document.createElement('div');
     block.classList.add("shadergraph-node");
     block.classList.add("shadergraph-node-" + node.type);
@@ -77768,14 +78331,14 @@ _markup = function(data, links) {
       block.appendChild(div);
       return outlets[outlet.id] = div.querySelector('.shadergraph-point');
     };
-    _ref1 = node.inputs;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      outlet = _ref1[_j];
+    ref2 = node.inputs;
+    for (j = 0, len1 = ref2.length; j < len1; j++) {
+      outlet = ref2[j];
       addOutlet(outlet, 'in');
     }
-    _ref2 = node.outputs;
-    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-      outlet = _ref2[_k];
+    ref3 = node.outputs;
+    for (k = 0, len2 = ref3.length; k < len2; k++) {
+      outlet = ref3[k];
       addOutlet(outlet, 'out');
     }
     if (node.graph != null) {
@@ -77799,15 +78362,15 @@ _markup = function(data, links) {
     }
     column.appendChild(block);
   }
-  for (_l = 0, _len3 = columns.length; _l < _len3; _l++) {
-    column = columns[_l];
+  for (l = 0, len3 = columns.length; l < len3; l++) {
+    column = columns[l];
     if (column != null) {
       wrapper.appendChild(column);
     }
   }
-  _ref3 = data.links;
-  for (_m = 0, _len4 = _ref3.length; _m < _len4; _m++) {
-    link = _ref3[_m];
+  ref4 = data.links;
+  for (m = 0, len4 = ref4.length; m < len4; m++) {
+    link = ref4[m];
     color = hashColor(link.type);
     links.push({
       color: color,
@@ -77848,13 +78411,13 @@ makeSVG = function(tag) {
 };
 
 connect = function(element, links) {
-  var a, b, box, c, line, link, ref, svg, _i, _j, _len, _len1;
+  var a, b, box, c, i, j, len, len1, line, link, ref, svg;
   if (element.parentNode == null) {
     return;
   }
   ref = element.getBoundingClientRect();
-  for (_i = 0, _len = links.length; _i < _len; _i++) {
-    link = links[_i];
+  for (i = 0, len = links.length; i < len; i++) {
+    link = links[i];
     a = link.out.getBoundingClientRect();
     b = link["in"].getBoundingClientRect();
     link.coords = {
@@ -77875,8 +78438,8 @@ connect = function(element, links) {
   svg = makeSVG();
   svg.setAttribute('width', box.offsetWidth);
   svg.setAttribute('height', box.offsetHeight);
-  for (_j = 0, _len1 = links.length; _j < _len1; _j++) {
-    link = links[_j];
+  for (j = 0, len1 = links.length; j < len1; j++) {
+    link = links[j];
     c = link.coords;
     line = makeSVG('path');
     line.setAttribute('d', path(c.x1, c.y1, c.x2, c.y2));
@@ -77920,21 +78483,21 @@ wrap = function(markup) {
 };
 
 merge = function(markup) {
-  var div, el, _i, _len;
+  var div, el, i, len;
   if (markup.length !== 1) {
     div = document.createElement('div');
-    for (_i = 0, _len = markup.length; _i < _len; _i++) {
-      el = markup[_i];
+    for (i = 0, len = markup.length; i < len; i++) {
+      el = markup[i];
       div.appendChild(wrap(el));
     }
     div.update = function() {
-      var _j, _len1, _results;
-      _results = [];
-      for (_j = 0, _len1 = markup.length; _j < _len1; _j++) {
-        el = markup[_j];
-        _results.push(typeof el.update === "function" ? el.update() : void 0);
+      var j, len1, results;
+      results = [];
+      for (j = 0, len1 = markup.length; j < len1; j++) {
+        el = markup[j];
+        results.push(typeof el.update === "function" ? el.update() : void 0);
       }
-      return _results;
+      return results;
     };
     return div;
   } else {
@@ -77949,7 +78512,8 @@ module.exports = {
 };
 
 
-},{"../factory/hash":190}],215:[function(require,module,exports){
+
+},{"../factory/hash":191}],216:[function(require,module,exports){
 var Block, isCallback, serialize;
 
 Block = require('../block');
@@ -77959,12 +78523,12 @@ isCallback = function(outlet) {
 };
 
 serialize = function(graph) {
-  var block, format, inputs, links, node, nodes, other, outlet, outputs, record, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+  var block, format, i, inputs, j, k, l, len, len1, len2, len3, links, node, nodes, other, outlet, outputs, record, ref, ref1, ref2, ref3, ref4;
   nodes = [];
   links = [];
-  _ref = graph.nodes;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    node = _ref[_i];
+  ref = graph.nodes;
+  for (i = 0, len = ref.length; i < len; i++) {
+    node = ref[i];
     record = {
       id: node.id,
       name: null,
@@ -77993,14 +78557,27 @@ serialize = function(graph) {
     } else if (block instanceof Block.Join) {
       record.name = 'Join';
       record.type = 'join';
+    } else if (block != null) {
+      if (record.name == null) {
+        record.name = (ref1 = block.name) != null ? ref1 : block.type;
+      }
+      if (record.type == null) {
+        record.type = block.type;
+      }
+      if (record.code == null) {
+        record.code = block.code;
+      }
+      if (block.graph != null) {
+        record.graph = serialize(block.graph);
+      }
     }
     format = function(type) {
       type = type.replace(")(", ")→(");
       return type = type.replace("()", "");
     };
-    _ref1 = node.inputs;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      outlet = _ref1[_j];
+    ref2 = node.inputs;
+    for (j = 0, len1 = ref2.length; j < len1; j++) {
+      outlet = ref2[j];
       inputs.push({
         id: outlet.id,
         name: outlet.name,
@@ -78008,18 +78585,18 @@ serialize = function(graph) {
         open: outlet.input == null
       });
     }
-    _ref2 = node.outputs;
-    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-      outlet = _ref2[_k];
+    ref3 = node.outputs;
+    for (k = 0, len2 = ref3.length; k < len2; k++) {
+      outlet = ref3[k];
       outputs.push({
         id: outlet.id,
         name: outlet.name,
         type: format(outlet.type),
         open: !outlet.output.length
       });
-      _ref3 = outlet.output;
-      for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-        other = _ref3[_l];
+      ref4 = outlet.output;
+      for (l = 0, len3 = ref4.length; l < len3; l++) {
+        other = ref4[l];
         links.push({
           from: node.id,
           out: outlet.id,
@@ -78039,10 +78616,11 @@ serialize = function(graph) {
 module.exports = serialize;
 
 
-},{"../block":185}],216:[function(require,module,exports){
+
+},{"../block":186}],217:[function(require,module,exports){
 module.exports = require('./lib/index')
 
-},{"./lib/index":218}],217:[function(require,module,exports){
+},{"./lib/index":219}],218:[function(require,module,exports){
 var state
   , token
   , tokens
@@ -78309,7 +78887,7 @@ function fail(message) {
   return function() { return state.unexpected(message) }
 }
 
-},{}],218:[function(require,module,exports){
+},{}],219:[function(require,module,exports){
 module.exports = parser
 
 var through = require('../../through')
@@ -79270,7 +79848,7 @@ function is_precision(token) {
          token.data === 'lowp'
 }
 
-},{"../../through":224,"./expr":217,"./scope":219}],219:[function(require,module,exports){
+},{"../../through":225,"./expr":218,"./scope":220}],220:[function(require,module,exports){
 module.exports = scope
 
 function scope(state) {
@@ -79310,7 +79888,7 @@ proto.find = function(name, fail) {
   return null
 }
 
-},{}],220:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 module.exports = tokenize
 
 var through = require('../through')
@@ -79647,7 +80225,7 @@ function tokenize() {
   }
 }
 
-},{"../through":224,"./lib/builtins":221,"./lib/literals":222,"./lib/operators":223}],221:[function(require,module,exports){
+},{"../through":225,"./lib/builtins":222,"./lib/literals":223,"./lib/operators":224}],222:[function(require,module,exports){
 module.exports = [
     'gl_Position'
   , 'gl_PointSize'
@@ -79793,7 +80371,7 @@ module.exports = [
   , 'textureCubeLod'
 ]
 
-},{}],222:[function(require,module,exports){
+},{}],223:[function(require,module,exports){
 module.exports = [
   // current
     'precision'
@@ -79888,7 +80466,7 @@ module.exports = [
   , 'using'
 ]
 
-},{}],223:[function(require,module,exports){
+},{}],224:[function(require,module,exports){
 module.exports = [
     '<<='
   , '>>='
@@ -79936,7 +80514,7 @@ module.exports = [
   , '}'
 ]
 
-},{}],224:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 var through;
 
 through = function(write, end) {
@@ -79959,9 +80537,9 @@ through = function(write, end) {
       return [output, errors];
     },
     queue: function(obj) {
-      var _ref;
+      var ref;
       if (obj != null) {
-        return (_ref = this.parser) != null ? _ref.write(obj) : void 0;
+        return (ref = this.parser) != null ? ref.write(obj) : void 0;
       }
     },
     emit: function(type, node) {
@@ -79978,6 +80556,7 @@ through = function(write, end) {
 };
 
 module.exports = through;
+
 
 
 },{}]},{},[30])

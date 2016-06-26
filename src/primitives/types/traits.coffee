@@ -38,6 +38,7 @@ Traits =
     pass:              Types.vertexPass()
   fragment:
     pass:              Types.fragmentPass()
+    gamma:             Types.bool(false)
 
   transform3:
     position:          Types.vec3()
@@ -106,7 +107,7 @@ Traits =
     crossed:           Types.bool(false)
 
   data:
-    data:              Types.nullable(Types.object())
+    data:              Types.nullable(Types.data())
     expr:              Types.nullable(Types.emitter())
     bind:              Types.nullable(Types.func())
     live:              Types.bool(true)
@@ -165,6 +166,7 @@ Traits =
     optical:           Types.bool(true)
     fill:              Types.bool(true)
     depth:             Types.number(1)
+
   line:
     width:             Types.positive(Types.number(2))
     depth:             Types.positive(Types.number(1))
@@ -175,6 +177,7 @@ Traits =
     fill:              Types.bool(true)
     shaded:            Types.bool(false)
     map:               Types.nullable(Types.select())
+    lineBias:          Types.number(5)
   strip:
     line:              Types.bool(false)
   face:
@@ -194,16 +197,16 @@ Traits =
 
   format:
     digits:            Types.nullable(Types.positive(Types.number(3)))
-    data:              Types.nullable(Types.object())
+    data:              Types.nullable(Types.data())
     expr:              Types.nullable(Types.func())
     live:              Types.bool(true)
-  text:
+  font:
     font:              Types.font('sans-serif')
     style:             Types.string()
     variant:           Types.string()
     weight:            Types.string()
     detail:            Types.number(24)
-    expand:            Types.number(5)
+    sdf:               Types.number(5)
   label:
     text:              Types.select()
     size:              Types.number(16)
@@ -293,8 +296,14 @@ Traits =
     height:            Types.nullable(Types.int())
     depth:             Types.nullable(Types.int())
   readback:
-    indexed:           Types.bool()
-
+    type:              Types.type('float')
+    expr:              Types.nullable(Types.func())
+    data:              Types.data()
+    channels:          Types.enum(4, [1, 2, 3, 4])
+    items:             Types.nullable(Types.int())
+    width:             Types.nullable(Types.int())
+    height:            Types.nullable(Types.int())
+    depth:             Types.nullable(Types.int())
   root:
     speed:             Types.number(1)
     camera:            Types.select('[camera]')
@@ -303,8 +312,9 @@ Traits =
     traits:            Types.array(Types.string())
 
   rtt:
-    width:             Types.nullable(Types.int())
-    height:            Types.nullable(Types.int())
+    size:              Types.mapping('absolute')
+    width:             Types.nullable(Types.number())
+    height:            Types.nullable(Types.number())
     history:           Types.int(1)
   compose:
     alpha:             Types.bool(false)

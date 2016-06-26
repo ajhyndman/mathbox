@@ -7,7 +7,12 @@ var karma      = require('gulp-karma');
 var sequence   = require('run-sequence');
 var browserify = require('gulp-browserify');
 var watch      = require('gulp-watch');
+var shell      = require('gulp-shell');
 var jsify      = require('./vendor/gulp-jsify');
+var plumber    = require('gulp-plumber');
+var batch      = require('gulp-batch');
+
+var KarmaServer = require('karma').Server;
 
 var builds = {
   core:   'build/mathbox-core.js',
@@ -36,7 +41,7 @@ var css = [
 ];
 
 var core = [
-  '.tmp/index.js'
+  '.tmp/index.js', 
 ];
 
 var glsls = [
@@ -70,7 +75,7 @@ gulp.task('browserify', function () {
         extensions: ['.coffee'],
       }))
       .pipe(rename({
-        ext: ".js"
+        extname: ".js",
       }))
       .pipe(gulp.dest('.tmp/'))
 });
@@ -97,17 +102,17 @@ gulp.task('uglify-js', function () {
   return gulp.src(products)
     .pipe(uglify())
     .pipe(rename({
-      ext: ".min.js"
+      extname: ".min.js",
     }))
     .pipe(gulp.dest('build'));
 });
 
-gulp.task('karma', function() {
-  return gulp.src(test)
-    .pipe(karma({
-      configFile: 'karma.conf.js',
-      action: 'single',
-    }));
+gulp.task('karma', function (done) {
+  new KarmaServer({
+    configFile: __dirname + '/karma.conf.js',
+    files: test,
+    singleRun: true,
+  }, done).start();
 });
 
 gulp.task('watch-karma', function() {
@@ -119,12 +124,9 @@ gulp.task('watch-karma', function() {
 });
 
 gulp.task('watch-build-watch', function () {
-  gulp.src(source)
-    .pipe(
-      watch(function(files) {
-        return gulp.start('build');
-      })
-    );
+  watch(source, function () {
+    return gulp.start('build');
+  });
 });
 
 // Main tasks
@@ -136,6 +138,10 @@ gulp.task('build', function (callback) {
 gulp.task('default', function (callback) {
   sequence('build', 'uglify-js', callback);
 });
+
+gulp.task('docs', shell.task([
+  'coffee src/docs/generate.coffee > docs/primitives.md',
+]));
 
 gulp.task('test', function (callback) {
   sequence('build', 'karma', callback);

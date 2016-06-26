@@ -7,16 +7,20 @@ Primitives = require '..//primitives'
 
 defs = {}
 
+titleCase = (v) -> v.slice(0, 1).toUpperCase() + v.slice(1)
+
 for type, klass of Primitives.Types.Classes
   def = defs[type] = {}
   for trait in klass.traits
-    def[k] = v for k, v of TraitDefs[trait] when TraitDefs[trait]?
+    [trait, ns] = trait.split ':'
+    suffix = if ns? then titleCase ns else ''
+    def[k + suffix] = v for k, v of TraitDefs[trait] when TraitDefs[trait]?
 
 docs = {}
 index = {}
 
 for type, def of defs
-  [module, description, examples] = PrimitiveDefs[type]
+  [module, description, examples, defaults] = PrimitiveDefs[type]
 
   id = "#{module}/#{type}"
 
@@ -37,10 +41,12 @@ for type, def of defs
   for key in props
     prop = def[key]
 
-    ex = prop[3] ? examples?[key]
+    ex = examples?[key] ? prop[3]
     ex = if ex then ", e.g. `#{ex}`" else ""
 
-    out += " * *#{key}* = #{prop[2]} (#{prop[1]}) - #{prop[0]}#{ex}\n"
+    val = defaults?[key] ? prop[2]
+
+    out += " * *#{key}* = `#{val}` (#{prop[1]}) - #{prop[0]}#{ex}\n"
 
   docs[type] = out
 

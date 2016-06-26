@@ -51,6 +51,11 @@ class Strip extends Primitive
     shaded  = @props.shaded
     fill    = @props.fill
 
+    # Auto z-bias wireframe over surface
+    wireUniforms = {}
+    wireUniforms.styleZBias  = @_attributes.make @_types.number()
+    @wireZBias  = wireUniforms.styleZBias
+
     # Fetch geometry dimensions
     dims    = @bind.points.getDimensions()
     {items, width, height, depth} = dims
@@ -63,6 +68,14 @@ class Strip extends Primitive
     # Build transition mask lookup
     mask = @_helpers.object.mask()
 
+    # Build texture map lookup
+    map = @_helpers.shade.map @bind.map?.sourceShader @_shaders.shader()
+
+    # Build fragment material lookup
+    material     = @_helpers.shade.pipeline()
+    faceMaterial = material || shaded
+    lineMaterial = material || false
+
     objects = []
 
     # Make line renderable
@@ -72,7 +85,7 @@ class Strip extends Primitive
       swizzle.pipe Util.GLSL.swizzleVec4 'yzwx'
       swizzle.pipe position
 
-      uniforms = Util.JS.merge unitUniforms, lineUniforms, styleUniforms
+      uniforms = Util.JS.merge unitUniforms, lineUniforms, styleUniforms, wireUniforms
 
       @line = @_renderables.make 'line',
                 uniforms: uniforms
@@ -83,6 +96,7 @@ class Strip extends Primitive
                 position: swizzle
                 color:    color
                 mask:     mask
+                material: lineMaterial
 
       objects.push @line
 
@@ -98,7 +112,7 @@ class Strip extends Primitive
                 items:    items
                 position: position
                 color:    color
-                material: shaded
+                material: faceMaterial
       objects.push @strip
 
     @_helpers.visible.make()
@@ -115,5 +129,12 @@ class Strip extends Primitive
 
   change: (changed, touched, init) ->
     return @rebuild() if changed['geometry.points'] or touched['mesh']
+
+    if changed['style.zBias']   or
+       changed['mesh.lineBias'] or
+       init
+
+      {fill, zBias, lineBias} = @props
+      @wireZBias.value = zBias + if fill then lineBias else 0
 
 module.exports = Strip

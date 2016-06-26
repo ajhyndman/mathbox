@@ -67,7 +67,9 @@ class Face extends Primitive
     map = @_helpers.shade.map @bind.map?.sourceShader @_shaders.shader()
 
     # Build fragment material lookup
-    material = @_helpers.shade.pipeline() || shaded
+    material     = @_helpers.shade.pipeline()
+    faceMaterial = material || shaded
+    lineMaterial = material || false
 
     objects = []
 
@@ -87,6 +89,7 @@ class Face extends Primitive
                 layers:   depth
                 position: swizzle
                 color:    color
+                material: lineMaterial
                 mask:     mask
                 closed:   true
       objects.push @line
@@ -102,7 +105,7 @@ class Face extends Primitive
                 items:    items
                 position: position
                 color:    color
-                material: material
+                material: faceMaterial
                 mask:     mask
                 map:      map
       objects.push @face
@@ -122,10 +125,11 @@ class Face extends Primitive
   change: (changed, touched, init) ->
     return @rebuild() if changed['geometry.points'] or touched['mesh']
 
-    if changed['style.zBias'] or
+    if changed['style.zBias']   or
+       changed['mesh.lineBias'] or
        init
 
-      {fill, zBias} = @props
-      @wireZBias.value = zBias + if fill then 5 else 0
+      {fill, zBias, lineBias} = @props
+      @wireZBias.value = zBias + if fill then lineBias else 0
 
 module.exports = Face

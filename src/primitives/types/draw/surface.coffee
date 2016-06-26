@@ -79,7 +79,9 @@ class Surface extends Primitive
     map = @_helpers.shade.map @bind.map?.sourceShader @_shaders.shader()
 
     # Build fragment material lookup
-    material = @_helpers.shade.pipeline() || shaded
+    material     = @_helpers.shade.pipeline()
+    faceMaterial = material || shaded
+    lineMaterial = material || false
 
     # Make line and surface renderables
     {swizzle, swizzle2}  = @_helpers.position
@@ -97,6 +99,7 @@ class Surface extends Primitive
                 zUnits:    -zUnits
                 stroke:    stroke
                 mask:      mask
+                material:  lineMaterial
                 proximity: proximity
                 closed:    closedX || closed
       objects.push @lineX
@@ -113,6 +116,7 @@ class Surface extends Primitive
                 zUnits:    -zUnits
                 stroke:    stroke
                 mask:      swizzle  mask,     if crossed then 'xyzw' else 'yxzw'
+                material:  lineMaterial
                 proximity: proximity
                 closed:    closedY || closed
       objects.push @lineY
@@ -127,9 +131,9 @@ class Surface extends Primitive
                 layers:   items
                 position: position
                 color:    color
-                material: shaded
                 zUnits:   zUnits
                 stroke:   stroke
+                material: faceMaterial
                 mask:     mask
                 map:      map
                 intUV:    true
@@ -156,14 +160,15 @@ class Surface extends Primitive
                          changed['line.stroke'] or
                          touched['grid']
 
-    if changed['style.color'] or
-       changed['style.zBias'] or
-       changed['mesh.fill']   or
+    if changed['style.color']   or
+       changed['style.zBias']   or
+       changed['mesh.fill']     or
+       changed['mesh.lineBias'] or
        init
 
-      {fill, color, zBias} = @props
+      {fill, color, zBias, lineBias} = @props
 
-      @wireZBias.value = zBias + if fill then 5 else 0
+      @wireZBias.value = zBias + if fill then lineBias else 0
       @wireColor.copy color
       if fill
         c = @wireScratch

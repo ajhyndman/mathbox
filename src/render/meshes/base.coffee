@@ -172,8 +172,8 @@ class Base extends Renderable
         f.pipe 'mesh.fragment.shaded',  @uniforms
       else
         f.require material
-        f.pipe 'mesh.fragment.map',     @uniforms, defs
-      join  = true
+        f.pipe 'mesh.fragment.material', @uniforms, defs
+
       gamma = true
 
     if gamma and !linear
