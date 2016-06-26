@@ -4,11 +4,13 @@
   "description": "Presentation-quality WebGL math graphing",
   "repository": {
     "type": "git",
-    "url": "https://gitgud.io/unconed/mathbox.git"
+    "url": "https://github.com/unconed/mathbox.git"
   },
   "main": "build/mathbox-bundle.js",
   "scripts": {
-    "test": "gulp test"
+    "build": "gulp",
+    "test": "gulp test",
+    "prepublish": "gulp"
   },
   "dependencies": {
     "browserify": "^3.46.1",
