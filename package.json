@@ -14,6 +14,17 @@
     "build": "gulp",
     "prepublish": "gulp"
   },
+	"keywords": [
+		"three",
+		"threejs",
+		"three.js",
+		"3D",
+		"webgl",
+		"math",
+		"mathbox",
+		"graph",
+		"graphing"
+	],
   "files": [
     "CHANGES.md",
     "LICENSE.md",
