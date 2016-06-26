@@ -577,6 +577,10 @@ Types =
     keys = ['circle', 'square', 'diamond', 'up', 'down', 'left', 'right']
     Types.enum value, keys
 
+  join: (value = 'miter') ->
+    keys = ['miter', 'round', 'bevel']
+    Types.enum value, keys
+
   stroke: (value = 'solid') ->
     keys = ['solid', 'dotted', 'dashed']
     Types.enum value, keys
@@ -590,7 +594,7 @@ Types =
     Types.enum value, keys
 
   ease: (value = 'linear') ->
-    keys = ['linear', 'cosine']
+    keys = ['linear', 'cosine', 'binary', 'hold']
     Types.enum value, keys
 
   fit: (value = 'contain') ->

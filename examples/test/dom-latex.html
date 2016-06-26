@@ -5,8 +5,8 @@
   <title>MathBox - LaTeX Label (KaTeX)</title>
   <script src="../../build/mathbox-bundle.js"></script>
   <link rel="stylesheet" href="../../build/mathbox.css">
-  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.css">
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js"></script>
   <meta name="viewport" content="initial-scale=1, maximum-scale=1">
 </head>
 <body>
@@ -67,7 +67,7 @@
     });
 
     view.interval({
-      length: 8,
+      width: 8,
       expr: function (emit, x, i, time) {
         y = Math.sin(x + (time*0.2) / 4) * .7;
         emit(x, y);
@@ -95,9 +95,9 @@
       width: 8,
       height: 3,
       depth:  2,
-      expr: function (emit, el, i, j) {
+      expr: function (emit, el, i, j, k, l, time) {
         // Emit latex element
-        emit(el('latex', null, 'c = \\pm\\sqrt{' + i + ' a^2 + ' + j + ' b^2}'));
+        emit(el('latex', null, 'c = \\mathbf{F} \\pm\\sqrt{' + i + ' a^2 + ' + j + ' b^2}'));
       },
     })
     .dom({

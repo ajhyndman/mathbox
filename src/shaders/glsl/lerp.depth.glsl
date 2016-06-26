@@ -1,10 +1,8 @@
-uniform float sampleRatio;
-
 // External
 vec4 sampleData(vec4 xyzw);
 
 vec4 lerpDepth(vec4 xyzw) {
-  float x = xyzw.z * sampleRatio;
+  float x = xyzw.z;
   float i = floor(x);
   float f = x - i;
     

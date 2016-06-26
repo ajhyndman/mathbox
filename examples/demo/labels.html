@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <title>MathBox - Label Everything</title>
-  <script src="../../build/mathbox-bundle.min.js"></script>
+  <script src="../../build/mathbox-bundle.js"></script>
   <link rel="stylesheet" href="../../build/mathbox.css">
-  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.css">
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js"></script>
   <meta name="viewport" content="initial-scale=1, maximum-scale=1">
 </head>
 <body>
@@ -94,7 +94,7 @@
     });
 
     view.interval({
-      length: 48,
+      width: 48,
       expr: function (emit, x, i, t) {
         y = Math.sin(x + t / 4) * .5 + .75;
         emit(x, y);
@@ -133,7 +133,7 @@
     });
 
     view.interval({
-      length: 192,
+      width: 192,
       expr: function (emit, x, i, t) {
         y = Math.sin(x + t / 4) * .5 + .25;
         emit(x, y);
@@ -190,7 +190,7 @@
     .end();
 
     view.interval({
-      length: 48,
+      width: 48,
       expr: function (emit, x, i, t) {
         y = Math.sin(x + t / 4) * .5 - .25;
         emit(x, y);
@@ -242,7 +242,7 @@
     });
   
     view.interval({
-      length: 48,
+      width: 48,
       expr: function (emit, x, i, t) {
         y = Math.sin(x + t / 4) * .5 - .75;
         emit(x, y);
@@ -274,7 +274,7 @@
       },
     })
     .array({
-      length:  8,
+      width:  8,
       expr: function (emit, i, t) {
         var color = [[192,192,192],[40,40,40]][i%2];
         emit(color[0]/255, color[1]/255, color[2]/255, 1);

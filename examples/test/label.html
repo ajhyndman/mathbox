@@ -56,14 +56,16 @@
     });
 
     view.array({
-      id: 'colors',
-      length: 2,
+      width: 2,
       channels: 4,
       data: [[0xc0/255, 0x20/255, 0x50/255, 1], [0x50/255, 0xc0/255, 0x20/255, 1]],
+    })
+    .repeat({
+      id: 'colors',
     });
 
     view.interval({
-      length: 16,
+      width: 16,
       expr: function (emit, x, i, time) {
         y = Math.sin(x + (time*0.2) / 4) * .7;// + (i%2)*Math.sin(x * 400000 + time * 5 + x * x * 10000)*.05;
         emit(x, y);
@@ -93,7 +95,7 @@
       width:  16,
       height: 5,
       depth:  2,
-      expr: function (emit, i, j, time) {
+      expr: function (emit, i, j, k, time) {
         time *= 0.2;
         //emit('QxAfjldgざおぎぼアプヸ⾤⾘⿕⿒');
         emit(
